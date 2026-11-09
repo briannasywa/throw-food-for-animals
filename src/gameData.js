@@ -1,135 +1,179 @@
-// Strict 32-Color Palette (Inspired by Endesga 32 / Crossy Road)
-export const PALETTE = {
-  black: '#181425',
-  darkPurple: '#262b44',
-  navy: '#3a4466',
-  slate: '#5a6988',
-  lightSlate: '#8b9bb4',
-  paper: '#c0cbdc',
-  white: '#ffffff',
-  
-  darkRed: '#5a1932',
-  red: '#a22633',
-  orange: '#e43b44',
-  amber: '#f77622',
-  yellow: '#feae34',
-  gold: '#fee761',
-  
-  darkGreen: '#1e4832',
-  forestGreen: '#38734a',
-  green: '#63c74d',
-  lime: '#b2ea67',
-  
-  darkBlue: '#1b2632',
-  skyBlue: '#0099db',
-  cyan: '#2ce8f5',
-  
-  cream: '#e4a672',
-  tan: '#b86f50',
-  brown: '#733e39',
-  darkBrown: '#3e2731'
-};
+// Official Color Palette & Biome Zones based on Roblox "Throw Food For Animals"
+// Sky color: #70c5ff (Vibrant Roblox Sky Blue)
 
-export const FOOD_TIERS = [
-  { id: 'carrot', name: 'Wortel', iconText: 'CARROT', color: PALETTE.amber, cost: 0, luckBonus: 1.0, desc: 'Umpan standar hewan pemula.' },
-  { id: 'apple', name: 'Apel Merah', iconText: 'APPLE', color: PALETTE.orange, cost: 100, luckBonus: 1.5, desc: 'Aroma segar menarik hewan sekitar.' },
-  { id: 'meat', name: 'Daging Balok', iconText: 'STEAK', color: PALETTE.red, cost: 500, luckBonus: 2.2, desc: 'Favorit predator dan karnivora.' },
-  { id: 'burger', name: 'Voxel Burger', iconText: 'BURGER', color: PALETTE.yellow, cost: 2500, luckBonus: 3.5, desc: 'Penuh kalori, menarik hewan eksotis.' },
-  { id: 'sushi', name: 'Nori Roll', iconText: 'SUSHI', color: PALETTE.cyan, cost: 15000, luckBonus: 6.0, desc: 'Umpan premium untuk hewan langka.' },
-  { id: 'dragon_fruit', name: 'Buah Naga', iconText: 'DRAGON', color: PALETTE.lime, cost: 100000, luckBonus: 12.0, desc: 'Buah legendaris berenergi murni.' },
-  { id: 'star_cake', name: 'Kue Bintang', iconText: 'STAR', color: PALETTE.gold, cost: 1000000, luckBonus: 25.0, desc: 'Umpan dewa penakluk naga kosmik.' }
-];
-
-export const MUTATION_DATA = {
-  Normal: { name: 'Normal', multiplier: 1.0, color: PALETTE.lightSlate, chance: 85 },
-  Gold: { name: 'Gold', multiplier: 1.8, color: PALETTE.gold, chance: 10 },
-  Diamond: { name: 'Diamond', multiplier: 3.5, color: PALETTE.cyan, chance: 3.5 },
-  Emerald: { name: 'Emerald', multiplier: 6.0, color: PALETTE.lime, chance: 1.2 },
-  Rainbow: { name: 'Rainbow', multiplier: 12.0, color: PALETTE.orange, chance: 0.3 }
-};
+export const SKY_COLOR = 0x70c5ff;
 
 export const ZONES = [
   {
-    id: 1,
-    name: 'Block Forest',
+    id: 'lobby',
+    name: 'Lobby',
     minDist: 0,
-    maxDist: 800,
-    groundColor: 0x63c74d,
-    trackColor: 0x8b9bb4,
-    skyColor: 0x3a4466,
+    maxDist: 300,
+    stripes: [0x84cc16, 0x65a30d], // Lime green stripes
+    accent: 0xec4899, // Pink finish line separator
+    gimmick: 'Safe Zone & Training Grounds: Angin tenang, tempat ideal pemula.',
+    windMultiplier: 0.2,
     animals: [
-      { id: 'rabbit', name: 'Kelinci', rarity: 'Common', baseCps: 2, weight: 50, color: 0xffffff },
-      { id: 'squirrel', name: 'Tupai', rarity: 'Common', baseCps: 4, weight: 35, color: 0xb86f50 },
-      { id: 'hedgehog', name: 'Landak', rarity: 'Rare', baseCps: 10, weight: 12, color: 0x733e39 },
-      { id: 'deer', name: 'Rusa', rarity: 'Epic', baseCps: 25, weight: 3, color: 0xfeae34 }
+      { id: 'rabbit', name: 'Kelinci', rarity: 'Common', baseCps: 3, weight: 50, color: 0xffffff },
+      { id: 'dog', name: 'Anjing Puppy', rarity: 'Common', baseCps: 6, weight: 35, color: 0xb45309 },
+      { id: 'cat', name: 'Kucing Kampung', rarity: 'Rare', baseCps: 15, weight: 12, color: 0xf59e0b },
+      { id: 'golden_retriever', name: 'Golden Retriever', rarity: 'Epic', baseCps: 35, weight: 3, color: 0xfef08a }
     ]
   },
   {
-    id: 2,
-    name: 'Voxel Savanna',
-    minDist: 801,
+    id: 'farm',
+    name: 'Farm',
+    minDist: 301,
+    maxDist: 1000,
+    stripes: [0xa3e635, 0x84cc16], // Light grass green
+    accent: 0xf97316,
+    gimmick: 'Hay Fever: Angin bertiup lembut membawa jerami, stamina regen +20%.',
+    windMultiplier: 0.5,
+    animals: [
+      { id: 'chicken', name: 'Ayam Jago', rarity: 'Common', baseCps: 50, weight: 45, color: 0xffffff },
+      { id: 'pig', name: 'Babi Lucu', rarity: 'Rare', baseCps: 120, weight: 30, color: 0xf472b6 },
+      { id: 'sheep', name: 'Domba Wol', rarity: 'Epic', baseCps: 260, weight: 18, color: 0xf1f5f9 },
+      { id: 'cow', name: 'Sapi Perah', rarity: 'Legendary', baseCps: 800, weight: 7, color: 0x181425 }
+    ]
+  },
+  {
+    id: 'jungle',
+    name: 'Jungle',
+    minDist: 1001,
     maxDist: 2500,
-    groundColor: 0xfeae34,
-    trackColor: 0x733e39,
-    skyColor: 0x262b44,
+    stripes: [0x15803d, 0x166534], // Deep jungle emerald green
+    accent: 0xf97316, // Orange bottom curb
+    gimmick: 'Tropical Rainstorm: Hujan tropis mempercepat luncuran makanan di udara.',
+    windMultiplier: 0.8,
     animals: [
-      { id: 'zebra', name: 'Zebra', rarity: 'Common', baseCps: 40, weight: 45, color: 0x181425 },
-      { id: 'giraffe', name: 'Jerapah', rarity: 'Rare', baseCps: 90, weight: 30, color: 0xf77622 },
-      { id: 'kangaroo', name: 'Kanguru', rarity: 'Epic', baseCps: 200, weight: 18, color: 0xb86f50 },
-      { id: 'lion', name: 'Singa', rarity: 'Legendary', baseCps: 600, weight: 7, color: 0xfee761 }
+      { id: 'monkey', name: 'Monyet Lincah', rarity: 'Common', baseCps: 1200, weight: 45, color: 0x78350f },
+      { id: 'parrot', name: 'Burung Beo', rarity: 'Rare', baseCps: 2800, weight: 30, color: 0xef4444 },
+      { id: 'snake', name: 'Ular Sanca', rarity: 'Epic', baseCps: 6500, weight: 18, color: 0x22c55e },
+      { id: 'gorilla', name: 'Gorila Perak', rarity: 'Legendary', baseCps: 18000, weight: 7, color: 0x334155 }
     ]
   },
   {
-    id: 3,
-    name: 'Dune Desert',
+    id: 'toxic',
+    name: 'Toxic',
     minDist: 2501,
-    maxDist: 6000,
-    groundColor: 0xf77622,
-    trackColor: 0x5a1932,
-    skyColor: 0x181425,
+    maxDist: 5000,
+    stripes: [0x312e81, 0x1e1b4b], // Dark purple/indigo
+    accent: 0x84cc16, // Radioactive bright lime bottom
+    gimmick: 'Radioactive Radiation: Meningkatkan peluang mutasi hewan hingga 3x lipat!',
+    windMultiplier: 1.0,
     animals: [
-      { id: 'camel', name: 'Unta', rarity: 'Common', baseCps: 800, weight: 45, color: 0xe4a672 },
-      { id: 'scorpion', name: 'Kalajengking', rarity: 'Rare', baseCps: 1800, weight: 30, color: 0xa22633 },
-      { id: 'fennec', name: 'Rubah', rarity: 'Epic', baseCps: 4000, weight: 18, color: 0xfeae34 },
-      { id: 'cobra', name: 'Kobra', rarity: 'Legendary', baseCps: 12000, weight: 7, color: 0x2ce8f5 }
+      { id: 'mutant_rat', name: 'Tikus Radioaktif', rarity: 'Common', baseCps: 35000, weight: 45, color: 0x6366f1 },
+      { id: 'toxic_slime', name: 'Slime Beracun', rarity: 'Rare', baseCps: 80000, weight: 30, color: 0x22c55e },
+      { id: 'mutant_bat', name: 'Kelelawar Asam', rarity: 'Epic', baseCps: 200000, weight: 18, color: 0x818cf8 },
+      { id: 'radioactive_spider', name: 'Laba-laba Nuklir', rarity: 'Legendary', baseCps: 600000, weight: 7, color: 0xa855f7 }
     ]
   },
   {
-    id: 4,
-    name: 'Frozen Lake',
-    minDist: 6001,
-    maxDist: 14000,
-    groundColor: 0x0099db,
-    trackColor: 0xc0cbdc,
-    skyColor: 0x1b2632,
+    id: 'lava',
+    name: 'Lava',
+    minDist: 5001,
+    maxDist: 9000,
+    stripes: [0x261715, 0x1a0f0d], // Dark magma ash
+    accent: 0xf97316, // Bright magma orange
+    gimmick: 'Thermal Heatwave: Hawa panas magma mengangkat makanan melambung lebih tinggi.',
+    windMultiplier: 1.2,
     animals: [
-      { id: 'penguin', name: 'Pinguin', rarity: 'Common', baseCps: 25000, weight: 45, color: 0x181425 },
-      { id: 'seal', name: 'Anjing Laut', rarity: 'Rare', baseCps: 60000, weight: 30, color: 0x8b9bb4 },
-      { id: 'polar_bear', name: 'Beruang Es', rarity: 'Epic', baseCps: 150000, weight: 18, color: 0xffffff },
-      { id: 'mammoth', name: 'Mammoth', rarity: 'Legendary', baseCps: 450000, weight: 7, color: 0x733e39 }
+      { id: 'magma_snail', name: 'Siput Magma', rarity: 'Common', baseCps: 1200000, weight: 45, color: 0xea580c },
+      { id: 'fire_lizard', name: 'Kadal Api', rarity: 'Rare', baseCps: 3000000, weight: 30, color: 0xd97706 },
+      { id: 'hell_hound', name: 'Cerberus Neraka', rarity: 'Epic', baseCps: 8000000, weight: 18, color: 0x991b1b },
+      { id: 'volcano_golem', name: 'Golem Lahar Raksasa', rarity: 'Legendary', baseCps: 25000000, weight: 7, color: 0x7c2d12 }
     ]
   },
   {
-    id: 5,
-    name: 'Void Rift',
-    minDist: 14001,
-    maxDist: 50000,
-    groundColor: 0x262b44,
-    trackColor: 0x5a1932,
-    skyColor: 0x181425,
+    id: 'glow_sea',
+    name: 'Glow Sea',
+    minDist: 9001,
+    maxDist: 15000,
+    stripes: [0x1e3a8a, 0x172554], // Deep abyssal navy
+    accent: 0x06b6d4, // Neon cyan bioluminescence
+    gimmick: 'Abyssal Pressure: Angin bergejolak kencang, timing meter bergerak lebih cepat!',
+    windMultiplier: 1.5,
     animals: [
-      { id: 'star_cat', name: 'Kucing Void', rarity: 'Rare', baseCps: 1000000, weight: 40, color: 0x2ce8f5 },
-      { id: 'void_whale', name: 'Paus Kosmik', rarity: 'Epic', baseCps: 3000000, weight: 35, color: 0x0099db },
-      { id: 'phoenix', name: 'Phoenix', rarity: 'Legendary', baseCps: 10000000, weight: 18, color: 0xe43b44 },
-      { id: 'cosmic_dragon', name: 'Naga Astral', rarity: 'Mythic', baseCps: 50000000, weight: 7, color: 0xfee761 }
+      { id: 'anglerfish', name: 'Ikan Sungut Lampu', rarity: 'Common', baseCps: 45000000, weight: 45, color: 0x0284c7 },
+      { id: 'glow_jellyfish', name: 'Ubur-ubur Neon', rarity: 'Rare', baseCps: 120000000, weight: 30, color: 0x06b6d4 },
+      { id: 'giant_squid', name: 'Cumi Raksasa Abisal', rarity: 'Epic', baseCps: 300000000, weight: 18, color: 0x38bdf8 },
+      { id: 'leviathan', name: 'Leviathan Samudra', rarity: 'Legendary', baseCps: 900000000, weight: 7, color: 0x0ea5e9 }
+    ]
+  },
+  {
+    id: 'christmas',
+    name: 'Christmas',
+    minDist: 15001,
+    maxDist: 23000,
+    stripes: [0xe11d48, 0xfff1f2], // Red & White candy cane stripes!
+    accent: 0x15803d, // Festive green bottom
+    gimmick: 'Holiday Blessing: Hadiah Natal melimpah! Nilai jual hewan ke NPC naik +50%.',
+    windMultiplier: 0.9,
+    animals: [
+      { id: 'gingerbread_man', name: 'Manusia Jahe', rarity: 'Common', baseCps: 1500000000, weight: 45, color: 0xb45309 },
+      { id: 'snow_reindeer', name: 'Rusa Kutub Sinterklas', rarity: 'Rare', baseCps: 4000000000, weight: 30, color: 0xd97706 },
+      { id: 'nutcracker', name: 'Prajurit Nutcracker', rarity: 'Epic', baseCps: 10000000000, weight: 18, color: 0xbe123c },
+      { id: 'santa_yeti', name: 'Yeti Topi Merah', rarity: 'Legendary', baseCps: 30000000000, weight: 7, color: 0xffffff }
+    ]
+  },
+  {
+    id: 'frost',
+    name: 'Frost',
+    minDist: 23001,
+    maxDist: 34000,
+    stripes: [0xbae6fd, 0xe0f2fe], // Light glacier icy cyan/white
+    accent: 0x38bdf8, // Ice blue bottom
+    gimmick: 'Blizzard Freeze: Badai salju es ekstrem! Konsumsi stamina meningkat 2x lipat.',
+    windMultiplier: 1.8,
+    animals: [
+      { id: 'ice_golem', name: 'Golem Es Kristal', rarity: 'Common', baseCps: 50000000000, weight: 45, color: 0x7dd3fc },
+      { id: 'frost_wolf', name: 'Serigala Badai Salju', rarity: 'Rare', baseCps: 140000000000, weight: 30, color: 0xe0f2fe },
+      { id: 'mammoth_frost', name: 'Mammoth Gading Es', rarity: 'Epic', baseCps: 400000000000, weight: 18, color: 0x38bdf8 },
+      { id: 'frost_wyrm', name: 'Naga Es Beku Kuno', rarity: 'Legendary', baseCps: 1200000000000, weight: 7, color: 0x0284c7 }
+    ]
+  },
+  {
+    id: 'galaxy',
+    name: 'Galaxy',
+    minDist: 34001,
+    maxDist: 60000,
+    stripes: [0x1e1035, 0x0d0714], // Deep space cosmic black/purple
+    accent: 0xfef08a, // Golden cosmic bottom border
+    gimmick: 'Zero Gravity & Void Singularity: Jarak lemparan melesat tanpa batas gesekan!',
+    windMultiplier: 2.2,
+    animals: [
+      { id: 'star_cat', name: 'Kucing Nebula', rarity: 'Rare', baseCps: 5000000000000, weight: 40, color: 0xa855f7 },
+      { id: 'void_whale', name: 'Paus Kosmik Astral', rarity: 'Epic', baseCps: 15000000000000, weight: 35, color: 0x38bdf8 },
+      { id: 'phoenix_sun', name: 'Phoenix Bintang Surya', rarity: 'Legendary', baseCps: 50000000000000, weight: 18, color: 0xf59e0b },
+      { id: 'cosmic_dragon', name: 'Naga Kosmik Keabadian', rarity: 'Mythic', baseCps: 200000000000000, weight: 7, color: 0xf43f5e }
     ]
   }
 ];
 
+export const FOOD_TIERS = [
+  { id: 'carrot', name: 'Wortel', iconText: 'CARROT', color: '#84cc16', cost: 0, luckBonus: 1.0, desc: 'Umpan dasar hewan Lobby.' },
+  { id: 'apple', name: 'Apel Kebun', iconText: 'APPLE', color: '#a3e635', cost: 100, luckBonus: 1.5, desc: 'Umpan segar hewan Farm.' },
+  { id: 'meat', name: 'Daging Rimba', iconText: 'MEAT', color: '#15803d', cost: 800, luckBonus: 2.2, desc: 'Umpan lezat hewan Jungle.' },
+  { id: 'burger', name: 'Burger Toksik', iconText: 'BURGER', color: '#6366f1', cost: 5000, luckBonus: 3.5, desc: 'Umpan aneh mutasi Toxic.' },
+  { id: 'sushi', name: 'Lahar Sushi', iconText: 'LAVA ROLL', color: '#f97316', cost: 50000, luckBonus: 5.5, desc: 'Umpan membara hewan Lava.' },
+  { id: 'pearl', name: 'Mutiara Laut', iconText: 'PEARL', color: '#06b6d4', cost: 500000, luckBonus: 9.0, desc: 'Umpan bercahaya Glow Sea.' },
+  { id: 'candy_cane', name: 'Permen Natal', iconText: 'CANDY', color: '#e11d48', cost: 5000000, luckBonus: 14.0, desc: 'Umpan manis zona Christmas.' },
+  { id: 'ice_crystal', name: 'Kristal Es Abadi', iconText: 'ICE GEM', color: '#38bdf8', cost: 50000000, luckBonus: 22.0, desc: 'Umpan dingin zona Frost.' },
+  { id: 'star_cake', name: 'Kue Bintang Kosmik', iconText: 'GALAXY', color: '#fef08a', cost: 500000000, luckBonus: 35.0, desc: 'Umpan mitologis penakluk Galaxy.' }
+];
+
+export const MUTATION_DATA = {
+  Normal: { name: 'Normal', multiplier: 1.0, color: '#94a3b8', chance: 85 },
+  Gold: { name: 'Gold', multiplier: 1.8, color: '#f59e0b', chance: 10 },
+  Diamond: { name: 'Diamond', multiplier: 3.5, color: '#06b6d4', chance: 3.5 },
+  Emerald: { name: 'Emerald', multiplier: 6.0, color: '#10b981', chance: 1.2 },
+  Rainbow: { name: 'Rainbow', multiplier: 12.0, color: '#ec4899', chance: 0.3 }
+};
+
 export const RARITY_COLORS = {
-  Common: PALETTE.lightSlate,
-  Rare: PALETTE.cyan,
-  Epic: PALETTE.amber,
-  Legendary: PALETTE.gold,
-  Mythic: PALETTE.red
+  Common: '#94a3b8',
+  Rare: '#06b6d4',
+  Epic: '#a855f7',
+  Legendary: '#f59e0b',
+  Mythic: '#ef4444'
 };
