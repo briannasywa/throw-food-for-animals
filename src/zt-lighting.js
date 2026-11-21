@@ -29,9 +29,10 @@ export const PRESETS = {
     hemi: { sky: '#D6ECFF', ground: '#D8CFA8', intensity: 1.5 },
     // ~jam 2 siang. Azimut 0° = arah +Z (sisi kamera/depan hewan). 30° = depan-samping, supaya wajah hewan & pemain terkena sinar.
     // Kalau kamera prototype menghadap arah lain, putar azimut supaya matahari tetap di sisi kamera.
-    // Disesuaikan ke prototype: kamera ada di arah (+X, +Z) dari pemain = azimut 45°. Matahari 30° dari kamera
-    // ke arah +Z (depan hewan & arah lempar) = 15°, supaya wajah hewan/pemain terang. (aslinya 30°)
-    sun: { color: '#FFF7E6', intensity: 2.3, elevationDeg: 45, azimuthDeg: 15 },
+    // Disesuaikan ke prototype (kamera orbit perspektif versi tim): kamera default di belakang pemain,
+    // sedikit ke +X (yaw 0.25) = azimut ±166°. Matahari 30° dari kamera = 135°, supaya sisi yang
+    // menghadap kamera tetap terang. (aslinya 30°)
+    sun: { color: '#FFF7E6', intensity: 2.3, elevationDeg: 45, azimuthDeg: 135 },
     canvasFilter: 'saturate(1.1) contrast(1.03)',      // pengganti ColorCorrection (+saturasi), murah
     bloom: { strength: 0.55, radius: 0.35, threshold: 1.05 }, // > 1: hanya bahan emissive yang berpendar, bukan benda putih yang terang
   },

@@ -7,6 +7,7 @@ import { FOOD_TIERS, ZONES, MUTATION_DATA } from './gameData.js';
 import { RobloxSeamlessWorld } from './robloxSeamlessWorld.js';
 import { sfx } from './audio.js';
 import { getAnimalThumb } from './animalThumbs.js';
+import { web3Manager } from './web3Manager.js';
 
 const state = new GameState();
 
@@ -69,6 +70,7 @@ app.innerHTML = `
 
   <!-- H4 menu (kanan atas) -->
   <div class="zt-menu absolute top-3 right-3 z-20 flex items-center gap-2">
+    <button id="btn-connect-wallet" class="zt-btn zt-btn--plain zt-btn--sm"><span id="wallet-btn-text">Connect Wallet</span></button>
     <button id="btn-open-quests" class="zt-btn zt-btn--primary">Quests</button>
     <button id="btn-open-index" class="zt-btn zt-btn--accent">Index</button>
     <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank</button>
@@ -132,6 +134,27 @@ app.innerHTML = `
   </div>
 
   ${modal('shop', 'Shop', `
+    <div class="zt-web3">
+      <div class="zt-web3__head">
+        <span class="zt-title zt-web3__title">USDC Shop</span>
+        <span class="zt-tag zt-tag--rare">Base Sepolia · testnet</span>
+      </div>
+      <div id="shop-wallet-status" class="zt-row__desc">Wallet not connected</div>
+      <div class="zt-row">
+        <div class="zt-row__main">
+          <div class="zt-title zt-row__title">+100 Power</div>
+          <div class="zt-row__desc">Permanent +100 throwing Power</div>
+        </div>
+        <button id="btn-buy-web3-power" class="zt-btn zt-btn--primary">0.10 USDC</button>
+      </div>
+      <div class="zt-row">
+        <div class="zt-row__main">
+          <div class="zt-title zt-row__title">Legendary Bait ×5 <span id="legendary-baits-owned" class="zt-muted">(own 0)</span></div>
+          <div class="zt-row__desc">Your next 5 throws catch a Legendary animal</div>
+        </div>
+        <button id="btn-buy-web3-bait" class="zt-btn zt-btn--accent">0.50 USDC</button>
+      </div>
+    </div>
     <div class="zt-row">
       <div class="zt-row__main">
         <div class="zt-title zt-row__title">Upgrade Pull-Up <span id="shop-pullup-lv" class="zt-muted">Lv.1</span></div>
@@ -300,6 +323,8 @@ function updateUI() {
   document.querySelector('#shop-rebirth-count').textContent = `${state.rebirthCount}x`;
   document.querySelector('#btn-shop-rebirth').textContent = `$${formatNum(state.rebirthCost)}`;
 
+  document.querySelector('#legendary-baits-owned').textContent = `(own ${state.legendaryBaits || 0})`;
+
   document.querySelector('#plot-capacity-text').textContent =
     `${state.inventory.length} / ${state.maxBaseSlots} SLOTS · ${state.equippedPets.length} / 2 PETS EQUIPPED`;
 
@@ -315,6 +340,24 @@ function updateUI() {
 function renderMiniFoodSelector() {
   const container = document.querySelector('#mini-food-selector');
   container.innerHTML = '';
+
+  // Umpan Legendary (web3). Kalau stok habis, chip membuka Shop.
+  const legCount = state.legendaryBaits || 0;
+  const legBtn = document.createElement('button');
+  legBtn.className = `zt-chip zt-chip--legend ${state.selectedFoodIndex === 'web3_legendary' ? 'is-active' : ''} ${legCount ? '' : 'is-locked'}`;
+  legBtn.innerHTML = `<span class="zt-chip__swatch" style="background:${LEGENDARY_BAIT.color}"></span>LEGENDARY
+    <span class="zt-chip__price">×${legCount}</span>`;
+  legBtn.onclick = () => {
+    sfx.playPop();
+    if (legCount > 0) {
+      state.selectedFoodIndex = 'web3_legendary';
+      state.save();
+      updateUI();
+    } else {
+      openModal('shop');
+    }
+  };
+  container.appendChild(legBtn);
 
   FOOD_TIERS.forEach((f, idx) => {
     const isUnlocked = state.unlockedFoods.includes(idx);
@@ -451,9 +494,29 @@ function showMeterResult(score) {
   m.classList.remove('is-flash'); void m.offsetWidth; m.classList.add('is-flash');
 }
 
+// Umpan Legendary dari toko web3 (logika dari tim: dijamin hewan Legendary/Mythic di zona tujuan)
+const LEGENDARY_BAIT = {
+  id: 'web3_legendary', name: 'Legendary Bait', iconText: 'LEGENDARY', color: '#FFC21A',
+  luckBonus: 50.0, isLegendaryBait: true, desc: 'Guaranteed Legendary catch!'
+};
+
 function triggerThrow() {
   if (world.isThrowing) return;
-  const food = FOOD_TIERS[state.selectedFoodIndex];
+
+  let food;
+  if (state.selectedFoodIndex === 'web3_legendary') {
+    if ((state.legendaryBaits || 0) <= 0) {
+      showNotice('NO LEGENDARY BAIT LEFT!');
+      state.selectedFoodIndex = 0;
+      updateUI();
+      return;
+    }
+    state.legendaryBaits -= 1;
+    state.save();
+    food = LEGENDARY_BAIT;
+  } else {
+    food = FOOD_TIERS[state.selectedFoodIndex] || FOOD_TIERS[0];
+  }
   const score = Math.floor(meterVal);
 
   sfx.playThrow(score);
@@ -461,29 +524,30 @@ function triggerThrow() {
   const hud = document.querySelector('#throw-flight-hud');
   hud.classList.remove('hidden');
 
-  world.startThrow({
-    food,
-    power: state.power,
-    timingScore: score,
-    onFinish: (caughtAnimal, dist) => {
-      hud.classList.add('hidden');
-      sfx.playCatch(caughtAnimal.rarity, caughtAnimal.mutation);
+  // Rumus jarak versi tim (main ba5b48a)
+  const baseDist = (state.power * 10) * (0.5 + (score / 20) * 1.5);
+  const windEffect = 1 + (world.windSpeed * 0.03 * world.windDirection);
+  const distance = Math.max(15, Math.floor(baseDist * windEffect));
+  const targetZone = zoneOfDistance(distance);
 
-      // Info untuk tampilan (dibaca sebelum state berubah)
-      const isNew = !(state.indexProgress[caughtAnimal.id] || []).length;
-      const zone = zoneOfAnimal(caughtAnimal.id);
-      const zoneFirstTime = zone && zone.id !== 'lobby' && !zone.animals.some(a => (state.indexProgress[a.id] || []).length);
+  world.throwFood(distance, targetZone, food, (caughtAnimal, dist) => {
+    hud.classList.add('hidden');
+    sfx.playCatch(caughtAnimal.rarity, caughtAnimal.mutation);
 
-      state.checkQuest('catch', 1);
-      state.checkQuest('distance', dist);
-      state.checkQuest('mutation', caughtAnimal.mutation);
+    // Info untuk tampilan (dibaca sebelum state berubah)
+    const isNew = !(state.indexProgress[caughtAnimal.id] || []).length;
+    const zone = zoneOfAnimal(caughtAnimal.id);
+    const zoneFirstTime = zone && zone.id !== 'lobby' && !zone.animals.some(a => (state.indexProgress[a.id] || []).length);
 
-      const res = state.addAnimal(caughtAnimal);
-      if (isNew) indexHasNew = true;
-      if (zoneFirstTime) showZoneBanner(zone);
-      showCatchToast(caughtAnimal, { sellPrice: res.autoSold ? res.sellPrice : null, isNew });
-      updateUI();
-    }
+    state.checkQuest('catch', 1);
+    state.checkQuest('distance', dist);
+    state.checkQuest('mutation', caughtAnimal.mutation);
+
+    const res = state.addAnimal(caughtAnimal);
+    if (isNew) indexHasNew = true;
+    if (zoneFirstTime) showZoneBanner(zone);
+    showCatchToast(caughtAnimal, { sellPrice: res.autoSold ? res.sellPrice : null, isNew });
+    updateUI();
   });
 }
 
@@ -583,6 +647,56 @@ document.querySelector('#btn-toggle-sound').onclick = () => {
   sfx.enabled = !sfx.enabled;
   document.querySelector('#btn-toggle-sound').innerHTML = sfx.enabled ? SPEAKER_ON : SPEAKER_OFF;
 };
+
+// Web3 (Base Sepolia testnet, USDC) — logika dari tim (web3Manager.js), tampilan versi art direction
+document.querySelector('#btn-connect-wallet').onclick = async () => {
+  sfx.playPop();
+  if (!web3Manager.isMetaMaskAvailable()) { showNotice('NO WALLET FOUND · INSTALL METAMASK'); return; }
+  const acc = await web3Manager.connectWallet();
+  if (acc) updateWalletUI(acc);
+};
+
+function updateWalletUI(acc) {
+  const btn = document.querySelector('#wallet-btn-text');
+  const shopStatus = document.querySelector('#shop-wallet-status');
+  if (acc) {
+    const shortAcc = `${acc.slice(0, 6)}…${acc.slice(-4)}`;
+    btn.textContent = shortAcc;
+    shopStatus.textContent = `Wallet ${shortAcc}`;
+    web3Manager.getUsdcBalance().then(bal => { shopStatus.textContent = `Wallet ${shortAcc} · ${bal} USDC`; });
+  } else {
+    btn.textContent = 'Connect Wallet';
+    shopStatus.textContent = 'Wallet not connected';
+  }
+}
+window.addEventListener('web3:accountChanged', (e) => updateWalletUI(e.detail));
+window.addEventListener('web3:disconnected', () => updateWalletUI(null));
+
+async function buyWeb3Item(btnSel, itemId, price, label, onSuccess) {
+  const btn = document.querySelector(btnSel);
+  btn.disabled = true;
+  btn.textContent = 'Processing…';
+  try {
+    const res = await web3Manager.buyShopItem(itemId, price);
+    if (res && res.success) {
+      sfx.playLevelUp();
+      onSuccess();
+      state.save();
+      updateUI();
+      showNotice(`PURCHASE COMPLETE! TX ${res.txHash.slice(0, 10)}…`);
+    }
+  } catch (err) {
+    showNotice('TRANSACTION CANCELLED OR FAILED');
+    console.warn('[web3]', err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+document.querySelector('#btn-buy-web3-power').onclick = () =>
+  buyWeb3Item('#btn-buy-web3-power', 1, '0.1', '0.10 USDC', () => { state.power += 100; });
+document.querySelector('#btn-buy-web3-bait').onclick = () =>
+  buyWeb3Item('#btn-buy-web3-bait', 2, '0.5', '0.50 USDC', () => { state.legendaryBaits = (state.legendaryBaits || 0) + 5; });
 
 // Shop actions
 document.querySelector('#btn-shop-sell-all').onclick = async () => {

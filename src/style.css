@@ -67,6 +67,15 @@ body { font-family: var(--zt-font-ui, 'Fredoka', sans-serif); font-weight: 600; 
 .zt-chip__swatch { width: 14px; height: 14px; border: 2px solid var(--zt-ink); border-radius: 3px; flex: none; }
 .zt-chip__price.is-short { color: #8A8478; }
 .zt-chip__check { color: var(--zt-good-d); }
+.zt-chip--legend { background: #FFE9A8; box-shadow: inset 0 -4px 0 #F2C94C, 0 3px 0 var(--zt-ink); }
+.zt-chip--legend .zt-chip__price { color: var(--zt-legendary-d, #A66F00); }
+
+/* ---------- toko USDC (web3, testnet) ---------- */
+.zt-web3 { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 2px solid var(--zt-ink); border-radius: var(--zt-radius);
+  background: #DCEBFF; box-shadow: inset 0 -4px 0 rgba(27,34,51,.12); }
+.zt-web3__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.zt-web3__title { font-size: 18px; color: var(--zt-ink); }
+.zt-web3 .zt-row { background: var(--zt-panel); }
 .zt-throw__foot { display: flex; gap: 10px; align-items: center; }
 .zt-throw__foot .zt-food-row { flex: 1; min-width: 0; }
 .zt-throw__actions { display: flex; gap: 8px; align-items: center; flex: none; }

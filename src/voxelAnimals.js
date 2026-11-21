@@ -86,3 +86,17 @@ export function createZookeeper(scale) {
   keeper.group.scale.setScalar(scale);
   return keeper;
 }
+
+// --- Antarmuka yang dipakai robloxSeamlessWorld.js (nama sama dengan animalModels.js milik tim) ---
+
+/** Group hewan siap pakai; animasi lewat animateAnimal(group.userData.animalInstance, t). */
+export function buildVoxelAnimal(id, rarity, mutation = 'Normal') {
+  const animal = createAnimal(id, { mutation, scale: 0.25 });
+  animal.group.userData = { animalInstance: animal, animalId: id, mutation, rarity };
+  return animal.group;
+}
+
+export function buildPlayerZookeeper(scale = 0.3) {
+  const keeper = createZookeeper(scale);
+  return { group: keeper.group, parts: keeper.parts, instance: keeper };
+}
