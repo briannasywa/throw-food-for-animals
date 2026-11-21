@@ -140,7 +140,11 @@ export class RobloxSeamlessWorld {
       }
 
       // 3. Colored Accent Bottom Curb (Matching pink, orange, lime, cyan, yellow borders in image)
-      const curbMat = new THREE.MeshLambertMaterial({ color: zone.accent });
+      // Aksen zona dari palette.json; aksen bercahaya (lendir Toxic, lava, cahaya laut, bintang) pakai emissive
+      const accentProps = zone.accentGlow
+        ? { color: zone.accent, emissive: zone.accent, emissiveIntensity: 0.9 }
+        : { color: zone.accent };
+      const curbMat = new THREE.MeshLambertMaterial(accentProps);
       const curbL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, lengthZ), curbMat);
       curbL.position.set(-trackWidth / 2 - 0.6, 0.35, centerZ);
       const curbR = curbL.clone();
@@ -148,7 +152,7 @@ export class RobloxSeamlessWorld {
       this.scene.add(curbL, curbR);
 
       // 4. Biome Entrance Archway Monument & Giant Voxel Guardian
-      const archMat = new THREE.MeshLambertMaterial({ color: zone.accent });
+      const archMat = curbMat;
       const pL = new THREE.Mesh(new THREE.BoxGeometry(3, 18, 3), archMat);
       pL.position.set(-trackWidth / 2 - 2, 9, startZ);
       const pR = pL.clone();
@@ -184,16 +188,16 @@ export class RobloxSeamlessWorld {
 
   buildInWorldStations() {
     // 1. Throw Pad (Garis Lempar)
-    const pad = new THREE.Mesh(new THREE.BoxGeometry(10, 0.3, 10), new THREE.MeshLambertMaterial({ color: 0xec4899 }));
-    pad.position.set(0, 0.16, 10);
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(10, 0.3, 10), new THREE.MeshLambertMaterial({ color: 0xff3d7f, emissive: 0xff3d7f, emissiveIntensity: 0.5 }));
+    pad.position.set(0, 0.16, 10); // garis lempar: Pop Pink (palette core.accent), sedikit bercahaya
     this.scene.add(pad);
 
     // 2. Gym Pull-Up Stand
     this.gymGroup = new THREE.Group();
     this.gymGroup.position.set(-18, 0, 12);
-    const gymFloor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.3, 12), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    const gymFloor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.3, 12), new THREE.MeshLambertMaterial({ color: 0x9c8f84 }));
     gymFloor.position.y = 0.15;
-    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 8, 0.6), new THREE.MeshLambertMaterial({ color: 0x64748b }));
+    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 8, 0.6), new THREE.MeshLambertMaterial({ color: 0x7a6f66 }));
     p1.position.set(-2.5, 4, 0);
     const p2 = p1.clone();
     p2.position.x = 2.5;
@@ -205,9 +209,9 @@ export class RobloxSeamlessWorld {
     // 3. Master NPC Booth
     this.shopGroup = new THREE.Group();
     this.shopGroup.position.set(18, 0, 12);
-    const shopBase = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 6), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+    const shopBase = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 6), new THREE.MeshLambertMaterial({ color: 0x8b5a2b }));
     shopBase.position.y = 2.5;
-    const shopRoof = new THREE.Mesh(new THREE.BoxGeometry(9, 1.5, 7), new THREE.MeshLambertMaterial({ color: 0xf97316 }));
+    const shopRoof = new THREE.Mesh(new THREE.BoxGeometry(9, 1.5, 7), new THREE.MeshLambertMaterial({ color: 0xff7a1a }));
     shopRoof.position.y = 5.7;
     this.shopGroup.add(shopBase, shopRoof);
     this.scene.add(this.shopGroup);
@@ -215,7 +219,7 @@ export class RobloxSeamlessWorld {
     // 4. Animal Pen Plot
     this.plotGroup = new THREE.Group();
     this.plotGroup.position.set(-35, 0, 32);
-    const plotFloor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.3, 26), new THREE.MeshLambertMaterial({ color: 0x166534 }));
+    const plotFloor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.3, 26), new THREE.MeshLambertMaterial({ color: 0xf2d9a6 }));
     plotFloor.position.y = 0.15;
     this.plotAnimals = new THREE.Group();
     this.plotGroup.add(plotFloor, this.plotAnimals);

@@ -1,6 +1,6 @@
 // Zoo Toss — biome zones & game data (angka game mengikuti prototype)
 
-export const SKY_COLOR = 0x70c5ff;
+export const SKY_COLOR = 0x7ccbff; // palette.json -> core.background
 
 export const ZONES = [
   {
@@ -8,8 +8,8 @@ export const ZONES = [
     name: 'Lobby',
     minDist: 0,
     maxDist: 300,
-    stripes: [0x84cc16, 0x65a30d], // Lime green stripes
-    accent: 0xec4899, // Pink finish line separator
+    stripes: [0x8ee06a, 0x7ad15a], // palette.json -> biome ground1/ground2
+    accent: 0xff3d7f, // palette.json -> core.accent (Pop Pink)
     gimmick: 'Safe Zone & Training Grounds: Angin tenang, tempat ideal pemula.',
     windMultiplier: 0.2,
     animals: [
@@ -24,8 +24,8 @@ export const ZONES = [
     name: 'Farm',
     minDist: 301,
     maxDist: 1000,
-    stripes: [0xa3e635, 0x84cc16], // Light grass green
-    accent: 0xf97316,
+    stripes: [0xb8efa0, 0xa3e38a], // palette.json -> biome ground1/ground2
+    accent: 0xffe29a, // palette.json -> Farm.hay
     gimmick: 'Hay Fever: Angin bertiup lembut membawa jerami, stamina regen +20%.',
     windMultiplier: 0.5,
     animals: [
@@ -40,8 +40,8 @@ export const ZONES = [
     name: 'Jungle',
     minDist: 1001,
     maxDist: 2500,
-    stripes: [0x15803d, 0x166534], // Deep jungle emerald green
-    accent: 0xf97316, // Orange bottom curb
+    stripes: [0x2fa84f, 0x23913f], // palette.json -> biome ground1/ground2
+    accent: 0xff9a3d, // palette.json -> Jungle.flower
     gimmick: 'Tropical Rainstorm: Hujan tropis mempercepat luncuran makanan di udara.',
     windMultiplier: 0.8,
     animals: [
@@ -56,8 +56,9 @@ export const ZONES = [
     name: 'Toxic',
     minDist: 2501,
     maxDist: 5000,
-    stripes: [0x312e81, 0x1e1b4b], // Dark purple/indigo
-    accent: 0x84cc16, // Radioactive bright lime bottom
+    stripes: [0x3a2f4f, 0x2c2340], // palette.json -> biome ground1/ground2
+    accent: 0x8cff3a, // palette.json -> Toxic.slime
+    accentGlow: true, // emissive
     gimmick: 'Radioactive Radiation: Meningkatkan peluang mutasi hewan hingga 3x lipat!',
     windMultiplier: 1.0,
     animals: [
@@ -72,8 +73,9 @@ export const ZONES = [
     name: 'Lava',
     minDist: 5001,
     maxDist: 9000,
-    stripes: [0x261715, 0x1a0f0d], // Dark magma ash
-    accent: 0xf97316, // Bright magma orange
+    stripes: [0x3b2a2a, 0x2a1d1d], // palette.json -> biome ground1/ground2
+    accent: 0xff5a1f, // palette.json -> Lava.lava
+    accentGlow: true, // emissive
     gimmick: 'Thermal Heatwave: Hawa panas magma mengangkat makanan melambung lebih tinggi.',
     windMultiplier: 1.2,
     animals: [
@@ -88,8 +90,9 @@ export const ZONES = [
     name: 'Glow Sea',
     minDist: 9001,
     maxDist: 15000,
-    stripes: [0x1e3a8a, 0x172554], // Deep abyssal navy
-    accent: 0x06b6d4, // Neon cyan bioluminescence
+    stripes: [0x1f3a6b, 0x17305a], // palette.json -> biome ground1/ground2
+    accent: 0x3ff0ff, // palette.json -> GlowSea.glow
+    accentGlow: true, // emissive
     gimmick: 'Abyssal Pressure: Angin bergejolak kencang, timing meter bergerak lebih cepat!',
     windMultiplier: 1.5,
     animals: [
@@ -104,8 +107,8 @@ export const ZONES = [
     name: 'Christmas',
     minDist: 15001,
     maxDist: 23000,
-    stripes: [0xe11d48, 0xfff1f2], // Red & White candy cane stripes!
-    accent: 0x15803d, // Festive green bottom
+    stripes: [0xf2e6d8, 0xe3d2c0], // palette.json -> biome ground1/ground2
+    accent: 0xe8384f, // palette.json -> Christmas.candy
     gimmick: 'Holiday Blessing: Hadiah Natal melimpah! Nilai jual hewan ke NPC naik +50%.',
     windMultiplier: 0.9,
     animals: [
@@ -120,8 +123,8 @@ export const ZONES = [
     name: 'Frost',
     minDist: 23001,
     maxDist: 34000,
-    stripes: [0xbae6fd, 0xe0f2fe], // Light glacier icy cyan/white
-    accent: 0x38bdf8, // Ice blue bottom
+    stripes: [0xcfefff, 0xa9ddf7], // palette.json -> biome ground1/ground2
+    accent: 0x7fd3ff, // palette.json -> Frost.ice
     gimmick: 'Blizzard Freeze: Badai salju es ekstrem! Konsumsi stamina meningkat 2x lipat.',
     windMultiplier: 1.8,
     animals: [
@@ -136,8 +139,9 @@ export const ZONES = [
     name: 'Galaxy',
     minDist: 34001,
     maxDist: 60000,
-    stripes: [0x1e1035, 0x0d0714], // Deep space cosmic black/purple
-    accent: 0xfef08a, // Golden cosmic bottom border
+    stripes: [0x2a1b4f, 0x1e1440], // palette.json -> biome ground1/ground2
+    accent: 0xfff27a, // palette.json -> Galaxy.star
+    accentGlow: true, // emissive
     gimmick: 'Zero Gravity & Void Singularity: Jarak lemparan melesat tanpa batas gesekan!',
     windMultiplier: 2.2,
     animals: [
