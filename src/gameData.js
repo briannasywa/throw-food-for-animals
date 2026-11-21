@@ -10,7 +10,7 @@ export const ZONES = [
     maxDist: 300,
     stripes: [0x8ee06a, 0x7ad15a], // palette.json -> biome ground1/ground2
     accent: 0xff3d7f, // palette.json -> core.accent (Pop Pink)
-    gimmick: 'Safe Zone & Training Grounds: Angin tenang, tempat ideal pemula.',
+    gimmick: 'Safe zone and training grounds. Calm winds, perfect for beginners.',
     windMultiplier: 0.2,
     animals: [
       { id: 'rabbit', name: 'Rabbit', rarity: 'Common', baseCps: 3, weight: 50, color: 0xffffff },
@@ -26,7 +26,7 @@ export const ZONES = [
     maxDist: 1000,
     stripes: [0xb8efa0, 0xa3e38a], // palette.json -> biome ground1/ground2
     accent: 0xffe29a, // palette.json -> Farm.hay
-    gimmick: 'Hay Fever: Angin bertiup lembut membawa jerami, stamina regen +20%.',
+    gimmick: 'Hay Fever: a gentle breeze carries hay. Stamina regen +20%.',
     windMultiplier: 0.5,
     animals: [
       { id: 'pastel_chick', name: 'Pastel Chick', rarity: 'Common', baseCps: 50, weight: 45, color: 0xffffff },
@@ -42,7 +42,7 @@ export const ZONES = [
     maxDist: 2500,
     stripes: [0x2fa84f, 0x23913f], // palette.json -> biome ground1/ground2
     accent: 0xff9a3d, // palette.json -> Jungle.flower
-    gimmick: 'Tropical Rainstorm: Hujan tropis mempercepat luncuran makanan di udara.',
+    gimmick: 'Tropical Rainstorm: rain makes food glide farther.',
     windMultiplier: 0.8,
     animals: [
       { id: 'sunset_monkey', name: 'Sunset Monkey', rarity: 'Common', baseCps: 1200, weight: 45, color: 0x78350f },
@@ -59,7 +59,7 @@ export const ZONES = [
     stripes: [0x3a2f4f, 0x2c2340], // palette.json -> biome ground1/ground2
     accent: 0x8cff3a, // palette.json -> Toxic.slime
     accentGlow: true, // emissive
-    gimmick: 'Radioactive Radiation: Meningkatkan peluang mutasi hewan hingga 3x lipat!',
+    gimmick: 'Radioactive: mutation chance up to 3×!',
     windMultiplier: 1.0,
     animals: [
       { id: 'toxic_bunny', name: 'Toxic Bunny', rarity: 'Common', baseCps: 35000, weight: 45, color: 0x6366f1 },
@@ -76,7 +76,7 @@ export const ZONES = [
     stripes: [0x3b2a2a, 0x2a1d1d], // palette.json -> biome ground1/ground2
     accent: 0xff5a1f, // palette.json -> Lava.lava
     accentGlow: true, // emissive
-    gimmick: 'Thermal Heatwave: Hawa panas magma mengangkat makanan melambung lebih tinggi.',
+    gimmick: 'Heatwave: rising magma heat lifts food higher.',
     windMultiplier: 1.2,
     animals: [
       { id: 'lava_raptor', name: 'Lava Raptor', rarity: 'Common', baseCps: 1200000, weight: 45, color: 0xea580c },
@@ -93,7 +93,7 @@ export const ZONES = [
     stripes: [0x1f3a6b, 0x17305a], // palette.json -> biome ground1/ground2
     accent: 0x3ff0ff, // palette.json -> GlowSea.glow
     accentGlow: true, // emissive
-    gimmick: 'Abyssal Pressure: Angin bergejolak kencang, timing meter bergerak lebih cepat!',
+    gimmick: 'Abyssal Pressure: strong gusts, the throw meter moves faster!',
     windMultiplier: 1.5,
     animals: [
       { id: 'glow_squid', name: 'Glow Squid', rarity: 'Common', baseCps: 45000000, weight: 45, color: 0x0284c7 },
@@ -109,7 +109,7 @@ export const ZONES = [
     maxDist: 23000,
     stripes: [0xf2e6d8, 0xe3d2c0], // palette.json -> biome ground1/ground2
     accent: 0xe8384f, // palette.json -> Christmas.candy
-    gimmick: 'Holiday Blessing: Hadiah Natal melimpah! Nilai jual hewan ke NPC naik +50%.',
+    gimmick: 'Holiday Blessing: animals sell for +50% at the booth.',
     windMultiplier: 0.9,
     animals: [
       { id: 'gingerbread_kitty', name: 'Gingerbread Kitty', rarity: 'Common', baseCps: 1500000000, weight: 45, color: 0xb45309 },
@@ -125,7 +125,7 @@ export const ZONES = [
     maxDist: 34000,
     stripes: [0xcfefff, 0xa9ddf7], // palette.json -> biome ground1/ground2
     accent: 0x7fd3ff, // palette.json -> Frost.ice
-    gimmick: 'Blizzard Freeze: Badai salju es ekstrem! Konsumsi stamina meningkat 2x lipat.',
+    gimmick: 'Blizzard: stamina drains 2× faster.',
     windMultiplier: 1.8,
     animals: [
       { id: 'frost_whelp', name: 'Frost Whelp', rarity: 'Common', baseCps: 50000000000, weight: 45, color: 0x7dd3fc },
@@ -142,7 +142,7 @@ export const ZONES = [
     stripes: [0x2a1b4f, 0x1e1440], // palette.json -> biome ground1/ground2
     accent: 0xfff27a, // palette.json -> Galaxy.star
     accentGlow: true, // emissive
-    gimmick: 'Zero Gravity & Void Singularity: Jarak lemparan melesat tanpa batas gesekan!',
+    gimmick: 'Zero Gravity: throws fly with no friction!',
     windMultiplier: 2.2,
     animals: [
       { id: 'nebula_cat', name: 'Nebula Cat', rarity: 'Rare', baseCps: 5000000000000, weight: 40, color: 0xa855f7 },
@@ -154,29 +154,31 @@ export const ZONES = [
 ];
 
 export const FOOD_TIERS = [
-  { id: 'carrot', name: 'Wortel', iconText: 'CARROT', color: '#84cc16', cost: 0, luckBonus: 1.0, desc: 'Umpan dasar hewan Lobby.' },
-  { id: 'apple', name: 'Apel Kebun', iconText: 'APPLE', color: '#a3e635', cost: 100, luckBonus: 1.5, desc: 'Umpan segar hewan Farm.' },
-  { id: 'meat', name: 'Daging Rimba', iconText: 'MEAT', color: '#15803d', cost: 800, luckBonus: 2.2, desc: 'Umpan lezat hewan Jungle.' },
-  { id: 'burger', name: 'Burger Toksik', iconText: 'BURGER', color: '#6366f1', cost: 5000, luckBonus: 3.5, desc: 'Umpan aneh mutasi Toxic.' },
-  { id: 'sushi', name: 'Lahar Sushi', iconText: 'LAVA ROLL', color: '#f97316', cost: 50000, luckBonus: 5.5, desc: 'Umpan membara hewan Lava.' },
-  { id: 'pearl', name: 'Mutiara Laut', iconText: 'PEARL', color: '#06b6d4', cost: 500000, luckBonus: 9.0, desc: 'Umpan bercahaya Glow Sea.' },
-  { id: 'candy_cane', name: 'Permen Natal', iconText: 'CANDY', color: '#e11d48', cost: 5000000, luckBonus: 14.0, desc: 'Umpan manis zona Christmas.' },
-  { id: 'ice_crystal', name: 'Kristal Es Abadi', iconText: 'ICE GEM', color: '#38bdf8', cost: 50000000, luckBonus: 22.0, desc: 'Umpan dingin zona Frost.' },
-  { id: 'star_cake', name: 'Kue Bintang Kosmik', iconText: 'GALAXY', color: '#fef08a', cost: 500000000, luckBonus: 35.0, desc: 'Umpan mitologis penakluk Galaxy.' }
+  { id: 'carrot', name: 'Carrot', iconText: 'CARROT', color: '#7AD15A', cost: 0, luckBonus: 1.0, desc: 'Basic bait for Lobby animals.' },
+  { id: 'apple', name: 'Apple', iconText: 'APPLE', color: '#B8EFA0', cost: 100, luckBonus: 1.5, desc: 'Fresh bait for Farm animals.' },
+  { id: 'meat', name: 'Meat', iconText: 'MEAT', color: '#2FA84F', cost: 800, luckBonus: 2.2, desc: 'Tasty bait for Jungle animals.' },
+  { id: 'burger', name: 'Burger', iconText: 'BURGER', color: '#8CFF3A', cost: 5000, luckBonus: 3.5, desc: 'Weird bait for Toxic mutants.' },
+  { id: 'sushi', name: 'Lava Roll', iconText: 'LAVA ROLL', color: '#FF5A1F', cost: 50000, luckBonus: 5.5, desc: 'Sizzling bait for Lava animals.' },
+  { id: 'pearl', name: 'Pearl', iconText: 'PEARL', color: '#3FF0FF', cost: 500000, luckBonus: 9.0, desc: 'Glowing bait for Glow Sea.' },
+  { id: 'candy_cane', name: 'Candy', iconText: 'CANDY', color: '#E8384F', cost: 5000000, luckBonus: 14.0, desc: 'Sweet bait for Christmas.' },
+  { id: 'ice_crystal', name: 'Ice Gem', iconText: 'ICE GEM', color: '#7FD3FF', cost: 50000000, luckBonus: 22.0, desc: 'Frozen bait for Frost.' },
+  { id: 'star_cake', name: 'Galaxy', iconText: 'GALAXY', color: '#B57BFF', cost: 500000000, luckBonus: 35.0, desc: 'Mythic bait for Galaxy.' }
 ];
 
 export const MUTATION_DATA = {
-  Normal: { name: 'Normal', multiplier: 1.0, color: '#94a3b8', chance: 85 },
-  Gold: { name: 'Gold', multiplier: 1.8, color: '#f59e0b', chance: 10 },
-  Diamond: { name: 'Diamond', multiplier: 3.5, color: '#06b6d4', chance: 3.5 },
-  Emerald: { name: 'Emerald', multiplier: 6.0, color: '#10b981', chance: 1.2 },
-  Rainbow: { name: 'Rainbow', multiplier: 12.0, color: '#ec4899', chance: 0.3 }
+  // warna dari palette.json -> mutation (Rainbow = gradasi di UI, warna ini hanya cadangan)
+  Normal: { name: 'Normal', multiplier: 1.0, color: '#B8C2CC', chance: 85 },
+  Gold: { name: 'Gold', multiplier: 1.8, color: '#FFD54A', chance: 10 },
+  Diamond: { name: 'Diamond', multiplier: 3.5, color: '#9BEBFF', chance: 3.5 },
+  Emerald: { name: 'Emerald', multiplier: 6.0, color: '#2EE59D', chance: 1.2 },
+  Rainbow: { name: 'Rainbow', multiplier: 12.0, color: '#FF4B4B', chance: 0.3 }
 };
 
+// palette.json -> rarity
 export const RARITY_COLORS = {
-  Common: '#94a3b8',
-  Rare: '#06b6d4',
-  Epic: '#a855f7',
-  Legendary: '#f59e0b',
-  Mythic: '#ef4444'
+  Common: '#B8C2CC',
+  Rare: '#2F8CFF',
+  Epic: '#A24BFF',
+  Legendary: '#FFC21A',
+  Mythic: '#19E6C1'
 };

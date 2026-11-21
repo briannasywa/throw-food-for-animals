@@ -1,0 +1,164 @@
+/* ZOO TOSS — ui-kit.css  ("Chunky Voxel" UI, art-direction v3)
+   Pakai bersama Google Fonts:
+   <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+   Semua warna dari palette.json v3. Prefix kelas: zt-  */
+
+:root {
+  /* core */
+  --zt-primary: #FF7A1A;   --zt-primary-d: #C2560B;
+  --zt-good: #3CCB5A;      --zt-good-d: #2A9D4B;
+  --zt-accent: #FF3D7F;    --zt-accent-d: #C2245A;
+  --zt-danger: #FF4B4B;    --zt-danger-d: #C23030;
+  --zt-panel: #FFF4DC;     --zt-panel-d: #F2DFB8;
+  --zt-disabled: #C9C2B3;  --zt-disabled-d: #A39C8D;
+  --zt-ink: #1B2233;       --zt-white: #FFFFFF;
+  --zt-sky: #7CCBFF;       --zt-sil: #3A4256;
+  /* rarity */
+  --zt-common: #B8C2CC;    --zt-common-d: #5E6B78;
+  --zt-rare: #2F8CFF;      --zt-rare-d: #1A4F99;
+  --zt-epic: #A24BFF;      --zt-epic-d: #5A2299;
+  --zt-legendary: #FFC21A; --zt-legendary-d: #A66F00;
+  --zt-mythic: #19E6C1;    --zt-mythic-d: #0B7A66;
+  /* mutation (ui-spec Bagian 7, disetujui) */
+  --zt-mut-gold: #FFD54A; --zt-mut-diamond: #9BEBFF; --zt-mut-emerald: #2EE59D;
+  /* meter */
+  --zt-m1: #FF3B3B; --zt-m2: #FF8A1F; --zt-m3: #FFE14D; --zt-m4: #A6E33C; --zt-m5: #3CCB5A;
+  /* shape */
+  --zt-border: 3px;
+  --zt-radius: 6px;
+  --zt-radius-lg: 10px;
+  --zt-font-title: 'Luckiest Guy', 'Fredoka', system-ui, sans-serif;
+  --zt-font-ui: 'Fredoka', system-ui, sans-serif;
+}
+
+/* ---------- teks ---------- */
+.zt-title { font-family: var(--zt-font-title); font-weight: 400; letter-spacing: .03em; text-transform: uppercase; }
+.zt-outline { color: var(--zt-white);
+  text-shadow: 2px 2px 0 var(--zt-ink), -2px 2px 0 var(--zt-ink), 2px -2px 0 var(--zt-ink), -2px -2px 0 var(--zt-ink),
+               0 2px 0 var(--zt-ink), 0 -2px 0 var(--zt-ink), 2px 0 0 var(--zt-ink), -2px 0 0 var(--zt-ink); }
+.zt-muted { color: #5E6B78; font-family: var(--zt-font-ui); }
+
+/* ---------- tombol balok ---------- */
+.zt-btn {
+  --c: var(--zt-primary); --cd: var(--zt-primary-d);
+  font-family: var(--zt-font-title); font-weight: 400; letter-spacing: .03em; text-transform: uppercase;
+  font-size: clamp(14px, 1.6vw, 18px); line-height: 1; color: var(--zt-white);
+  min-height: 48px; min-width: 48px; padding: .55em 1.1em .75em;
+  background: var(--c); border: var(--zt-border) solid var(--zt-ink); border-radius: var(--zt-radius);
+  box-shadow: inset 0 -5px 0 var(--cd), 0 4px 0 var(--zt-ink);
+  text-shadow: 1.5px 1.5px 0 var(--zt-ink), -1.5px 1.5px 0 var(--zt-ink), 1.5px -1.5px 0 var(--zt-ink), -1.5px -1.5px 0 var(--zt-ink);
+  cursor: pointer; transition: transform .06s, box-shadow .06s; display: inline-flex; align-items: center; justify-content: center; gap: .4em;
+}
+.zt-btn:active, .zt-btn.is-pressed { transform: translateY(3px); box-shadow: inset 0 -2px 0 var(--cd), 0 1px 0 var(--zt-ink); }
+.zt-btn:focus-visible { outline: 3px solid var(--zt-white); outline-offset: 2px; }
+.zt-btn--primary { --c: var(--zt-primary); --cd: var(--zt-primary-d); }
+.zt-btn--good    { --c: var(--zt-good);    --cd: var(--zt-good-d); }
+.zt-btn--danger  { --c: var(--zt-danger);  --cd: var(--zt-danger-d); }
+.zt-btn--accent  { --c: var(--zt-accent);  --cd: var(--zt-accent-d); }
+.zt-btn--plain   { --c: var(--zt-panel);   --cd: var(--zt-panel-d); color: var(--zt-ink); text-shadow: none; }
+.zt-btn[disabled], .zt-btn.is-disabled { --c: var(--zt-disabled); --cd: var(--zt-disabled-d); color: rgba(27,34,51,.55); text-shadow: none; cursor: not-allowed; }
+.zt-btn--sm { min-height: 36px; font-size: 13px; padding: .4em .8em .6em; }
+.zt-btn--lg { font-size: clamp(18px, 2.2vw, 26px); padding: .6em 1.4em .85em; }
+.zt-btn--icon { padding: 0; width: 48px; }
+
+/* titik notifikasi di pojok tombol */
+.zt-dot { position: relative; }
+.zt-dot::after { content: ""; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--zt-danger); border: 2px solid var(--zt-white); }
+
+/* ---------- panel ---------- */
+.zt-panel {
+  background: var(--zt-panel); color: var(--zt-ink); font-family: var(--zt-font-ui);
+  border: var(--zt-border) solid var(--zt-ink); border-radius: var(--zt-radius-lg);
+  box-shadow: inset 0 -6px 0 var(--zt-panel-d), 0 5px 0 var(--zt-ink);
+}
+.zt-panel--dark { background: rgba(27,34,51,.78); color: var(--zt-white); box-shadow: 0 4px 0 rgba(27,34,51,.6); }
+.zt-modal-shade { position: fixed; inset: 0; background: rgba(27,34,51,.5); display: grid; place-items: center; padding: 16px; }
+.zt-modal { width: min(680px, 92vw); max-height: 86vh; display: flex; flex-direction: column; position: relative; padding: 28px 18px 18px; }
+.zt-modal__head { position: absolute; top: 0; left: 50%; transform: translate(-50%, -55%);
+  background: var(--zt-primary); border: var(--zt-border) solid var(--zt-ink); border-radius: var(--zt-radius);
+  box-shadow: inset 0 -4px 0 var(--zt-primary-d), 0 3px 0 var(--zt-ink); padding: .3em 1.2em .45em; white-space: nowrap;
+  font-size: clamp(18px, 2.4vw, 26px); }
+.zt-modal__close { position: absolute; top: -18px; right: -18px; }
+.zt-modal__body { overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- HUD ---------- */
+.zt-stats { display: flex; gap: 4px; padding: 6px 8px 10px; }
+.zt-stat { padding: 2px 10px; border-right: 2px solid var(--zt-panel-d); }
+.zt-stat:last-child { border-right: 0; }
+.zt-stat__label { font-family: var(--zt-font-ui); font-weight: 600; font-size: 11px; letter-spacing: .04em; color: #5E6B78; text-transform: uppercase; }
+.zt-stat__value { font-family: var(--zt-font-title); font-size: clamp(16px, 2vw, 22px); color: var(--zt-ink); }
+.zt-stat__value.is-bump { animation: zt-bump .15s ease-out; }
+@keyframes zt-bump { 50% { transform: scale(1.15); } }
+.zt-zonechip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 7px; }
+.zt-swatch { width: 18px; height: 18px; border: 2px solid var(--zt-ink); border-radius: 4px; flex: none; }
+
+/* ---------- prompt stasiun ---------- */
+.zt-prompt { display: flex; align-items: center; gap: 12px; padding: 10px 12px 14px; }
+.zt-key { font-family: var(--zt-font-title); font-size: 15px; color: var(--zt-white); background: var(--zt-ink);
+  border: 2px solid var(--zt-ink); border-radius: 6px; padding: .35em .6em .5em; box-shadow: inset 0 -4px 0 #000, 0 2px 0 #000; }
+@media (pointer: coarse) { .zt-key { display: none; } }
+
+/* ---------- meter lempar ---------- */
+.zt-meter { position: relative; height: 34px; border: var(--zt-border) solid var(--zt-ink); border-radius: var(--zt-radius);
+  background: linear-gradient(90deg, var(--zt-m1) 0%, var(--zt-m2) 55%, var(--zt-m3) 55%, var(--zt-m4) 90%, var(--zt-m5) 90%);
+  box-shadow: inset 0 -5px 0 rgba(27,34,51,.25), 0 3px 0 var(--zt-ink); }
+.zt-meter__marker { position: absolute; top: -9px; bottom: -9px; width: 10px; transform: translateX(-50%);
+  background: var(--zt-white); border: 3px solid var(--zt-ink); border-radius: 4px; }
+.zt-meter__labels { display: grid; grid-template-columns: 55fr 35fr 10fr; font-family: var(--zt-font-title); font-size: 12px; color: var(--zt-ink); margin-top: 6px; text-align: center; }
+
+/* ---------- chip makanan ---------- */
+.zt-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 9px; min-height: 44px;
+  background: var(--zt-panel); border: 2px solid var(--zt-ink); border-radius: var(--zt-radius);
+  box-shadow: inset 0 -4px 0 var(--zt-panel-d), 0 3px 0 var(--zt-ink); font-family: var(--zt-font-title); font-size: 13px; color: var(--zt-ink); cursor: pointer; white-space: nowrap; }
+.zt-chip.is-active { outline: 3px solid var(--zt-good); outline-offset: 1px; }
+.zt-chip.is-locked { opacity: .55; }
+.zt-chip__price { color: var(--zt-good-d); }
+
+/* ---------- baris (toko, quest) ---------- */
+.zt-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px 13px; background: var(--zt-panel-d);
+  border: 2px solid var(--zt-ink); border-radius: var(--zt-radius); box-shadow: inset 0 -4px 0 rgba(27,34,51,.12); }
+.zt-row__main { flex: 1; min-width: 0; }
+.zt-bar { height: 12px; background: var(--zt-white); border: 2px solid var(--zt-ink); border-radius: 6px; overflow: hidden; margin-top: 6px; }
+.zt-bar > i { display: block; height: 100%; background: var(--zt-good); }
+
+/* ---------- kartu hewan ---------- */
+.zt-card { --r: var(--zt-common); --rd: var(--zt-common-d);
+  background: var(--zt-panel-d); border: 4px solid var(--r); border-radius: var(--zt-radius-lg);
+  box-shadow: 0 0 0 2px var(--zt-ink), inset 0 -5px 0 rgba(27,34,51,.12), 0 4px 0 2px var(--zt-ink);
+  padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-family: var(--zt-font-ui); }
+.zt-card--common { --r: var(--zt-common); --rd: var(--zt-common-d); }
+.zt-card--rare { --r: var(--zt-rare); --rd: var(--zt-rare-d); }
+.zt-card--epic { --r: var(--zt-epic); --rd: var(--zt-epic-d); }
+.zt-card--legendary { --r: var(--zt-legendary); --rd: var(--zt-legendary-d); }
+.zt-card--mythic { --r: var(--zt-mythic); --rd: var(--zt-mythic-d); }
+.zt-card__name { font-family: var(--zt-font-title); font-size: 14px; color: var(--zt-ink); }
+.zt-card__income { font-family: var(--zt-font-title); font-size: 13px; color: var(--zt-good-d); }
+
+/* ---------- tag rarity & mutasi ---------- */
+.zt-tag { --r: var(--zt-common); --rd: var(--zt-common-d);
+  font-family: var(--zt-font-title); font-size: 11px; letter-spacing: .04em; color: var(--zt-white); text-transform: uppercase;
+  background: var(--r); border: 2px solid var(--rd); border-radius: 4px; padding: .15em .5em .25em;
+  text-shadow: 1px 1px 0 var(--rd), -1px 1px 0 var(--rd), 1px -1px 0 var(--rd), -1px -1px 0 var(--rd); }
+.zt-tag--common { --r: var(--zt-common); --rd: var(--zt-common-d); }
+.zt-tag--rare { --r: var(--zt-rare); --rd: var(--zt-rare-d); }
+.zt-tag--epic { --r: var(--zt-epic); --rd: var(--zt-epic-d); }
+.zt-tag--legendary { --r: var(--zt-legendary); --rd: var(--zt-legendary-d); }
+.zt-tag--mythic { --r: var(--zt-mythic); --rd: var(--zt-mythic-d); }
+.zt-mut { font-family: var(--zt-font-title); font-size: 11px; color: var(--zt-ink); text-transform: uppercase;
+  padding: .15em .9em .25em; border: 2px solid var(--zt-ink); clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); background: var(--m, #fff); }
+.zt-mut::before { content: "✦ "; }
+.zt-mut--gold { --m: var(--zt-mut-gold); }
+.zt-mut--diamond { --m: var(--zt-mut-diamond); }
+.zt-mut--emerald { --m: var(--zt-mut-emerald); }
+.zt-mut--rainbow { background: linear-gradient(90deg, #FF4B4B, #FF8A1F, #FFE14D, #3CCB5A, #2F8CFF, #A24BFF, #FF4B4B); background-size: 200% 100%; animation: zt-rainbow 2s linear infinite; }
+@keyframes zt-rainbow { to { background-position: 200% 0; } }
+.zt-new { font-family: var(--zt-font-title); font-size: 12px; color: var(--zt-white); background: var(--zt-accent);
+  border: 2px solid var(--zt-ink); border-radius: 4px; padding: .1em .45em .2em; transform: rotate(8deg); display: inline-block; }
+
+/* ---------- toast / kartu tangkapan ---------- */
+.zt-toast { display: flex; gap: 12px; align-items: center; padding: 10px 14px 14px; border-left-width: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .zt-mut--rainbow, .zt-stat__value.is-bump { animation: none; }
+}

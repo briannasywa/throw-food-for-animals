@@ -29,10 +29,10 @@ export class GameState {
     
     // Daily & Dynamic Quests System
     this.quests = [
-      { id: 'q_pullup', title: 'Latihan Keras', desc: 'Lakukan Pull-up hingga mengumpulkan 50 Power', target: 50, current: 0, rewardCash: 500, completed: false, claimed: false },
-      { id: 'q_catches', title: 'Pemburu Rimba', desc: 'Tangkap 5 hewan apapun di lintasan', target: 5, current: 0, rewardCash: 1200, completed: false, claimed: false },
-      { id: 'q_distance', title: 'Lemparan Roket', desc: 'Capai jarak lemparan minimal 2000 studs', target: 2000, current: 0, rewardCash: 3500, completed: false, claimed: false },
-      { id: 'q_mutation', title: 'Sentuhan Emas', desc: 'Dapatkan 1 hewan dengan mutasi langka', target: 1, current: 0, rewardCash: 8000, completed: false, claimed: false }
+      { id: 'q_pullup', title: 'Hard Training', desc: 'Reach 50 Power with pull-ups', target: 50, current: 0, rewardCash: 500, completed: false, claimed: false },
+      { id: 'q_catches', title: 'Jungle Hunter', desc: 'Catch 5 animals', target: 5, current: 0, rewardCash: 1200, completed: false, claimed: false },
+      { id: 'q_distance', title: 'Rocket Throw', desc: 'Throw 2,000 m in one go', target: 2000, current: 0, rewardCash: 3500, completed: false, claimed: false },
+      { id: 'q_mutation', title: 'Golden Touch', desc: 'Catch 1 animal with a rare mutation', target: 1, current: 0, rewardCash: 8000, completed: false, claimed: false }
     ];
 
     this.equippedPets = []; // UIDs of equipped companion pets (max 2)
@@ -66,7 +66,7 @@ export class GameState {
         this.save();
         return { equipped: true };
       } else {
-        return { error: 'Maksimal 2 Pet Companion terpasang!' };
+        return { error: 'Max 2 pets equipped!' };
       }
     }
   }
@@ -226,6 +226,7 @@ export class GameState {
         rarity: animalData.rarity,
         mutation: animalData.mutation,
         icon: animalData.icon,
+        id: animalData.id,
         score: luckScore
       };
     }
@@ -303,7 +304,11 @@ export class GameState {
         this.autoThrow = d.autoThrow ?? false;
         this.rebirthCount = d.rebirthCount ?? 0;
         this.rebirthCost = d.rebirthCost ?? 50000;
-        if (d.quests) this.quests = d.quests;
+        // Progres quest dari save, teks (judul/deskripsi) tetap dari definisi terbaru
+        if (d.quests) this.quests = this.quests.map(q => {
+          const sq = d.quests.find(x => x.id === q.id);
+          return sq ? { ...q, current: sq.current, completed: sq.completed, claimed: sq.claimed } : q;
+        });
         if (d.equippedPets) this.equippedPets = d.equippedPets;
         if (d.autoSellRarity) this.autoSellRarity = d.autoSellRarity;
       }

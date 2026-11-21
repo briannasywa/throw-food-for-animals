@@ -1,243 +1,198 @@
+// ui-kit.css dulu, lalu style.css (penyesuaian prototype & HP) supaya override-nya menang
+import './ui-kit.css';
 import './style.css';
+import confetti from 'canvas-confetti';
 import { GameState, formatNum } from './gameState.js';
-import { FOOD_TIERS, ZONES, MUTATION_DATA, RARITY_COLORS } from './gameData.js';
+import { FOOD_TIERS, ZONES, MUTATION_DATA } from './gameData.js';
 import { RobloxSeamlessWorld } from './robloxSeamlessWorld.js';
 import { sfx } from './audio.js';
+import { getAnimalThumb } from './animalThumbs.js';
 
 const state = new GameState();
+
+// ---------- helper tampilan (Chunky Voxel, ui-spec v2) ----------
+const RARITY_ORDER = ['Mythic', 'Legendary', 'Epic', 'Rare', 'Common'];
+const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
+const meters = (n) => `${Math.floor(n).toLocaleString('en-US')} m`;
+const zoneRange = (z) => `${z.minDist.toLocaleString('en-US')}–${z.maxDist.toLocaleString('en-US')} m`;
+const rarityTag = (r) => `<span class="zt-tag zt-tag--${r.toLowerCase()}">${r}</span>`;
+const mutTag = (m) => (m && m !== 'Normal' ? `<span class="zt-mut zt-mut--${m.toLowerCase()}">${m}</span>` : '');
+const sellPriceOf = (item) => Math.max(10, Math.floor(item.baseCps * (MUTATION_DATA[item.mutation]?.multiplier || 1) * 25));
+const incomeOf = (item) => Math.floor(item.baseCps * (MUTATION_DATA[item.mutation]?.multiplier || 1));
+const zoneOfDistance = (d) => { for (let i = ZONES.length - 1; i >= 0; i--) if (d >= ZONES[i].minDist) return ZONES[i]; return ZONES[0]; };
+const zoneOfAnimal = (id) => ZONES.find(z => z.animals.some(a => a.id === id));
+
+const SPEAKER_ON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#1B2233"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>`;
+const SPEAKER_OFF = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#1B2233"/><path d="M17 9l5 6M22 9l-5 6"/></svg>`;
+
+const modal = (id, title, body, sub = '') => `
+  <div id="modal-${id}" class="zt-modal-shade hidden">
+    <div class="zt-panel zt-modal">
+      <div class="zt-modal__head zt-title zt-outline">${title}</div>
+      <button id="btn-close-${id}" class="zt-btn zt-btn--danger zt-btn--icon zt-modal__close" aria-label="Close">✕</button>
+      ${sub}
+      <div class="zt-modal__body">${body}</div>
+    </div>
+  </div>`;
 
 // FULL SCREEN IMMERSIVE MAP LAYOUT
 const app = document.querySelector('#app');
 app.innerHTML = `
-<div class="relative w-screen h-screen overflow-hidden bg-[#70c5ff] font-pixel text-white select-none">
-  
+<div class="zt-root relative w-screen h-screen overflow-hidden bg-[#7CCBFF] select-none">
+
   <!-- 3D FULLSCREEN CANVAS CONTAINER -->
   <div id="full-map-viewport" class="absolute inset-0 w-full h-full z-0"></div>
 
-  <!-- FLOATING MINIMALIST HUD (TOP LEFT: LEADERSTATS) -->
-  <div class="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
-    <!-- Stats Badge -->
-    <div class="bg-black/80 backdrop-blur-md border-2 border-white/40 px-3.5 py-2 rounded-xl flex items-center gap-4 shadow-2xl pointer-events-auto">
+  <!-- H1 stat bar · H2 zone chip · H5 stamina (kiri atas) -->
+  <div class="absolute top-3 left-3 z-20 flex flex-col items-start gap-2.5 pointer-events-none">
+    <div class="zt-panel zt-stats pointer-events-auto">
+      <div class="zt-stat"><div class="zt-stat__label">Cash</div><div id="hud-money" class="zt-stat__value">$0</div></div>
+      <div class="zt-stat"><div class="zt-stat__label">Power</div><div id="hud-power" class="zt-stat__value" style="color:var(--zt-primary-d)">10</div></div>
+      <div class="zt-stat"><div class="zt-stat__label">Income</div><div id="hud-cps" class="zt-stat__value" style="color:var(--zt-good-d)">+$0/s</div></div>
+      <div class="zt-stat"><div class="zt-stat__label">Rebirth</div><div id="hud-rebirth" class="zt-stat__value" style="color:var(--zt-accent-d)">0x</div></div>
+    </div>
+    <div class="zt-panel zt-zonechip pointer-events-auto">
+      <span id="hud-zone-swatch" class="zt-swatch" style="background:${hex(ZONES[0].stripes[0])}"></span>
       <div>
-        <div class="text-[9px] text-[#84cc16] font-retro">CASH</div>
-        <div id="hud-money" class="text-xs md:text-sm font-retro text-[#a3e635]">$0</div>
-      </div>
-      <div class="w-px h-6 bg-white/20"></div>
-      <div>
-        <div class="text-[9px] text-[#f97316] font-retro">POWER</div>
-        <div id="hud-power" class="text-xs md:text-sm font-retro text-[#fed7aa]">10</div>
-      </div>
-      <div class="w-px h-6 bg-white/20"></div>
-      <div>
-        <div class="text-[9px] text-[#06b6d4] font-retro">CPS</div>
-        <div id="hud-cps" class="text-xs md:text-sm font-retro text-[#67e8f9]">+$0</div>
-      </div>
-      <div class="w-px h-6 bg-white/20"></div>
-      <div>
-        <div class="text-[9px] text-[#e11d48] font-retro">REBIRTH</div>
-        <div id="hud-rebirth" class="text-xs md:text-sm font-retro text-[#fecdd3]">0x</div>
+        <div id="hud-zone-name" class="zt-title zt-zone-name">${ZONES[0].name.toUpperCase()} · ${zoneRange(ZONES[0])}</div>
+        <div id="hud-zone-gimmick" class="zt-zone-gimmick">${ZONES[0].gimmick}</div>
       </div>
     </div>
+    <div id="hud-stamina" class="zt-stamina is-faded"><i></i></div>
+  </div>
 
-    <!-- Active Zone Banner & Gimmick Alert -->
-    <div class="bg-black/80 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-lg flex flex-col gap-0.5 max-w-sm pointer-events-auto">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-[#84cc16] animate-pulse"></span>
-        <span id="hud-zone-name" class="font-retro text-[10px] text-yellow-300">ZONE: LOBBY (0 - 300m)</span>
+  <!-- H3 zone banner -->
+  <div id="zone-banner" class="zt-banner hidden">
+    <div id="zone-banner-title" class="zt-title zt-outline zt-banner__title">ENTERING JUNGLE</div>
+    <div id="zone-banner-sub" class="zt-banner__sub"></div>
+  </div>
+
+  <!-- H4 menu (kanan atas) -->
+  <div class="zt-menu absolute top-3 right-3 z-20 flex items-center gap-2">
+    <button id="btn-open-quests" class="zt-btn zt-btn--primary">Quests</button>
+    <button id="btn-open-index" class="zt-btn zt-btn--accent">Index</button>
+    <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank</button>
+    <button id="btn-toggle-sound" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Sound">${SPEAKER_ON}</button>
+  </div>
+
+  <!-- Prompt stasiun (bawah tengah) -->
+  <div id="context-action-bar" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 hidden">
+    <div class="zt-panel zt-prompt">
+      <span id="context-key" class="zt-key">SPACE</span>
+      <div class="zt-prompt__text">
+        <div id="context-action" class="zt-title zt-prompt__title">THROW FOOD</div>
+        <div id="context-desc" class="zt-prompt__desc">Press Space or tap to throw</div>
       </div>
-      <div id="hud-zone-gimmick" class="text-[9px] text-slate-300 font-pixel">Safe Zone: Tempat latihan pemula.</div>
+      <button id="btn-context-trigger" class="zt-btn zt-btn--primary">Go</button>
     </div>
   </div>
 
-  <!-- TOP RIGHT: QUICK SHORTCUTS & RADAR COMPASS -->
-  <div class="absolute top-4 right-4 z-20 flex items-center gap-2">
-    <button id="btn-open-quests" class="retro-btn text-[9px] bg-black/80 border-2 border-amber-400 text-yellow-300 hover:scale-105 active:scale-95 transition">
-      📜 QUEST
-    </button>
-    <button id="btn-open-index" class="retro-btn text-[9px] bg-black/80 border-2 border-cyan-400 text-cyan-300 hover:scale-105 active:scale-95 transition">
-      📖 INDEX
-    </button>
-    <button id="btn-open-rank" class="retro-btn text-[9px] bg-black/80 border-2 border-rose-400 text-rose-300 hover:scale-105 active:scale-95 transition">
-      🏆 RANK
-    </button>
-    <button id="btn-toggle-sound" class="retro-btn text-[9px] bg-black/80 border-2 border-white/40">
-      🔊
-    </button>
-  </div>
-
-  <!-- BOTTOM CENTER: CONTEXT-AWARE IN-WORLD ACTION BAR (MUNCUL KETIKA BERINTERAKSI / DI LOKASI MAP) -->
-  <div id="context-action-bar" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-200 hidden">
-    <div class="bg-black/90 backdrop-blur-md border-3 border-amber-400 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 animate-bounce">
-      <span id="context-key" class="font-retro text-sm text-black bg-yellow-400 px-2.5 py-1 rounded-md">[SPACE]</span>
-      <div>
-        <div id="context-action" class="font-retro text-xs md:text-sm text-yellow-300">LEMPAR MAKANAN</div>
-        <div id="context-desc" class="text-[10px] text-slate-300 font-pixel">Garis Lempar • Tekan [SPASI] untuk aksi</div>
+  <!-- Panel lempar -->
+  <div id="throw-control-floating" class="zt-panel zt-throw absolute left-1/2 -translate-x-1/2 z-20">
+    <div class="zt-throw__head">
+      <span class="zt-title zt-throw__title">Throw</span>
+      <span id="floating-wind-val" class="zt-wind is-tail">WIND 0 m/s</span>
+      <span class="zt-throw__count"><small>TIMING</small><span id="floating-meter-val">0 / 20</span></span>
+    </div>
+    <div class="relative">
+      <div id="meter-container" class="zt-meter">
+        <div id="meter-needle" class="zt-meter__marker" style="left: 0%;"></div>
       </div>
-      <button id="btn-context-trigger" class="retro-btn retro-btn-orange text-[10px] py-1.5 px-3">
-        EKSEKUSI
-      </button>
+      <div id="meter-result-slot"></div>
     </div>
-  </div>
-
-  <!-- FLOATING THROW CONTROLLER (MUNCUL OTOMATIS SAAT BERADA DI GARIS LEMPAR / BISA DI-TRIGGER) -->
-  <div id="throw-control-floating" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 w-11/12 max-w-lg bg-black/85 backdrop-blur-md border-2 border-white/30 p-3 rounded-2xl flex flex-col gap-2 shadow-2xl transition-all">
-    <div class="flex justify-between items-center text-[9px] font-retro">
-      <span class="text-slate-300">THROW METER</span>
-      <span id="floating-meter-val" class="text-yellow-300">0 / 20</span>
-      <span id="floating-wind-val" class="text-cyan-300">WIND: 0 M/S</span>
-    </div>
-
-    <!-- Precision Meter -->
-    <div id="meter-container" class="relative w-full h-8 bg-slate-900 border-2 border-white/20 rounded-lg overflow-hidden cursor-pointer">
-      <div class="absolute inset-0 flex text-[8px] font-retro items-center opacity-30">
-        <div class="w-[50%] bg-blue-500 h-full flex items-center justify-center">POOR</div>
-        <div class="w-[30%] bg-emerald-500 h-full flex items-center justify-center">GOOD</div>
-        <div class="w-[20%] bg-amber-400 h-full flex items-center justify-center text-white">MAX</div>
-      </div>
-      <div id="meter-needle" class="absolute top-0 bottom-0 w-3 bg-yellow-400 border border-white -translate-x-1/2 pointer-events-none" style="left: 0%;"></div>
-    </div>
-
-    <div class="flex items-center justify-between gap-2 pt-1">
-      <!-- Food Select Dropdown / Mini-bar -->
-      <div class="flex items-center gap-1.5 overflow-x-auto flex-1 pb-1" id="mini-food-selector"></div>
-      
-      <button id="btn-toggle-auto" class="retro-btn text-[8px] py-1 px-2 whitespace-nowrap">
-        AUTO: OFF
-      </button>
-    </div>
-  </div>
-
-  <!-- FLYING DISTANCE HUD (WHEN PROJECTILE FLIES) -->
-  <div id="throw-flight-hud" class="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-black/90 border-2 border-yellow-400 px-6 py-2 rounded-xl font-retro text-sm text-yellow-300 hidden">
-    JARAK: <span id="flight-distance">0</span> STUDS
-  </div>
-
-  <!-- CATCH NOTIFICATION TOAST -->
-  <div id="catch-toast" class="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 bg-black/95 border-3 border-yellow-400 p-3.5 rounded-2xl flex items-center gap-3 opacity-0 transition-opacity duration-200 pointer-events-none shadow-2xl">
-    <div>
-      <div id="catch-name" class="font-retro text-xs text-yellow-300">TERTANGKAP!</div>
-      <div id="catch-sub" class="text-[10px] text-slate-200 mt-0.5">+50 CASH/S</div>
-    </div>
-  </div>
-
-  <!-- MODAL: SHOP & NPC BOOTH (MUNCUL KETIKA INTERAKSI DENGAN NPC) -->
-  <div id="modal-shop" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-amber-500 rounded-2xl max-w-xl w-full p-4 flex flex-col max-h-[85vh] shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2.5">
-        <div>
-          <h2 class="font-retro text-xs text-yellow-300">🧙‍♂️ MASTER NPC STAND</h2>
-          <p class="text-[10px] text-slate-400">Jual hewan tangkapan & upgrade kekuatan!</p>
-        </div>
-        <button id="btn-close-shop" class="retro-btn text-xs text-rose-400">&times;</button>
-      </div>
-
-      <div class="mt-3 overflow-y-auto space-y-3 flex-1 pr-1">
-        <!-- Quick Sell All -->
-        <div class="bg-slate-900 border border-white/20 p-3 rounded-xl flex justify-between items-center">
-          <div>
-            <div class="font-retro text-[10px] text-white">JUAL SEMUA HEWAN</div>
-            <div class="text-[9px] text-slate-400">Jual semua isi kandang untuk koin instan</div>
-          </div>
-          <button id="btn-shop-sell-all" class="retro-btn retro-btn-orange text-[9px]">
-            JUAL SEMUA
-          </button>
-        </div>
-
-        <!-- Upgrade Pull-Up -->
-        <div class="bg-slate-900 border border-white/20 p-3 rounded-xl flex justify-between items-center">
-          <div>
-            <div class="font-retro text-[10px] text-yellow-300">UPGRADE LEVEL PULL-UP <span id="shop-pullup-lv">Lv.1</span></div>
-            <div class="text-[9px] text-emerald-400" id="shop-pullup-rate">+3 Power / detik</div>
-          </div>
-          <button id="btn-shop-upgrade-pullup" class="retro-btn retro-btn-green text-[9px]">
-            $50
-          </button>
-        </div>
-
-        <!-- Expand Base Slots -->
-        <div class="bg-slate-900 border border-white/20 p-3 rounded-xl flex justify-between items-center">
-          <div>
-            <div class="font-retro text-[10px] text-cyan-300">PERLUAS KANDANG <span id="shop-slots-count">(4)</span></div>
-            <div class="text-[9px] text-cyan-400">+2 Slot Hewan Baru</div>
-          </div>
-          <button id="btn-shop-upgrade-slots" class="retro-btn text-[9px]">
-            $200
-          </button>
-        </div>
-
-        <!-- Rebirth -->
-        <div class="bg-gradient-to-r from-purple-950 to-slate-900 border border-purple-500 p-3 rounded-xl flex justify-between items-center">
-          <div>
-            <div class="font-retro text-[10px] text-purple-300">REBIRTH PRESTIGE <span id="shop-rebirth-count">(0x)</span></div>
-            <div class="text-[9px] text-purple-200">+50% Permanen Power & CPS Multiplier!</div>
-          </div>
-          <button id="btn-shop-rebirth" class="retro-btn retro-btn-gold text-[9px]">
-            $50K
-          </button>
-        </div>
+    <div class="zt-meter__labels"><span>POOR</span><span>GOOD</span><span>MAX</span></div>
+    <div class="zt-throw__foot">
+      <div id="mini-food-selector" class="zt-food-row"></div>
+      <div class="zt-throw__actions">
+        <button id="btn-toggle-auto" class="zt-btn zt-btn--plain zt-btn--sm">AUTO: OFF</button>
+        <button id="btn-throw" class="zt-btn zt-btn--primary">Throw</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: ANIMAL PEN / PLOT (MUNCUL KETIKA INTERAKSI DI BASE KANDANG) -->
-  <div id="modal-plot" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-emerald-500 rounded-2xl max-w-2xl w-full p-4 flex flex-col max-h-[85vh] shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2.5">
-        <div>
-          <h2 class="font-retro text-xs text-emerald-300">🏡 KANDANG HEWAN (PLOT)</h2>
-          <div id="plot-capacity-text" class="text-[10px] text-slate-400">Slot: 0 / 4 Terpakai</div>
-        </div>
-        <button id="btn-close-plot" class="retro-btn text-xs text-rose-400">&times;</button>
-      </div>
-      <div id="plot-animals-list" class="grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto mt-3 flex-1 pr-1"></div>
+  <!-- F1 jarak selama lemparan -->
+  <div id="throw-flight-hud" class="zt-flight absolute top-24 left-1/2 -translate-x-1/2 z-30 hidden">
+    <div class="zt-title zt-outline zt-flight__dist"><span id="flight-distance">0</span> m</div>
+    <div class="zt-panel zt-zonechip">
+      <span id="flight-zone-swatch" class="zt-swatch"></span>
+      <span id="flight-zone-name" class="zt-title zt-zone-name">LOBBY</span>
     </div>
   </div>
 
-  <!-- MODAL: QUESTS -->
-  <div id="modal-quests" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-amber-500 rounded-2xl max-w-lg w-full p-4 flex flex-col max-h-[85vh] shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2">
-        <h2 class="font-retro text-xs text-yellow-300">📜 MISI HARIAN (QUESTS)</h2>
-        <button id="btn-close-quests" class="retro-btn text-xs text-rose-400">&times;</button>
-      </div>
-      <div id="quests-list" class="overflow-y-auto mt-3 space-y-2 flex-1"></div>
+  <!-- F2 kartu tangkapan -->
+  <div id="catch-toast" class="zt-panel zt-toast zt-catch">
+    <img id="catch-img" class="zt-catch__img" alt="">
+    <div class="min-w-0">
+      <div class="zt-title zt-catch__head">Caught! <span id="catch-new" class="zt-new hidden">NEW!</span></div>
+      <div id="catch-name" class="zt-title zt-catch__name">Rabbit</div>
+      <div id="catch-tags" class="zt-tags"></div>
+      <div id="catch-sub" class="zt-card__income" style="margin-top:4px">+$3/s</div>
+      <div id="catch-sold" class="zt-catch__sold hidden"></div>
     </div>
   </div>
 
-  <!-- MODAL: BESTIARY INDEX (9 ZONES) -->
-  <div id="modal-index" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-cyan-500 rounded-2xl max-w-2xl w-full p-4 flex flex-col max-h-[85vh] shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2">
-        <h2 class="font-retro text-xs text-cyan-300">📖 INDEKS 9 ZONA BIOMA</h2>
-        <button id="btn-close-index" class="retro-btn text-xs text-rose-400">&times;</button>
+  ${modal('shop', 'Shop', `
+    <div class="zt-row">
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title">Upgrade Pull-Up <span id="shop-pullup-lv" class="zt-muted">Lv.1</span></div>
+        <div id="shop-pullup-rate" class="zt-row__desc">+3 Power / sec</div>
       </div>
-      <div id="index-list" class="overflow-y-auto mt-3 space-y-3 flex-1"></div>
+      <button id="btn-shop-upgrade-pullup" class="zt-btn zt-btn--good">$50</button>
+    </div>
+    <div class="zt-row">
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title">Expand Pen <span id="shop-slots-count" class="zt-muted">(4 slots)</span></div>
+        <div class="zt-row__desc">+2 animal slots</div>
+      </div>
+      <button id="btn-shop-upgrade-slots" class="zt-btn zt-btn--good">$200</button>
+    </div>
+    <div class="zt-row">
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title">Sell All Animals</div>
+        <div class="zt-row__desc">Sell every animal in your pen for instant cash</div>
+      </div>
+      <button id="btn-shop-sell-all" class="zt-btn zt-btn--danger">Sell All</button>
+    </div>
+    <div class="zt-row">
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title">Rebirth <span id="shop-rebirth-count" class="zt-muted">0x</span></div>
+        <div class="zt-row__desc">Reset cash and Power for a permanent +50% income &amp; Power boost</div>
+      </div>
+      <button id="btn-shop-rebirth" class="zt-btn zt-btn--accent">$50K</button>
+    </div>
+  `)}
+
+  ${modal('plot', 'My Pen', `<div id="plot-animals-list" class="zt-grid"></div>`,
+    `<div id="plot-capacity-text" class="zt-modal__sub">0 / 4 SLOTS</div>`)}
+
+  ${modal('quests', 'Quests', `<div id="quests-list" class="flex flex-col gap-2.5"></div>`)}
+
+  ${modal('index', 'Index', `
+    <div id="index-tabs" class="zt-tabs"></div>
+    <div id="index-list" class="flex flex-col gap-3"></div>
+  `, `<div id="index-total" class="zt-modal__sub">0 / 36</div>`)}
+
+  ${modal('rank', 'Records', `
+    <div class="zt-stat-cards">
+      <div class="zt-row zt-stat-card"><div class="zt-stat-card__label">Most Catches</div><div id="lb-catches" class="zt-stat-card__value">0</div></div>
+      <div class="zt-row zt-stat-card"><div class="zt-stat-card__label">Total Cash</div><div id="lb-money" class="zt-stat-card__value" style="color:var(--zt-good-d)">$0</div></div>
+      <div class="zt-row zt-stat-card" id="lb-luck"><div class="zt-stat-card__label">Luckiest Catch</div><div class="zt-stat-card__value">—</div></div>
+    </div>
+  `, `<div class="zt-modal__sub">Your best runs on this device</div>`)}
+
+  <!-- R1–R3 popup konfirmasi -->
+  <div id="modal-confirm" class="zt-modal-shade hidden" style="z-index:70">
+    <div class="zt-panel zt-modal zt-confirm">
+      <div id="confirm-title" class="zt-modal__head zt-title zt-outline">Sure?</div>
+      <div id="confirm-body" class="zt-confirm__text"></div>
+      <div class="zt-confirm__actions">
+        <button id="confirm-cancel" class="zt-btn zt-btn--plain">Cancel</button>
+        <button id="confirm-ok" class="zt-btn zt-btn--danger">OK</button>
+      </div>
     </div>
   </div>
 
-  <!-- MODAL: RANKINGS -->
-  <div id="modal-rank" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-rose-500 rounded-2xl max-w-md w-full p-4 flex flex-col shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2">
-        <h2 class="font-retro text-xs text-rose-300">🏆 PAPAN PERINGKAT GLOBAL</h2>
-        <button id="btn-close-rank" class="retro-btn text-xs text-rose-400">&times;</button>
-      </div>
-      <div class="mt-3 space-y-2 font-retro text-[9px]">
-        <div class="bg-slate-900 p-2 border border-white/20 flex justify-between">
-          <span>MOST CATCHES:</span>
-          <span id="lb-catches" class="text-yellow-300">0</span>
-        </div>
-        <div class="bg-slate-900 p-2 border border-white/20 flex justify-between">
-          <span>TOTAL CASH:</span>
-          <span id="lb-money" class="text-emerald-400">$0</span>
-        </div>
-        <div class="bg-slate-900 p-2 border border-white/20" id="lb-luck">
-          LUCKIEST: NONE
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <div id="zt-notice" class="zt-panel zt-notice hidden"></div>
 </div>
 `;
 
@@ -251,13 +206,47 @@ window.addEventListener('roblox:pullup', () => togglePullUp());
 window.addEventListener('roblox:shop', () => openModal('shop'));
 window.addEventListener('roblox:plot', () => openModal('plot'));
 
-// In-World Context Action Execution
-document.querySelector('#btn-context-trigger').onclick = () => {
+// Prompt stasiun: seluruh panel bisa di-tap (di HP keycap disembunyikan)
+document.querySelector('#context-action-bar').onclick = () => {
   if (world.currentStation?.id === 'throw') triggerThrow();
   else if (world.currentStation?.id === 'gym') togglePullUp();
   else if (world.currentStation?.id === 'shop') openModal('shop');
   else if (world.currentStation?.id === 'plot') openModal('plot');
 };
+
+// ---------- notifikasi & konfirmasi ----------
+let noticeTimer = null;
+function showNotice(text) {
+  const n = document.querySelector('#zt-notice');
+  n.textContent = text;
+  n.classList.remove('hidden');
+  n.style.animation = 'none'; void n.offsetWidth; n.style.animation = '';
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => n.classList.add('hidden'), 1800);
+}
+
+function confirmDialog({ title, html, okLabel, okClass = 'zt-btn--danger' }) {
+  return new Promise((resolve) => {
+    const m = document.querySelector('#modal-confirm');
+    document.querySelector('#confirm-title').textContent = title;
+    document.querySelector('#confirm-body').innerHTML = html;
+    const ok = document.querySelector('#confirm-ok');
+    ok.className = `zt-btn ${okClass}`;
+    ok.textContent = okLabel;
+    m.classList.remove('hidden');
+    const done = (v) => { m.classList.add('hidden'); confirmResolve = null; resolve(v); };
+    confirmResolve = done;
+    ok.onclick = () => done(true);
+    document.querySelector('#confirm-cancel').onclick = () => done(false);
+  });
+}
+let confirmResolve = null;
+
+// Prompt stasiun selalu di atas panel lempar (penting di HP, panel lempar ada di paling bawah)
+const throwPanel = document.querySelector('#throw-control-floating');
+new ResizeObserver(() => {
+  document.documentElement.style.setProperty('--zt-throw-h', `${throwPanel.offsetHeight}px`);
+}).observe(throwPanel);
 
 // Meter Animation
 let meterVal = 0;
@@ -278,25 +267,41 @@ function animateMeter() {
 }
 requestAnimationFrame(animateMeter);
 
+// Angka membesar sebentar saat berubah
+function setStat(sel, text) {
+  const el = document.querySelector(sel);
+  if (el.textContent === text) return;
+  el.textContent = text;
+  el.classList.remove('is-bump'); void el.offsetWidth; el.classList.add('is-bump');
+}
+
+// Titik merah: QUESTS (hadiah siap diklaim), INDEX (hewan baru belum dilihat)
+let indexHasNew = false;
+function updateDots() {
+  document.querySelector('#btn-open-quests').classList.toggle('zt-dot', state.quests.some(q => q.completed && !q.claimed));
+  document.querySelector('#btn-open-index').classList.toggle('zt-dot', indexHasNew);
+}
+
 // Update UI
 function updateUI() {
-  document.querySelector('#hud-money').textContent = `$${formatNum(state.money)}`;
-  document.querySelector('#hud-power').textContent = formatNum(state.power);
-  document.querySelector('#hud-cps').textContent = `+$${formatNum(state.getCurrentCps())}`;
-  document.querySelector('#hud-rebirth').textContent = `${state.rebirthCount}x`;
+  setStat('#hud-money', `$${formatNum(state.money)}`);
+  setStat('#hud-power', formatNum(state.power));
+  setStat('#hud-cps', `+$${formatNum(state.getCurrentCps())}/s`);
+  setStat('#hud-rebirth', `${state.rebirthCount}x`);
 
   // Shop values
   document.querySelector('#shop-pullup-lv').textContent = `Lv.${state.pullUpLevel}`;
-  document.querySelector('#shop-pullup-rate').textContent = `+${formatNum(state.getPullUpRate())} Power/detik`;
+  document.querySelector('#shop-pullup-rate').textContent = `+${formatNum(state.getPullUpRate())} Power / sec`;
   document.querySelector('#btn-shop-upgrade-pullup').textContent = `$${formatNum(state.pullUpCost)}`;
 
-  document.querySelector('#shop-slots-count').textContent = `(${state.maxBaseSlots})`;
+  document.querySelector('#shop-slots-count').textContent = `(${state.maxBaseSlots} slots)`;
   document.querySelector('#btn-shop-upgrade-slots').textContent = `$${formatNum(state.baseSlotCost)}`;
 
-  document.querySelector('#shop-rebirth-count').textContent = `(${state.rebirthCount}x)`;
+  document.querySelector('#shop-rebirth-count').textContent = `${state.rebirthCount}x`;
   document.querySelector('#btn-shop-rebirth').textContent = `$${formatNum(state.rebirthCost)}`;
 
-  document.querySelector('#plot-capacity-text').textContent = `Slot: ${state.inventory.length} / ${state.maxBaseSlots} Terpakai`;
+  document.querySelector('#plot-capacity-text').textContent =
+    `${state.inventory.length} / ${state.maxBaseSlots} SLOTS · ${state.equippedPets.length} / 2 PETS EQUIPPED`;
 
   // Sync 3D in-world plot
   world.updatePlotAnimals(state.inventory);
@@ -304,6 +309,7 @@ function updateUI() {
 
   renderMiniFoodSelector();
   renderPlotAnimals();
+  updateDots();
 }
 
 function renderMiniFoodSelector() {
@@ -313,16 +319,14 @@ function renderMiniFoodSelector() {
   FOOD_TIERS.forEach((f, idx) => {
     const isUnlocked = state.unlockedFoods.includes(idx);
     const isSelected = state.selectedFoodIndex === idx;
+    const canAfford = state.money >= f.cost;
 
     const btn = document.createElement('button');
-    btn.className = `px-2 py-1 text-[8px] font-retro rounded border transition whitespace-nowrap cursor-pointer ${
-      isSelected
-        ? 'bg-yellow-400 text-black border-yellow-300 font-black scale-105'
-        : isUnlocked
-        ? 'bg-black/60 text-slate-200 border-white/30 hover:border-white'
-        : 'bg-black/30 text-slate-500 border-white/10 opacity-50'
-    }`;
-    btn.innerHTML = `${f.iconText} <span class="text-emerald-400">${isUnlocked ? '✓' : '$' + formatNum(f.cost)}</span>`;
+    btn.className = `zt-chip ${isSelected ? 'is-active' : ''} ${!isUnlocked && !canAfford ? 'is-locked' : ''}`;
+    btn.innerHTML = `<span class="zt-chip__swatch" style="background:${f.color}"></span>${f.iconText}
+      ${isUnlocked
+        ? `<span class="zt-chip__check">${isSelected ? '✓' : ''}</span>`
+        : `<span class="zt-chip__price ${canAfford ? '' : 'is-short'}">$${formatNum(f.cost)}</span>`}`;
 
     btn.onclick = () => {
       sfx.playPop();
@@ -336,7 +340,7 @@ function renderMiniFoodSelector() {
           sfx.playLevelUp();
           updateUI();
         } else {
-          alert('Uang tidak cukup untuk membuka umpan ini!');
+          showNotice('NOT ENOUGH CASH!');
         }
       }
     };
@@ -349,44 +353,50 @@ function renderPlotAnimals() {
   container.innerHTML = '';
 
   if (state.inventory.length === 0) {
-    container.innerHTML = `<div class="col-span-3 text-center text-slate-500 text-[10px] py-10 font-retro">KANDANG KOSONG</div>`;
+    container.innerHTML = `<div class="zt-empty">YOUR PEN IS EMPTY · GO THROW SOME FOOD!</div>`;
     return;
   }
 
-  state.inventory.forEach((item, idx) => {
-    const mut = MUTATION_DATA[item.mutation] || MUTATION_DATA.Normal;
-    const isEquipped = state.equippedPets.includes(item.uid);
-    const cps = Math.floor(item.baseCps * mut.multiplier);
-    const sellPrice = Math.max(10, Math.floor(cps * 25));
+  // Urutan tampilan: Mythic → Common, lalu penghasilan tertinggi (data inventory tidak diubah)
+  const rows = state.inventory.map((item, idx) => ({ item, idx }));
+  rows.sort((a, b) => (RARITY_ORDER.indexOf(a.item.rarity) - RARITY_ORDER.indexOf(b.item.rarity)) || (incomeOf(b.item) - incomeOf(a.item)));
 
+  rows.forEach(({ item }) => {
+    const isEquipped = state.equippedPets.includes(item.uid);
     const card = document.createElement('div');
-    card.className = 'bg-slate-900 border-2 border-white/20 p-2 rounded-xl flex flex-col justify-between';
+    card.className = `zt-card zt-card--${item.rarity.toLowerCase()}`;
     card.innerHTML = `
-      <div>
-        <div class="flex justify-between items-start font-retro text-[8px]">
-          <span class="text-yellow-300">${item.name}</span>
-          <span style="color:${RARITY_COLORS[item.rarity]}">${item.rarity}</span>
-        </div>
-        <div class="text-[9px] font-pixel mt-0.5" style="color:${mut.color}">[${mut.name}]</div>
-        <div class="font-retro text-[8px] text-emerald-400 mt-1">+${formatNum(cps)}/s</div>
-      </div>
-      <div class="flex gap-1 mt-2">
-        <button class="retro-btn flex-1 text-[7px] py-1 px-1 ${isEquipped ? 'retro-btn-gold' : ''}" data-equip="${item.uid}">
-          ${isEquipped ? 'PAKAI' : 'PASANG'}
-        </button>
-        <button class="retro-btn retro-btn-orange text-[7px] py-1 px-1" data-sell="${idx}">
-          $${formatNum(sellPrice)}
-        </button>
+      <img class="zt-card__img" src="${getAnimalThumb(item.id)}" alt="">
+      <div class="zt-card__name">${item.name}</div>
+      <div class="zt-tags" style="justify-content:center">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
+      <div class="zt-card__income">+$${formatNum(incomeOf(item))}/s</div>
+      <div class="zt-card__actions">
+        <button class="zt-btn zt-btn--sm ${isEquipped ? 'zt-btn--plain' : 'zt-btn--good'}" data-equip>${isEquipped ? '✓ Equipped' : 'Equip'}</button>
+        <button class="zt-btn zt-btn--sm zt-btn--danger" data-sell>Sell $${formatNum(sellPriceOf(item))}</button>
       </div>
     `;
 
-    card.querySelector(`[data-equip="${item.uid}"]`).onclick = () => {
+    card.querySelector('[data-equip]').onclick = () => {
       sfx.playPop();
-      state.toggleEquipPet(item.uid);
+      const res = state.toggleEquipPet(item.uid);
+      if (res?.error) showNotice('MAX 2 PETS EQUIPPED!');
       updateUI();
     };
 
-    card.querySelector(`[data-sell="${idx}"]`).onclick = () => {
+    card.querySelector('[data-sell]').onclick = async () => {
+      const big = RARITY_ORDER.indexOf(item.rarity) <= 2 || item.mutation !== 'Normal';
+      const ok = await confirmDialog({
+        title: 'Sell Animal?',
+        html: `<img src="${getAnimalThumb(item.id)}" alt="" style="width:96px;height:96px;margin:0 auto">
+          <div class="zt-title" style="font-size:18px">${item.name}</div>
+          <div class="zt-tags" style="justify-content:center;margin:4px 0 8px">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
+          ${big ? `<div class="zt-confirm__warn">THIS IS A RARE ANIMAL!</div>` : ''}
+          <div class="zt-title" style="font-size:20px;color:var(--zt-good-d)">YOU GET $${formatNum(sellPriceOf(item))}</div>`,
+        okLabel: 'Sell',
+      });
+      if (!ok) return;
+      const idx = state.inventory.findIndex(x => x.uid === item.uid);
+      if (idx < 0) return;
       sfx.playCoins();
       state.sellAnimal(idx);
       updateUI();
@@ -396,17 +406,49 @@ function renderPlotAnimals() {
   });
 }
 
-function showCatchToast(animal, sellPrice = null) {
+let toastTimer = null;
+function showCatchToast(animal, { sellPrice = null, isNew = false } = {}) {
   const toast = document.querySelector('#catch-toast');
-  const name = document.querySelector('#catch-name');
-  const sub = document.querySelector('#catch-sub');
+  toast.style.borderColor = `var(--zt-${animal.rarity.toLowerCase()})`;
+  document.querySelector('#catch-img').src = getAnimalThumb(animal.id);
+  document.querySelector('#catch-name').textContent = animal.name;
+  document.querySelector('#catch-tags').innerHTML = rarityTag(animal.rarity) + mutTag(animal.mutation);
+  document.querySelector('#catch-sub').textContent = `+$${formatNum(incomeOf(animal))}/s`;
+  document.querySelector('#catch-new').classList.toggle('hidden', !isNew);
+  const sold = document.querySelector('#catch-sold');
+  sold.classList.toggle('hidden', !sellPrice);
+  if (sellPrice) sold.textContent = `PEN FULL! AUTO-SOLD +$${formatNum(sellPrice)}`;
 
-  name.textContent = `TERTANGKAP: ${animal.name.toUpperCase()}`;
-  if (sellPrice) sub.textContent = `KANDANG PENUH! AUTO-SOLD: +$${formatNum(sellPrice)}`;
-  else sub.textContent = `+${formatNum(animal.baseCps)}/S [${animal.mutation.toUpperCase()}]`;
+  toast.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('is-show'), 3000);
 
-  toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+  // Epic ke atas: confetti warna palet
+  if (['Epic', 'Legendary', 'Mythic'].includes(animal.rarity) || animal.mutation === 'Rainbow') {
+    confetti({ particleCount: animal.rarity === 'Epic' ? 60 : 120, spread: 70, origin: { x: 0.85, y: 0.4 },
+      colors: ['#FF7A1A', '#3CCB5A', '#FF3D7F', '#FFC21A', '#2F8CFF', '#A24BFF', '#19E6C1'] });
+  }
+}
+
+let bannerTimer = null;
+function showZoneBanner(zone) {
+  const b = document.querySelector('#zone-banner');
+  b.style.background = hex(zone.accent);
+  document.querySelector('#zone-banner-title').textContent = `Entering ${zone.name}`;
+  document.querySelector('#zone-banner-sub').textContent = zone.gimmick;
+  b.classList.remove('hidden');
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => b.classList.add('hidden'), 2000);
+}
+
+function showMeterResult(score) {
+  // Label hasil (tampilan saja): MAX = 90–100%, GOOD = 55–90%, POOR = di bawahnya
+  const pct = score / 20;
+  const [label, color] = pct >= 0.9 ? ['MAX!', 'var(--zt-good)'] : pct >= 0.55 ? ['GOOD!', 'var(--zt-legendary)'] : ['POOR', 'var(--zt-danger)'];
+  const slot = document.querySelector('#meter-result-slot');
+  slot.innerHTML = `<div class="zt-title zt-meter-result" style="color:${color};text-shadow:2px 2px 0 #1B2233,-2px 2px 0 #1B2233,2px -2px 0 #1B2233,-2px -2px 0 #1B2233">${label}</div>`;
+  const m = document.querySelector('#meter-container');
+  m.classList.remove('is-flash'); void m.offsetWidth; m.classList.add('is-flash');
 }
 
 function triggerThrow() {
@@ -415,6 +457,7 @@ function triggerThrow() {
   const score = Math.floor(meterVal);
 
   sfx.playThrow(score);
+  showMeterResult(score);
   const hud = document.querySelector('#throw-flight-hud');
   hud.classList.remove('hidden');
 
@@ -426,12 +469,19 @@ function triggerThrow() {
       hud.classList.add('hidden');
       sfx.playCatch(caughtAnimal.rarity, caughtAnimal.mutation);
 
+      // Info untuk tampilan (dibaca sebelum state berubah)
+      const isNew = !(state.indexProgress[caughtAnimal.id] || []).length;
+      const zone = zoneOfAnimal(caughtAnimal.id);
+      const zoneFirstTime = zone && zone.id !== 'lobby' && !zone.animals.some(a => (state.indexProgress[a.id] || []).length);
+
       state.checkQuest('catch', 1);
       state.checkQuest('distance', dist);
       state.checkQuest('mutation', caughtAnimal.mutation);
 
       const res = state.addAnimal(caughtAnimal);
-      showCatchToast(caughtAnimal, res.autoSold ? res.sellPrice : null);
+      if (isNew) indexHasNew = true;
+      if (zoneFirstTime) showZoneBanner(zone);
+      showCatchToast(caughtAnimal, { sellPrice: res.autoSold ? res.sellPrice : null, isNew });
       updateUI();
     }
   });
@@ -444,31 +494,66 @@ function togglePullUp() {
   updateUI();
 }
 
-// Tick loop for distance, wind & zone info
+// Tick loop for distance, wind, zone info & stamina
+let lastWindKey = '';
+let staminaFullSince = 0;
 setInterval(() => {
   if (world.isThrowing) {
-    document.querySelector('#flight-distance').textContent = world.currentDistance;
-    document.querySelector('#hud-zone-name').textContent = `ZONE: ${world.targetZone.name.toUpperCase()} (${world.targetZone.minDist}-${world.targetZone.maxDist}m)`;
-    document.querySelector('#hud-zone-gimmick').textContent = world.targetZone.gimmick;
+    document.querySelector('#flight-distance').textContent = Math.floor(world.currentDistance).toLocaleString('en-US');
+    const fz = zoneOfDistance(world.currentDistance);
+    document.querySelector("#flight-zone-name").textContent = fz.name.toUpperCase();
+    document.querySelector('#flight-zone-swatch').style.background = hex(fz.stripes[0]);
+
+    const z = world.targetZone;
+    document.querySelector("#hud-zone-name").textContent = `${z.name.toUpperCase()} · ${zoneRange(z)}`;
+    document.querySelector('#hud-zone-gimmick').textContent = z.gimmick;
+    document.querySelector('#hud-zone-swatch').style.background = hex(z.stripes[0]);
   }
 
-  const windDir = world.windDirection > 0 ? 'DORONG (TAIL)' : 'LAWAN (HEAD)';
-  document.querySelector('#floating-wind-val').textContent = `WIND: ${world.windSpeed} M/S (${windDir})`;
+  // T2 angin: TAILWIND (dari belakang, hijau) / HEADWIND (dari depan, merah)
+  const tail = world.windDirection > 0;
+  const windKey = `${world.windSpeed}|${tail}`;
+  if (windKey !== lastWindKey) {
+    const w = document.querySelector('#floating-wind-val');
+    w.className = `zt-wind ${tail ? 'is-tail' : 'is-head'} ${lastWindKey ? 'is-flash' : ''}`;
+    w.innerHTML = `<span class="zt-wind__arrow" style="transform:rotate(${tail ? 0 : 180}deg)">➜</span>WIND ${world.windSpeed} m/s · ${tail ? 'TAILWIND' : 'HEADWIND'}`;
+    lastWindKey = windKey;
+  }
+
+  // H5 stamina: tampil saat berkurang, hilang perlahan 2 dtk setelah penuh
+  const st = document.querySelector('#hud-stamina');
+  const pct = world.stamina / world.maxStamina;
+  st.firstElementChild.style.width = `${pct * 100}%`;
+  st.classList.toggle('is-low', pct < 0.3);
+  if (pct < 1) { staminaFullSince = 0; st.classList.remove('is-faded'); }
+  else {
+    if (!staminaFullSince) staminaFullSince = performance.now();
+    if (performance.now() - staminaFullSince > 2000) st.classList.add('is-faded');
+  }
 }, 50);
 
 // Buttons & Actions
 document.querySelector('#meter-container').onclick = () => triggerThrow();
+document.querySelector('#btn-throw').onclick = () => triggerThrow();
 
+function renderAutoBtn() {
+  const b = document.querySelector('#btn-toggle-auto');
+  b.textContent = state.autoThrow ? 'AUTO: ON' : 'AUTO: OFF';
+  b.className = `zt-btn zt-btn--sm ${state.autoThrow ? 'zt-btn--good' : 'zt-btn--plain'}`;
+}
 document.querySelector('#btn-toggle-auto').onclick = () => {
   sfx.playPop();
   state.autoThrow = !state.autoThrow;
   state.save();
-  document.querySelector('#btn-toggle-auto').textContent = state.autoThrow ? 'AUTO: ON' : 'AUTO: OFF';
+  renderAutoBtn();
 };
+renderAutoBtn();
 
-// Modal helpers
+// Modal helpers — hanya satu panel terbuka; tutup dengan X atau Esc
+const MODALS = ['shop', 'plot', 'quests', 'index', 'rank'];
 function openModal(id) {
   sfx.playPop();
+  MODALS.forEach(other => other !== id && closeModal(other));
   const m = document.querySelector(`#modal-${id}`);
   if (m) m.classList.remove('hidden');
 }
@@ -478,48 +563,68 @@ function closeModal(id) {
   if (m) m.classList.add('hidden');
 }
 
-['shop', 'plot', 'quests', 'index', 'rank'].forEach(id => {
+MODALS.forEach(id => {
   const btnClose = document.querySelector(`#btn-close-${id}`);
   if (btnClose) btnClose.onclick = () => closeModal(id);
+  // klik di latar gelap juga menutup
+  document.querySelector(`#modal-${id}`).addEventListener('click', (e) => { if (e.target.id === `modal-${id}`) closeModal(id); });
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (confirmResolve) { confirmResolve(false); return; }
+  MODALS.forEach(closeModal);
 });
 
 document.querySelector('#btn-open-quests').onclick = () => { renderQuestsModal(); openModal('quests'); };
-document.querySelector('#btn-open-index').onclick = () => { renderIndexModal(); openModal('index'); };
+document.querySelector('#btn-open-index').onclick = () => { indexHasNew = false; updateDots(); renderIndexModal(); openModal('index'); };
 document.querySelector('#btn-open-rank').onclick = () => { updateRankModal(); openModal('rank'); };
 
 document.querySelector('#btn-toggle-sound').onclick = () => {
   sfx.enabled = !sfx.enabled;
-  document.querySelector('#btn-toggle-sound').textContent = sfx.enabled ? '🔊' : '🔇';
+  document.querySelector('#btn-toggle-sound').innerHTML = sfx.enabled ? SPEAKER_ON : SPEAKER_OFF;
 };
 
 // Shop actions
-document.querySelector('#btn-shop-sell-all').onclick = () => {
-  if (state.inventory.length === 0) return;
+document.querySelector('#btn-shop-sell-all').onclick = async () => {
+  if (state.inventory.length === 0) { showNotice('YOUR PEN IS EMPTY!'); return; }
+  const total = state.inventory.reduce((s, it) => s + sellPriceOf(it), 0);
+  const ok = await confirmDialog({
+    title: 'Sell All?',
+    html: `<div class="zt-title" style="font-size:20px">${state.inventory.length} animals · $${formatNum(total)} total</div>`,
+    okLabel: 'Sell All',
+  });
+  if (!ok) return;
   sfx.playCoins();
   const res = state.sellAllAnimals();
-  alert(`Berhasil menjual ${res.count} hewan ke Master Game seharga +$${formatNum(res.totalSellPrice)}!`);
+  showNotice(`SOLD ${res.count} ANIMALS · +$${formatNum(res.totalSellPrice)}`);
   updateUI();
 };
 
 document.querySelector('#btn-shop-upgrade-pullup').onclick = () => {
   if (state.upgradePullUp()) { sfx.playLevelUp(); updateUI(); }
-  else alert('Uang tidak cukup!');
+  else showNotice('NOT ENOUGH CASH!');
 };
 
 document.querySelector('#btn-shop-upgrade-slots').onclick = () => {
   if (state.upgradeBaseSlot()) { sfx.playLevelUp(); updateUI(); }
-  else alert('Uang tidak cukup!');
+  else showNotice('NOT ENOUGH CASH!');
 };
 
-document.querySelector('#btn-shop-rebirth').onclick = () => {
+document.querySelector('#btn-shop-rebirth').onclick = async () => {
   if (state.canRebirth()) {
-    if (confirm('REBIRTH SEKARANG? Uang & Power di-reset, tapi kamu dapat bonus +50% PERMANEN!')) {
+    const ok = await confirmDialog({
+      title: 'Rebirth?',
+      html: `You'll lose your cash and Power, but keep your animals, food and Index.<br><b>+50% income and Power forever.</b>`,
+      okLabel: 'Rebirth',
+      okClass: 'zt-btn--accent',
+    });
+    if (ok) {
       state.doRebirth();
       sfx.playLevelUp();
       updateUI();
     }
   } else {
-    alert(`Butuh $${formatNum(state.rebirthCost)} untuk Rebirth!`);
+    showNotice(`NEED $${formatNum(state.rebirthCost)} TO REBIRTH`);
   }
 };
 
@@ -528,17 +633,23 @@ function renderQuestsModal() {
   list.innerHTML = '';
   state.quests.forEach(q => {
     const card = document.createElement('div');
-    card.className = `p-2.5 rounded-xl border border-white/20 bg-slate-900 flex justify-between items-center ${q.claimed ? 'opacity-40' : ''}`;
+    card.className = `zt-row ${q.claimed ? 'is-done' : ''}`;
     const pct = Math.min(100, Math.round((q.current / q.target) * 100));
     card.innerHTML = `
-      <div>
-        <div class="font-retro text-[9px] text-yellow-300">${q.title}</div>
-        <div class="text-[9px] text-slate-300">${q.desc}</div>
-        <div class="font-retro text-[8px] text-emerald-400 mt-1">${formatNum(q.current)}/${formatNum(q.target)} (${pct}%)</div>
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title">${q.title}</div>
+        <div class="zt-row__desc">${q.desc}</div>
+        <div class="zt-bar"><i style="width:${pct}%"></i></div>
+        <div class="flex justify-between mt-1">
+          <span class="zt-row__desc">${formatNum(q.current)} / ${formatNum(q.target)}</span>
+          <span class="zt-reward">+$${formatNum(q.rewardCash)}</span>
+        </div>
       </div>
-      <div>
-        ${q.claimed ? '<span class="text-[8px] text-slate-500">SELESAI</span>' : q.completed ? `<button class="retro-btn retro-btn-gold text-[8px]" data-claim="${q.id}">KLAIM</button>` : `<span class="text-[8px] text-emerald-400">+$${formatNum(q.rewardCash)}</span>`}
-      </div>
+      ${q.claimed
+        ? `<button class="zt-btn zt-btn--plain zt-btn--sm" disabled style="--c:var(--zt-panel);--cd:var(--zt-panel-d);color:var(--zt-ink)">Claimed ✓</button>`
+        : q.completed
+          ? `<button class="zt-btn zt-btn--good" data-claim="${q.id}" style="animation:zt-bump .8s ease-in-out infinite">Claim</button>`
+          : `<button class="zt-btn zt-btn--sm" disabled>In Progress</button>`}
     `;
     if (q.completed && !q.claimed) {
       card.querySelector(`[data-claim="${q.id}"]`).onclick = () => {
@@ -552,42 +663,65 @@ function renderQuestsModal() {
   });
 }
 
+// Index: tab zona + grid 4 kartu
+let indexZoneIdx = 0;
+function zoneReached(i) {
+  if (i === 0) return true;
+  return ZONES.slice(i).some(z => z.animals.some(a => (state.indexProgress[a.id] || []).length));
+}
+
 function renderIndexModal() {
-  const list = document.querySelector('#index-list');
-  list.innerHTML = '';
-  ZONES.forEach(z => {
-    const box = document.createElement('div');
-    box.className = 'bg-slate-900 border border-white/20 p-2.5 rounded-xl';
-    let anHtml = '';
-    z.animals.forEach(an => {
-      const disc = (state.indexProgress[an.id] || []).length > 0;
-      anHtml += `
-        <div class="bg-black/60 p-1.5 rounded border border-white/10 flex justify-between font-retro text-[8px] ${disc ? '' : 'opacity-30'}">
-          <span>${disc ? an.name : '???'}</span>
-          <span style="color:${RARITY_COLORS[an.rarity]}">${an.rarity}</span>
-        </div>
-      `;
-    });
-    box.innerHTML = `
-      <div class="flex justify-between items-center font-retro text-[9px] text-yellow-300 mb-1.5">
-        <span>${z.name}</span>
-        <span class="text-[8px] text-slate-400">${z.minDist}-${z.maxDist}m</span>
-      </div>
-      <div class="text-[9px] text-cyan-300 mb-2 italic">${z.gimmick}</div>
-      <div class="grid grid-cols-2 gap-1.5">${anHtml}</div>
-    `;
-    list.appendChild(box);
+  const discovered = (an) => (state.indexProgress[an.id] || []).length > 0;
+  const total = ZONES.reduce((s, z) => s + z.animals.filter(discovered).length, 0);
+  document.querySelector('#index-total').textContent = `${total} / ${ZONES.reduce((s, z) => s + z.animals.length, 0)} DISCOVERED`;
+
+  const tabs = document.querySelector('#index-tabs');
+  tabs.innerHTML = '';
+  ZONES.forEach((z, i) => {
+    const t = document.createElement('button');
+    const reached = zoneReached(i);
+    t.className = `zt-tab ${i === indexZoneIdx ? 'is-active' : ''} ${reached ? '' : 'is-locked'}`;
+    t.innerHTML = `<span class="zt-tab__strip" style="background:linear-gradient(90deg, ${hex(z.stripes[0])} 50%, ${hex(z.stripes[1])} 50%)"></span>
+      <span class="zt-tab__label">${reached ? '' : '🔒 '}${z.name}</span>`;
+    t.onclick = () => { sfx.playPop(); indexZoneIdx = i; renderIndexModal(); };
+    tabs.appendChild(t);
   });
+
+  const z = ZONES[indexZoneIdx];
+  const found = z.animals.filter(discovered).length;
+  const cards = z.animals.map(an => {
+    const d = discovered(an);
+    return `<div class="zt-card zt-card--${an.rarity.toLowerCase()} ${d ? '' : 'is-unknown'}">
+      <img class="zt-card__img" src="${getAnimalThumb(an.id, { silhouette: !d })}" alt="">
+      <div class="zt-card__name">${d ? an.name : '???'}</div>
+      ${d ? rarityTag(an.rarity) : ''}
+    </div>`;
+  }).join('');
+
+  document.querySelector('#index-list').innerHTML = `
+    <div class="zt-zoneinfo">
+      <span class="zt-title zt-zoneinfo__name">${z.name}</span>
+      <span class="zt-zoneinfo__dist">${zoneRange(z)}</span>
+    </div>
+    <div class="zt-zoneinfo__fx" style="margin-top:-8px">${z.gimmick}</div>
+    <div class="zt-grid">${cards}</div>
+    <div>
+      <div class="flex justify-between"><span class="zt-title" style="font-size:14px">${z.name} ${found} / ${z.animals.length}</span></div>
+      <div class="zt-bar"><i style="width:${(found / z.animals.length) * 100}%"></i></div>
+    </div>
+  `;
 }
 
 function updateRankModal() {
   document.querySelector('#lb-catches').textContent = `${formatNum(state.totalCatches)}`;
   document.querySelector('#lb-money').textContent = `$${formatNum(state.totalEarned)}`;
-  if (state.luckiestCatch) {
-    document.querySelector('#lb-luck').innerHTML = `
-      LUCKIEST: ${state.luckiestCatch.name} (${state.luckiestCatch.rarity}) [${state.luckiestCatch.mutation}]
-    `;
-  }
+  const l = state.luckiestCatch;
+  document.querySelector('#lb-luck').innerHTML = `
+    <div class="zt-stat-card__label">Luckiest Catch</div>
+    ${l ? `<div class="zt-stat-card__value" style="font-size:18px">${l.name}</div>
+      <div class="zt-tags" style="justify-content:center">${rarityTag(l.rarity)}${mutTag(l.mutation)}</div>`
+      : `<div class="zt-stat-card__value">—</div>`}
+  `;
 }
 
 // 1-second passive loop
@@ -599,14 +733,16 @@ setInterval(() => {
     const gain = state.getPullUpRate();
     state.power += gain;
     state.checkQuest('pullup', gain);
-    document.querySelector('#hud-power').textContent = formatNum(state.power);
+    setStat('#hud-power', formatNum(state.power));
   }
   const cps = state.getCurrentCps();
   if (cps > 0) {
     state.money += cps;
     state.totalEarned += cps;
-    document.querySelector('#hud-money').textContent = `$${formatNum(state.money)}`;
+    setStat('#hud-money', `$${formatNum(state.money)}`);
+    renderMiniFoodSelector(); // warna harga makanan ikut berubah saat uang cukup
   }
+  updateDots();
 }, 1000);
 
 updateUI();

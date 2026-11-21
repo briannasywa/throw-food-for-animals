@@ -35,10 +35,10 @@ export class RobloxSeamlessWorld {
 
     // Interactive In-World Trigger Stations
     this.worldStations = [
-      { id: 'throw', name: 'Garis Lempar', pos: new THREE.Vector3(0, 0, 10), radius: 7, actionKey: 'SPACE', actionLabel: 'LEMPAR MAKANAN', desc: 'Tekan [SPASI] atau klik tombol' },
-      { id: 'gym', name: 'Gym Pull-Up', pos: new THREE.Vector3(-18, 0, 12), radius: 6, actionKey: 'E', actionLabel: 'LATIHAN PULL-UP', desc: 'Tekan [E] untuk auto-train power' },
-      { id: 'shop', name: 'Master NPC Booth', pos: new THREE.Vector3(18, 0, 12), radius: 6, actionKey: 'T', actionLabel: 'BUKA TOKO / JUAL', desc: 'Beli makanan & upgrade' },
-      { id: 'plot', name: 'Kandang Plot Hewan', pos: new THREE.Vector3(-35, 0, 32), radius: 16, actionKey: 'P', actionLabel: 'KELOLA HEWAN', desc: 'Pasang & lihat hewan 3D' },
+      { id: 'throw', name: 'Throw Line', pos: new THREE.Vector3(0, 0, 10), radius: 7, actionKey: 'SPACE', actionLabel: 'THROW FOOD', desc: 'Press Space or tap to throw' },
+      { id: 'gym', name: 'Pull-Up Gym', pos: new THREE.Vector3(-18, 0, 12), radius: 6, actionKey: 'E', actionLabel: 'TRAIN PULL-UPS', desc: 'Auto-train your Power' },
+      { id: 'shop', name: 'Shop Booth', pos: new THREE.Vector3(18, 0, 12), radius: 6, actionKey: 'T', actionLabel: 'OPEN SHOP', desc: 'Upgrades, pen slots and selling' },
+      { id: 'plot', name: 'Animal Pen', pos: new THREE.Vector3(-35, 0, 32), radius: 16, actionKey: 'P', actionLabel: 'MANAGE PEN', desc: 'Equip and view your animals' },
     ];
 
     // Hewan voxel yang dianimasikan tiap frame
@@ -507,9 +507,9 @@ export class RobloxSeamlessWorld {
     if (promptModal && promptKey && promptAction && promptDesc) {
       if (closest && !this.isThrowing) {
         promptModal.classList.remove('hidden');
-        promptKey.textContent = `[${closest.actionKey}]`;
+        promptKey.textContent = closest.actionKey;
         promptAction.textContent = closest.actionLabel;
-        promptDesc.textContent = `${closest.name} • ${closest.desc}`;
+        promptDesc.textContent = closest.desc;
       } else {
         promptModal.classList.add('hidden');
       }
