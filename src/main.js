@@ -1,4 +1,5 @@
 import './style.css';
+import './ui-kit.css';
 import { GameState, formatNum } from './gameState.js';
 import { FOOD_TIERS, ZONES, MUTATION_DATA, RARITY_COLORS } from './gameData.js';
 import { RobloxSeamlessWorld } from './robloxSeamlessWorld.js';
@@ -6,172 +7,183 @@ import { sfx } from './audio.js';
 
 const state = new GameState();
 
-// FULL SCREEN IMMERSIVE MAP LAYOUT
+// FULL SCREEN IMMERSIVE MAP LAYOUT - CHUNKY VOXEL DIORAMA (ZOO TOSS)
 const app = document.querySelector('#app');
 app.innerHTML = `
-<div class="relative w-screen h-screen overflow-hidden bg-[#70c5ff] font-pixel text-white select-none">
+<div class="relative w-screen h-screen overflow-hidden bg-[#7CCBFF] font-ui text-[#1B2233] select-none">
   
   <!-- 3D FULLSCREEN CANVAS CONTAINER -->
   <div id="full-map-viewport" class="absolute inset-0 w-full h-full z-0"></div>
 
-  <!-- FLOATING MINIMALIST HUD (TOP LEFT: LEADERSTATS) -->
+  <!-- FLOATING HUD (TOP LEFT: LEADERSTATS) -->
   <div class="absolute top-4 left-4 z-20 flex flex-col gap-2 pointer-events-none">
     <!-- Stats Badge -->
-    <div class="bg-black/80 backdrop-blur-md border-2 border-white/40 px-3.5 py-2 rounded-xl flex items-center gap-4 shadow-2xl pointer-events-auto">
+    <div class="zt-panel px-4 py-2.5 flex items-center gap-4 shadow-xl pointer-events-auto">
       <div>
-        <div class="text-[9px] text-[#84cc16] font-retro">CASH</div>
-        <div id="hud-money" class="text-xs md:text-sm font-retro text-[#a3e635]">$0</div>
+        <div class="text-[10px] text-[#2A9D4B] font-display">CASH</div>
+        <div id="hud-money" class="text-xs md:text-sm font-display text-[#1B2233]">$0</div>
       </div>
-      <div class="w-px h-6 bg-white/20"></div>
+      <div class="w-0.5 h-6 bg-[#1B2233]/20"></div>
       <div>
-        <div class="text-[9px] text-[#f97316] font-retro">POWER</div>
-        <div id="hud-power" class="text-xs md:text-sm font-retro text-[#fed7aa]">10</div>
+        <div class="text-[10px] text-[#C2560B] font-display">POWER</div>
+        <div id="hud-power" class="text-xs md:text-sm font-display text-[#1B2233]">10</div>
       </div>
-      <div class="w-px h-6 bg-white/20"></div>
+      <div class="w-0.5 h-6 bg-[#1B2233]/20"></div>
       <div>
-        <div class="text-[9px] text-[#06b6d4] font-retro">CPS</div>
-        <div id="hud-cps" class="text-xs md:text-sm font-retro text-[#67e8f9]">+$0</div>
+        <div class="text-[10px] text-[#1A4F99] font-display">CPS</div>
+        <div id="hud-cps" class="text-xs md:text-sm font-display text-[#1B2233]">+$0</div>
       </div>
-      <div class="w-px h-6 bg-white/20"></div>
+      <div class="w-0.5 h-6 bg-[#1B2233]/20"></div>
       <div>
-        <div class="text-[9px] text-[#e11d48] font-retro">REBIRTH</div>
-        <div id="hud-rebirth" class="text-xs md:text-sm font-retro text-[#fecdd3]">0x</div>
+        <div class="text-[10px] text-[#C23030] font-display">REBIRTH</div>
+        <div id="hud-rebirth" class="text-xs md:text-sm font-display text-[#1B2233]">0x</div>
       </div>
     </div>
 
-    <!-- Active Zone Banner & Gimmick Alert -->
-    <div class="bg-black/80 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-lg flex flex-col gap-0.5 max-w-sm pointer-events-auto">
+    <!-- Active Zone Banner -->
+    <div class="zt-card px-3.5 py-2 flex flex-col gap-0.5 max-w-sm pointer-events-auto">
       <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-[#84cc16] animate-pulse"></span>
-        <span id="hud-zone-name" class="font-retro text-[10px] text-yellow-300">ZONE: LOBBY (0 - 300m)</span>
+        <span class="w-2.5 h-2.5 rounded-full bg-[#3CCB5A]"></span>
+        <span id="hud-zone-name" class="font-display text-[11px] text-[#FF7A1A]">ZONE: LOBBY (0 - 300m)</span>
       </div>
-      <div id="hud-zone-gimmick" class="text-[9px] text-slate-300 font-pixel">Safe Zone: Tempat latihan pemula.</div>
+      <div id="hud-zone-gimmick" class="text-[11px] text-[#1B2233] font-ui">Safe zone and training grounds. Calm winds, perfect for beginners.</div>
     </div>
   </div>
 
-  <!-- TOP RIGHT: QUICK SHORTCUTS & RADAR COMPASS -->
-  <div class="absolute top-4 right-4 z-20 flex items-center gap-2">
-    <button id="btn-open-quests" class="retro-btn text-[9px] bg-black/80 border-2 border-amber-400 text-yellow-300 hover:scale-105 active:scale-95 transition">
-      📜 QUEST
-    </button>
-    <button id="btn-open-index" class="retro-btn text-[9px] bg-black/80 border-2 border-cyan-400 text-cyan-300 hover:scale-105 active:scale-95 transition">
-      📖 INDEX
-    </button>
-    <button id="btn-open-rank" class="retro-btn text-[9px] bg-black/80 border-2 border-rose-400 text-rose-300 hover:scale-105 active:scale-95 transition">
-      🏆 RANK
-    </button>
-    <button id="btn-toggle-sound" class="retro-btn text-[9px] bg-black/80 border-2 border-white/40">
-      🔊
-    </button>
-  </div>
-
-  <!-- BOTTOM CENTER: CONTEXT-AWARE IN-WORLD ACTION BAR (MUNCUL KETIKA BERINTERAKSI / DI LOKASI MAP) -->
-  <div id="context-action-bar" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-200 hidden">
-    <div class="bg-black/90 backdrop-blur-md border-3 border-amber-400 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 animate-bounce">
-      <span id="context-key" class="font-retro text-sm text-black bg-yellow-400 px-2.5 py-1 rounded-md">[SPACE]</span>
-      <div>
-        <div id="context-action" class="font-retro text-xs md:text-sm text-yellow-300">LEMPAR MAKANAN</div>
-        <div id="context-desc" class="text-[10px] text-slate-300 font-pixel">Garis Lempar • Tekan [SPASI] untuk aksi</div>
-      </div>
-      <button id="btn-context-trigger" class="retro-btn retro-btn-orange text-[10px] py-1.5 px-3">
-        EKSEKUSI
+  <!-- TOP RIGHT: QUICK SHORTCUTS & CAMERA HINT -->
+  <div class="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
+    <div class="flex items-center gap-2">
+      <button id="btn-open-quests" class="zt-btn zt-btn--primary text-xs py-1.5 px-3">
+        📜 QUEST
+      </button>
+      <button id="btn-open-index" class="zt-btn zt-btn--primary text-xs py-1.5 px-3">
+        📖 INDEX
+      </button>
+      <button id="btn-open-rank" class="zt-btn zt-btn--primary text-xs py-1.5 px-3">
+        🏆 RANK
+      </button>
+      <button id="btn-toggle-sound" class="zt-btn zt-btn--secondary text-xs py-1.5 px-2.5">
+        🔊
       </button>
     </div>
+    <div class="zt-card px-2.5 py-1 text-[10px] text-[#1B2233]/80 font-ui shadow-sm">
+      🖱️ Drag mouse to rotate view • Scroll to zoom POV
+    </div>
   </div>
 
-  <!-- FLOATING THROW CONTROLLER (MUNCUL OTOMATIS SAAT BERADA DI GARIS LEMPAR / BISA DI-TRIGGER) -->
-  <div id="throw-control-floating" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 w-11/12 max-w-lg bg-black/85 backdrop-blur-md border-2 border-white/30 p-3 rounded-2xl flex flex-col gap-2 shadow-2xl transition-all">
-    <div class="flex justify-between items-center text-[9px] font-retro">
-      <span class="text-slate-300">THROW METER</span>
-      <span id="floating-meter-val" class="text-yellow-300">0 / 20</span>
-      <span id="floating-wind-val" class="text-cyan-300">WIND: 0 M/S</span>
-    </div>
-
-    <!-- Precision Meter -->
-    <div id="meter-container" class="relative w-full h-8 bg-slate-900 border-2 border-white/20 rounded-lg overflow-hidden cursor-pointer">
-      <div class="absolute inset-0 flex text-[8px] font-retro items-center opacity-30">
-        <div class="w-[50%] bg-blue-500 h-full flex items-center justify-center">POOR</div>
-        <div class="w-[30%] bg-emerald-500 h-full flex items-center justify-center">GOOD</div>
-        <div class="w-[20%] bg-amber-400 h-full flex items-center justify-center text-white">MAX</div>
+  <!-- BOTTOM CENTER CONTROLS: UNIFIED THROW METER & ACTION BAR -->
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-md flex flex-col gap-2 items-center pointer-events-none">
+    
+    <!-- CONTEXT ACTION PROMPT (WHEN STANDING AT STATIONS) -->
+    <div id="context-action-bar" class="w-full transition-all duration-200 hidden pointer-events-auto">
+      <div class="zt-panel px-4 py-2 flex items-center justify-between shadow-xl">
+        <div class="flex items-center gap-2.5">
+          <span id="context-key" class="font-display text-xs text-white bg-[#FF7A1A] border-2 border-[#1B2233] px-2 py-0.5 rounded">[SPACE]</span>
+          <div>
+            <div id="context-action" class="font-display text-xs text-[#FF7A1A]">THROW FOOD</div>
+            <div id="context-desc" class="text-[10px] text-[#1B2233] font-ui">Press key or tap execute</div>
+          </div>
+        </div>
+        <button id="btn-context-trigger" class="zt-btn zt-btn--secondary text-xs py-1 px-3">
+          EXECUTE
+        </button>
       </div>
-      <div id="meter-needle" class="absolute top-0 bottom-0 w-3 bg-yellow-400 border border-white -translate-x-1/2 pointer-events-none" style="left: 0%;"></div>
     </div>
 
-    <div class="flex items-center justify-between gap-2 pt-1">
-      <!-- Food Select Dropdown / Mini-bar -->
-      <div class="flex items-center gap-1.5 overflow-x-auto flex-1 pb-1" id="mini-food-selector"></div>
-      
-      <button id="btn-toggle-auto" class="retro-btn text-[8px] py-1 px-2 whitespace-nowrap">
-        AUTO: OFF
-      </button>
+    <!-- FLOATING THROW CONTROLLER (CHUNKY VOXEL POWER METER & BAIT BAR) -->
+    <div id="throw-control-floating" class="w-full zt-panel p-3 flex flex-col gap-2 pointer-events-auto shadow-2xl">
+      <div class="flex justify-between items-center text-[11px] font-display">
+        <span class="text-[#1B2233]">POWER METER</span>
+        <span id="floating-meter-val" class="text-[#FF7A1A]">0 / 20</span>
+        <span id="floating-wind-val" class="text-[#2F8CFF]">WIND: 0 M/S</span>
+      </div>
+
+      <!-- Precision Meter -->
+      <div id="meter-container" class="relative w-full h-8 bg-[#1B2233] border-3 border-[#1B2233] rounded-lg overflow-hidden cursor-pointer" title="Click or tap to throw!">
+        <div class="absolute inset-0 flex text-[9px] font-display items-center text-white">
+          <div class="w-[50%] bg-[#FF3B3B] h-full flex items-center justify-center border-r-2 border-[#1B2233]">POOR</div>
+          <div class="w-[30%] bg-[#FFE14D] text-[#1B2233] h-full flex items-center justify-center border-r-2 border-[#1B2233]">GOOD</div>
+          <div class="w-[20%] bg-[#3CCB5A] h-full flex items-center justify-center">MAX</div>
+        </div>
+        <div id="meter-needle" class="absolute top-0 bottom-0 w-3 bg-[#FFFFFF] border-2 border-[#1B2233] -translate-x-1/2 pointer-events-none" style="left: 0%;"></div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 pt-0.5">
+        <!-- Food Select Bar -->
+        <div class="flex items-center gap-1.5 overflow-x-auto flex-1 pb-1" id="mini-food-selector"></div>
+        
+        <button id="btn-toggle-auto" class="zt-btn zt-btn--accent text-[10px] py-1 px-2.5 whitespace-nowrap">
+          AUTO: OFF
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- FLYING DISTANCE HUD (WHEN PROJECTILE FLIES) -->
-  <div id="throw-flight-hud" class="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-black/90 border-2 border-yellow-400 px-6 py-2 rounded-xl font-retro text-sm text-yellow-300 hidden">
-    JARAK: <span id="flight-distance">0</span> STUDS
+  <!-- FLYING DISTANCE HUD (IN METERS) -->
+  <div id="throw-flight-hud" class="absolute top-16 left-1/2 -translate-x-1/2 z-30 zt-panel px-6 py-2 font-display text-sm text-[#FF7A1A] hidden">
+    DISTANCE: <span id="flight-distance">0</span> M
   </div>
 
   <!-- CATCH NOTIFICATION TOAST -->
-  <div id="catch-toast" class="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 bg-black/95 border-3 border-yellow-400 p-3.5 rounded-2xl flex items-center gap-3 opacity-0 transition-opacity duration-200 pointer-events-none shadow-2xl">
+  <div id="catch-toast" class="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 zt-panel p-3.5 flex items-center gap-3 opacity-0 transition-opacity duration-200 pointer-events-none shadow-2xl">
     <div>
-      <div id="catch-name" class="font-retro text-xs text-yellow-300">TERTANGKAP!</div>
-      <div id="catch-sub" class="text-[10px] text-slate-200 mt-0.5">+50 CASH/S</div>
+      <div id="catch-name" class="font-display text-xs text-[#FF7A1A]">CAUGHT!</div>
+      <div id="catch-sub" class="text-[11px] text-[#1B2233] mt-0.5">+50 CASH/S</div>
     </div>
   </div>
 
-  <!-- MODAL: SHOP & NPC BOOTH (MUNCUL KETIKA INTERAKSI DENGAN NPC) -->
-  <div id="modal-shop" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-amber-500 rounded-2xl max-w-xl w-full p-4 flex flex-col max-h-[85vh] shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2.5">
+  <!-- MODAL: SHOP & NPC BOOTH -->
+  <div id="modal-shop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="zt-panel max-w-xl w-full p-5 flex flex-col max-h-[85vh]">
+      <div class="flex justify-between items-center border-b-2 border-[#1B2233]/20 pb-3">
         <div>
-          <h2 class="font-retro text-xs text-yellow-300">🧙‍♂️ MASTER NPC STAND</h2>
-          <p class="text-[10px] text-slate-400">Jual hewan tangkapan & upgrade kekuatan!</p>
+          <h2 class="font-display text-sm text-[#FF7A1A]">ZOOKEEPER MERCHANT STAND</h2>
+          <p class="text-xs text-[#1B2233]/70 font-ui">Sell caught animals & upgrade your strength!</p>
         </div>
-        <button id="btn-close-shop" class="retro-btn text-xs text-rose-400">&times;</button>
+        <button id="btn-close-shop" class="zt-btn zt-btn--danger text-xs py-1 px-2.5">&times;</button>
       </div>
 
-      <div class="mt-3 overflow-y-auto space-y-3 flex-1 pr-1">
+      <div class="mt-4 overflow-y-auto space-y-3 flex-1 pr-1">
         <!-- Quick Sell All -->
-        <div class="bg-slate-900 border border-white/20 p-3 rounded-xl flex justify-between items-center">
+        <div class="zt-card p-3 flex justify-between items-center">
           <div>
-            <div class="font-retro text-[10px] text-white">JUAL SEMUA HEWAN</div>
-            <div class="text-[9px] text-slate-400">Jual semua isi kandang untuk koin instan</div>
+            <div class="font-display text-xs text-[#1B2233]">SELL ALL ANIMALS</div>
+            <div class="text-[11px] text-[#1B2233]/70 font-ui">Sell all pen inventory for immediate coins</div>
           </div>
-          <button id="btn-shop-sell-all" class="retro-btn retro-btn-orange text-[9px]">
-            JUAL SEMUA
+          <button id="btn-shop-sell-all" class="zt-btn zt-btn--danger text-xs py-1.5 px-3">
+            SELL ALL
           </button>
         </div>
 
         <!-- Upgrade Pull-Up -->
-        <div class="bg-slate-900 border border-white/20 p-3 rounded-xl flex justify-between items-center">
+        <div class="zt-card p-3 flex justify-between items-center">
           <div>
-            <div class="font-retro text-[10px] text-yellow-300">UPGRADE LEVEL PULL-UP <span id="shop-pullup-lv">Lv.1</span></div>
-            <div class="text-[9px] text-emerald-400" id="shop-pullup-rate">+3 Power / detik</div>
+            <div class="font-display text-xs text-[#FF7A1A]">TRAINING LEVEL <span id="shop-pullup-lv">Lv.1</span></div>
+            <div class="text-[11px] text-[#2A9D4B] font-display" id="shop-pullup-rate">+3 Power / sec</div>
           </div>
-          <button id="btn-shop-upgrade-pullup" class="retro-btn retro-btn-green text-[9px]">
+          <button id="btn-shop-upgrade-pullup" class="zt-btn zt-btn--secondary text-xs py-1.5 px-3">
             $50
           </button>
         </div>
 
         <!-- Expand Base Slots -->
-        <div class="bg-slate-900 border border-white/20 p-3 rounded-xl flex justify-between items-center">
+        <div class="zt-card p-3 flex justify-between items-center">
           <div>
-            <div class="font-retro text-[10px] text-cyan-300">PERLUAS KANDANG <span id="shop-slots-count">(4)</span></div>
-            <div class="text-[9px] text-cyan-400">+2 Slot Hewan Baru</div>
+            <div class="font-display text-xs text-[#2F8CFF]">EXPAND PEN SLOTS <span id="shop-slots-count">(4)</span></div>
+            <div class="text-[11px] text-[#1A4F99] font-ui">+2 New Animal Slots</div>
           </div>
-          <button id="btn-shop-upgrade-slots" class="retro-btn text-[9px]">
+          <button id="btn-shop-upgrade-slots" class="zt-btn zt-btn--primary text-xs py-1.5 px-3">
             $200
           </button>
         </div>
 
         <!-- Rebirth -->
-        <div class="bg-gradient-to-r from-purple-950 to-slate-900 border border-purple-500 p-3 rounded-xl flex justify-between items-center">
+        <div class="zt-card p-3 flex justify-between items-center border-2 border-[#A24BFF]">
           <div>
-            <div class="font-retro text-[10px] text-purple-300">REBIRTH PRESTIGE <span id="shop-rebirth-count">(0x)</span></div>
-            <div class="text-[9px] text-purple-200">+50% Permanen Power & CPS Multiplier!</div>
+            <div class="font-display text-xs text-[#A24BFF]">REBIRTH PRESTIGE <span id="shop-rebirth-count">(0x)</span></div>
+            <div class="text-[11px] text-[#5A2299] font-ui">+50% Permanent Power & CPS Multiplier!</div>
           </div>
-          <button id="btn-shop-rebirth" class="retro-btn retro-btn-gold text-[9px]">
+          <button id="btn-shop-rebirth" class="zt-btn zt-btn--accent text-xs py-1.5 px-3">
             $50K
           </button>
         </div>
@@ -179,59 +191,59 @@ app.innerHTML = `
     </div>
   </div>
 
-  <!-- MODAL: ANIMAL PEN / PLOT (MUNCUL KETIKA INTERAKSI DI BASE KANDANG) -->
-  <div id="modal-plot" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-emerald-500 rounded-2xl max-w-2xl w-full p-4 flex flex-col max-h-[85vh] shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2.5">
+  <!-- MODAL: ANIMAL PEN / PLOT -->
+  <div id="modal-plot" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="zt-panel max-w-2xl w-full p-5 flex flex-col max-h-[85vh]">
+      <div class="flex justify-between items-center border-b-2 border-[#1B2233]/20 pb-3">
         <div>
-          <h2 class="font-retro text-xs text-emerald-300">🏡 KANDANG HEWAN (PLOT)</h2>
-          <div id="plot-capacity-text" class="text-[10px] text-slate-400">Slot: 0 / 4 Terpakai</div>
+          <h2 class="font-display text-sm text-[#3CCB5A]">ANIMAL PEN</h2>
+          <div id="plot-capacity-text" class="text-xs text-[#1B2233]/70 font-ui">Slots: 0 / 4 Used</div>
         </div>
-        <button id="btn-close-plot" class="retro-btn text-xs text-rose-400">&times;</button>
+        <button id="btn-close-plot" class="zt-btn zt-btn--danger text-xs py-1 px-2.5">&times;</button>
       </div>
-      <div id="plot-animals-list" class="grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto mt-3 flex-1 pr-1"></div>
+      <div id="plot-animals-list" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto mt-4 flex-1 pr-1"></div>
     </div>
   </div>
 
   <!-- MODAL: QUESTS -->
-  <div id="modal-quests" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-amber-500 rounded-2xl max-w-lg w-full p-4 flex flex-col max-h-[85vh] shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2">
-        <h2 class="font-retro text-xs text-yellow-300">📜 MISI HARIAN (QUESTS)</h2>
-        <button id="btn-close-quests" class="retro-btn text-xs text-rose-400">&times;</button>
+  <div id="modal-quests" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="zt-panel max-w-lg w-full p-5 flex flex-col max-h-[85vh]">
+      <div class="flex justify-between items-center border-b-2 border-[#1B2233]/20 pb-3">
+        <h2 class="font-display text-sm text-[#FF7A1A]">DAILY QUESTS</h2>
+        <button id="btn-close-quests" class="zt-btn zt-btn--danger text-xs py-1 px-2.5">&times;</button>
       </div>
-      <div id="quests-list" class="overflow-y-auto mt-3 space-y-2 flex-1"></div>
+      <div id="quests-list" class="overflow-y-auto mt-4 space-y-2.5 flex-1"></div>
     </div>
   </div>
 
   <!-- MODAL: BESTIARY INDEX (9 ZONES) -->
-  <div id="modal-index" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-cyan-500 rounded-2xl max-w-2xl w-full p-4 flex flex-col max-h-[85vh] shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2">
-        <h2 class="font-retro text-xs text-cyan-300">📖 INDEKS 9 ZONA BIOMA</h2>
-        <button id="btn-close-index" class="retro-btn text-xs text-rose-400">&times;</button>
+  <div id="modal-index" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="zt-panel max-w-2xl w-full p-5 flex flex-col max-h-[85vh]">
+      <div class="flex justify-between items-center border-b-2 border-[#1B2233]/20 pb-3">
+        <h2 class="font-display text-sm text-[#2F8CFF]">ZONE BESTIARY INDEX</h2>
+        <button id="btn-close-index" class="zt-btn zt-btn--danger text-xs py-1 px-2.5">&times;</button>
       </div>
-      <div id="index-list" class="overflow-y-auto mt-3 space-y-3 flex-1"></div>
+      <div id="index-list" class="overflow-y-auto mt-4 space-y-3.5 flex-1"></div>
     </div>
   </div>
 
   <!-- MODAL: RANKINGS -->
-  <div id="modal-rank" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-black/95 border-3 border-rose-500 rounded-2xl max-w-md w-full p-4 flex flex-col shadow-2xl">
-      <div class="flex justify-between items-center border-b border-white/20 pb-2">
-        <h2 class="font-retro text-xs text-rose-300">🏆 PAPAN PERINGKAT GLOBAL</h2>
-        <button id="btn-close-rank" class="retro-btn text-xs text-rose-400">&times;</button>
+  <div id="modal-rank" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="zt-panel max-w-md w-full p-5 flex flex-col">
+      <div class="flex justify-between items-center border-b-2 border-[#1B2233]/20 pb-3">
+        <h2 class="font-display text-sm text-[#FF3D7F]">GLOBAL LEADERBOARD</h2>
+        <button id="btn-close-rank" class="zt-btn zt-btn--danger text-xs py-1 px-2.5">&times;</button>
       </div>
-      <div class="mt-3 space-y-2 font-retro text-[9px]">
-        <div class="bg-slate-900 p-2 border border-white/20 flex justify-between">
+      <div class="mt-4 space-y-2.5 font-display text-xs">
+        <div class="zt-card p-3 flex justify-between">
           <span>MOST CATCHES:</span>
-          <span id="lb-catches" class="text-yellow-300">0</span>
+          <span id="lb-catches" class="text-[#FF7A1A]">0</span>
         </div>
-        <div class="bg-slate-900 p-2 border border-white/20 flex justify-between">
+        <div class="zt-card p-3 flex justify-between">
           <span>TOTAL CASH:</span>
-          <span id="lb-money" class="text-emerald-400">$0</span>
+          <span id="lb-money" class="text-[#3CCB5A]">$0</span>
         </div>
-        <div class="bg-slate-900 p-2 border border-white/20" id="lb-luck">
+        <div class="zt-card p-3" id="lb-luck">
           LUCKIEST: NONE
         </div>
       </div>
@@ -244,12 +256,6 @@ app.innerHTML = `
 // Initialize Fullscreen 3D World
 const viewportContainer = document.querySelector('#full-map-viewport');
 const world = new RobloxSeamlessWorld(viewportContainer);
-
-// Custom Events from in-world keys
-window.addEventListener('roblox:throw', () => triggerThrow());
-window.addEventListener('roblox:pullup', () => togglePullUp());
-window.addEventListener('roblox:shop', () => openModal('shop'));
-window.addEventListener('roblox:plot', () => openModal('plot'));
 
 // In-World Context Action Execution
 document.querySelector('#btn-context-trigger').onclick = () => {
@@ -287,7 +293,7 @@ function updateUI() {
 
   // Shop values
   document.querySelector('#shop-pullup-lv').textContent = `Lv.${state.pullUpLevel}`;
-  document.querySelector('#shop-pullup-rate').textContent = `+${formatNum(state.getPullUpRate())} Power/detik`;
+  document.querySelector('#shop-pullup-rate').textContent = `+${formatNum(state.getPullUpRate())} Power / sec`;
   document.querySelector('#btn-shop-upgrade-pullup').textContent = `$${formatNum(state.pullUpCost)}`;
 
   document.querySelector('#shop-slots-count').textContent = `(${state.maxBaseSlots})`;
@@ -296,7 +302,7 @@ function updateUI() {
   document.querySelector('#shop-rebirth-count').textContent = `(${state.rebirthCount}x)`;
   document.querySelector('#btn-shop-rebirth').textContent = `$${formatNum(state.rebirthCost)}`;
 
-  document.querySelector('#plot-capacity-text').textContent = `Slot: ${state.inventory.length} / ${state.maxBaseSlots} Terpakai`;
+  document.querySelector('#plot-capacity-text').textContent = `Slots: ${state.inventory.length} / ${state.maxBaseSlots} Used`;
 
   // Sync 3D in-world plot
   world.updatePlotAnimals(state.inventory);
@@ -315,14 +321,14 @@ function renderMiniFoodSelector() {
     const isSelected = state.selectedFoodIndex === idx;
 
     const btn = document.createElement('button');
-    btn.className = `px-2 py-1 text-[8px] font-retro rounded border transition whitespace-nowrap cursor-pointer ${
+    btn.className = `px-2.5 py-1 text-[10px] font-display rounded-md border-2 border-[#1B2233] transition whitespace-nowrap cursor-pointer ${
       isSelected
-        ? 'bg-yellow-400 text-black border-yellow-300 font-black scale-105'
+        ? 'bg-[#FF7A1A] text-white scale-105'
         : isUnlocked
-        ? 'bg-black/60 text-slate-200 border-white/30 hover:border-white'
-        : 'bg-black/30 text-slate-500 border-white/10 opacity-50'
+        ? 'bg-[#FFF4DC] text-[#1B2233] hover:bg-[#F2DFB8]'
+        : 'bg-[#C9C2B3] text-[#1B2233]/50 opacity-60'
     }`;
-    btn.innerHTML = `${f.iconText} <span class="text-emerald-400">${isUnlocked ? '✓' : '$' + formatNum(f.cost)}</span>`;
+    btn.innerHTML = `${f.iconText} <span class="${isUnlocked ? 'text-[#3CCB5A]' : 'text-[#FF7A1A]'}">${isUnlocked ? '✓' : '$' + formatNum(f.cost)}</span>`;
 
     btn.onclick = () => {
       sfx.playPop();
@@ -336,7 +342,7 @@ function renderMiniFoodSelector() {
           sfx.playLevelUp();
           updateUI();
         } else {
-          alert('Uang tidak cukup untuk membuka umpan ini!');
+          alert('Not enough cash to unlock this bait!');
         }
       }
     };
@@ -349,7 +355,7 @@ function renderPlotAnimals() {
   container.innerHTML = '';
 
   if (state.inventory.length === 0) {
-    container.innerHTML = `<div class="col-span-3 text-center text-slate-500 text-[10px] py-10 font-retro">KANDANG KOSONG</div>`;
+    container.innerHTML = `<div class="col-span-3 text-center text-[#1B2233]/50 text-xs py-10 font-display">PEN IS EMPTY</div>`;
     return;
   }
 
@@ -360,21 +366,21 @@ function renderPlotAnimals() {
     const sellPrice = Math.max(10, Math.floor(cps * 25));
 
     const card = document.createElement('div');
-    card.className = 'bg-slate-900 border-2 border-white/20 p-2 rounded-xl flex flex-col justify-between';
+    card.className = 'zt-card p-3 flex flex-col justify-between';
     card.innerHTML = `
       <div>
-        <div class="flex justify-between items-start font-retro text-[8px]">
-          <span class="text-yellow-300">${item.name}</span>
-          <span style="color:${RARITY_COLORS[item.rarity]}">${item.rarity}</span>
+        <div class="flex justify-between items-start font-display text-[11px]">
+          <span class="text-[#1B2233]">${item.name}</span>
+          <span style="color:${RARITY_COLORS[item.rarity] || '#1B2233'}">${item.rarity}</span>
         </div>
-        <div class="text-[9px] font-pixel mt-0.5" style="color:${mut.color}">[${mut.name}]</div>
-        <div class="font-retro text-[8px] text-emerald-400 mt-1">+${formatNum(cps)}/s</div>
+        <div class="text-[10px] font-ui font-semibold mt-0.5" style="color:${mut.color}">[${mut.name}]</div>
+        <div class="font-display text-[10px] text-[#3CCB5A] mt-1">+${formatNum(cps)}/s</div>
       </div>
-      <div class="flex gap-1 mt-2">
-        <button class="retro-btn flex-1 text-[7px] py-1 px-1 ${isEquipped ? 'retro-btn-gold' : ''}" data-equip="${item.uid}">
-          ${isEquipped ? 'PAKAI' : 'PASANG'}
+      <div class="flex gap-1.5 mt-2.5">
+        <button class="zt-btn ${isEquipped ? 'zt-btn--accent' : 'zt-btn--secondary'} flex-1 text-[9px] py-1 px-1" data-equip="${item.uid}">
+          ${isEquipped ? 'EQUIPPED' : 'EQUIP'}
         </button>
-        <button class="retro-btn retro-btn-orange text-[7px] py-1 px-1" data-sell="${idx}">
+        <button class="zt-btn zt-btn--danger text-[9px] py-1 px-1" data-sell="${idx}">
           $${formatNum(sellPrice)}
         </button>
       </div>
@@ -401,8 +407,8 @@ function showCatchToast(animal, sellPrice = null) {
   const name = document.querySelector('#catch-name');
   const sub = document.querySelector('#catch-sub');
 
-  name.textContent = `TERTANGKAP: ${animal.name.toUpperCase()}`;
-  if (sellPrice) sub.textContent = `KANDANG PENUH! AUTO-SOLD: +$${formatNum(sellPrice)}`;
+  name.textContent = `CAUGHT: ${animal.name.toUpperCase()}`;
+  if (sellPrice) sub.textContent = `PEN FULL! AUTO-SOLD: +$${formatNum(sellPrice)}`;
   else sub.textContent = `+${formatNum(animal.baseCps)}/S [${animal.mutation.toUpperCase()}]`;
 
   toast.style.opacity = '1';
@@ -418,22 +424,29 @@ function triggerThrow() {
   const hud = document.querySelector('#throw-flight-hud');
   hud.classList.remove('hidden');
 
-  world.startThrow({
-    food,
-    power: state.power,
-    timingScore: score,
-    onFinish: (caughtAnimal, dist) => {
-      hud.classList.add('hidden');
-      sfx.playCatch(caughtAnimal.rarity, caughtAnimal.mutation);
+  const baseDist = (state.power * 10) * (0.5 + (score / 20) * 1.5);
+  const windEffect = 1 + (world.windSpeed * 0.03 * world.windDirection);
+  const distance = Math.max(15, Math.floor(baseDist * windEffect));
 
-      state.checkQuest('catch', 1);
-      state.checkQuest('distance', dist);
-      state.checkQuest('mutation', caughtAnimal.mutation);
-
-      const res = state.addAnimal(caughtAnimal);
-      showCatchToast(caughtAnimal, res.autoSold ? res.sellPrice : null);
-      updateUI();
+  let targetZone = ZONES[0];
+  for (let i = ZONES.length - 1; i >= 0; i--) {
+    if (distance >= ZONES[i].minDist) {
+      targetZone = ZONES[i];
+      break;
     }
+  }
+
+  world.throwFood(distance, targetZone, food, (caughtAnimal, dist) => {
+    hud.classList.add('hidden');
+    sfx.playCatch(caughtAnimal.rarity, caughtAnimal.mutation);
+
+    state.checkQuest('catch', 1);
+    state.checkQuest('distance', dist);
+    state.checkQuest('mutation', caughtAnimal.mutation);
+
+    const res = state.addAnimal(caughtAnimal);
+    showCatchToast(caughtAnimal, res.autoSold ? res.sellPrice : null);
+    updateUI();
   });
 }
 
@@ -452,7 +465,7 @@ setInterval(() => {
     document.querySelector('#hud-zone-gimmick').textContent = world.targetZone.gimmick;
   }
 
-  const windDir = world.windDirection > 0 ? 'DORONG (TAIL)' : 'LAWAN (HEAD)';
+  const windDir = world.windDirection > 0 ? 'TAILWIND' : 'HEADWIND';
   document.querySelector('#floating-wind-val').textContent = `WIND: ${world.windSpeed} M/S (${windDir})`;
 }, 50);
 
@@ -497,29 +510,29 @@ document.querySelector('#btn-shop-sell-all').onclick = () => {
   if (state.inventory.length === 0) return;
   sfx.playCoins();
   const res = state.sellAllAnimals();
-  alert(`Berhasil menjual ${res.count} hewan ke Master Game seharga +$${formatNum(res.totalSellPrice)}!`);
+  alert(`Sold ${res.count} animals for +$${formatNum(res.totalSellPrice)}!`);
   updateUI();
 };
 
 document.querySelector('#btn-shop-upgrade-pullup').onclick = () => {
   if (state.upgradePullUp()) { sfx.playLevelUp(); updateUI(); }
-  else alert('Uang tidak cukup!');
+  else alert('Not enough cash!');
 };
 
 document.querySelector('#btn-shop-upgrade-slots').onclick = () => {
   if (state.upgradeBaseSlot()) { sfx.playLevelUp(); updateUI(); }
-  else alert('Uang tidak cukup!');
+  else alert('Not enough cash!');
 };
 
 document.querySelector('#btn-shop-rebirth').onclick = () => {
   if (state.canRebirth()) {
-    if (confirm('REBIRTH SEKARANG? Uang & Power di-reset, tapi kamu dapat bonus +50% PERMANEN!')) {
+    if (confirm('REBIRTH NOW? Money & Power will reset, but you get a permanent +50% multiplier!')) {
       state.doRebirth();
       sfx.playLevelUp();
       updateUI();
     }
   } else {
-    alert(`Butuh $${formatNum(state.rebirthCost)} untuk Rebirth!`);
+    alert(`Need $${formatNum(state.rebirthCost)} for Rebirth!`);
   }
 };
 
@@ -528,16 +541,16 @@ function renderQuestsModal() {
   list.innerHTML = '';
   state.quests.forEach(q => {
     const card = document.createElement('div');
-    card.className = `p-2.5 rounded-xl border border-white/20 bg-slate-900 flex justify-between items-center ${q.claimed ? 'opacity-40' : ''}`;
+    card.className = `zt-card p-3 flex justify-between items-center ${q.claimed ? 'opacity-40' : ''}`;
     const pct = Math.min(100, Math.round((q.current / q.target) * 100));
     card.innerHTML = `
       <div>
-        <div class="font-retro text-[9px] text-yellow-300">${q.title}</div>
-        <div class="text-[9px] text-slate-300">${q.desc}</div>
-        <div class="font-retro text-[8px] text-emerald-400 mt-1">${formatNum(q.current)}/${formatNum(q.target)} (${pct}%)</div>
+        <div class="font-display text-xs text-[#FF7A1A]">${q.title}</div>
+        <div class="text-[11px] text-[#1B2233] font-ui">${q.desc}</div>
+        <div class="font-display text-[10px] text-[#3CCB5A] mt-1">${formatNum(q.current)}/${formatNum(q.target)} (${pct}%)</div>
       </div>
       <div>
-        ${q.claimed ? '<span class="text-[8px] text-slate-500">SELESAI</span>' : q.completed ? `<button class="retro-btn retro-btn-gold text-[8px]" data-claim="${q.id}">KLAIM</button>` : `<span class="text-[8px] text-emerald-400">+$${formatNum(q.rewardCash)}</span>`}
+        ${q.claimed ? '<span class="text-[10px] font-display text-[#1B2233]/40">COMPLETED</span>' : q.completed ? `<button class="zt-btn zt-btn--primary text-[10px] py-1 px-2.5" data-claim="${q.id}">CLAIM</button>` : `<span class="text-[11px] font-display text-[#3CCB5A]">+$${formatNum(q.rewardCash)}</span>`}
       </div>
     `;
     if (q.completed && !q.claimed) {
@@ -557,24 +570,24 @@ function renderIndexModal() {
   list.innerHTML = '';
   ZONES.forEach(z => {
     const box = document.createElement('div');
-    box.className = 'bg-slate-900 border border-white/20 p-2.5 rounded-xl';
+    box.className = 'zt-card p-3';
     let anHtml = '';
     z.animals.forEach(an => {
       const disc = (state.indexProgress[an.id] || []).length > 0;
       anHtml += `
-        <div class="bg-black/60 p-1.5 rounded border border-white/10 flex justify-between font-retro text-[8px] ${disc ? '' : 'opacity-30'}">
+        <div class="bg-[#FFF4DC] p-2 rounded-md border-2 border-[#1B2233] flex justify-between font-display text-[10px] ${disc ? '' : 'opacity-40'}">
           <span>${disc ? an.name : '???'}</span>
-          <span style="color:${RARITY_COLORS[an.rarity]}">${an.rarity}</span>
+          <span style="color:${RARITY_COLORS[an.rarity] || '#1B2233'}">${an.rarity}</span>
         </div>
       `;
     });
     box.innerHTML = `
-      <div class="flex justify-between items-center font-retro text-[9px] text-yellow-300 mb-1.5">
+      <div class="flex justify-between items-center font-display text-xs text-[#FF7A1A] mb-1.5">
         <span>${z.name}</span>
-        <span class="text-[8px] text-slate-400">${z.minDist}-${z.maxDist}m</span>
+        <span class="text-[10px] text-[#1B2233]/60">${z.minDist}-${z.maxDist}m</span>
       </div>
-      <div class="text-[9px] text-cyan-300 mb-2 italic">${z.gimmick}</div>
-      <div class="grid grid-cols-2 gap-1.5">${anHtml}</div>
+      <div class="text-[11px] text-[#1B2233]/80 font-ui mb-2.5 italic">${z.gimmick}</div>
+      <div class="grid grid-cols-2 gap-2">${anHtml}</div>
     `;
     list.appendChild(box);
   });

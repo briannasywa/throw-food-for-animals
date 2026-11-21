@@ -5,5 +5,8 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
   ],
+  server: {
+    host: '0.0.0.0', // Expose ke seluruh jaringan lokal (LAN/Wi-Fi)
+    port: 5173,
+  },
 });
-

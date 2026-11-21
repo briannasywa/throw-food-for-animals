@@ -1,0 +1,808 @@
+{
+  "name": "Sunny Voxel Diorama",
+  "version": 3,
+  "usage": "Game web (Three.js + CSS). Pakai 'hex' untuk CSS/Three.js. Abu/biru/ungu/emas/Mythic khusus kelangkaan di UI. biomeOrder = urutan zona dari garis lempar.",
+  "fonts": {
+    "display": "Luckiest Guy (Google Fonts)",
+    "ui": "Fredoka 600 (Google Fonts)",
+    "strokeColor": "#1B2233",
+    "strokeThicknessPx": {
+      "large": 3,
+      "button": 2,
+      "small": 1.5
+    }
+  },
+  "core": {
+    "primary": {
+      "hex": "#FF7A1A",
+      "rgb": [
+        255,
+        122,
+        26
+      ],
+      "note": "Sunny Orange - tombol utama, judul panel"
+    },
+    "secondary": {
+      "hex": "#3CCB5A",
+      "rgb": [
+        60,
+        203,
+        90
+      ],
+      "note": "Leaf Green - aksi positif, uang bertambah"
+    },
+    "accent": {
+      "hex": "#FF3D7F",
+      "rgb": [
+        255,
+        61,
+        127
+      ],
+      "note": "Pop Pink - garis lempar, target, panah bimbingan, badge NEW"
+    },
+    "background": {
+      "hex": "#7CCBFF",
+      "rgb": [
+        124,
+        203,
+        255
+      ],
+      "note": "Sky Blue - langit, layar loading"
+    },
+    "panel": {
+      "hex": "#FFF4DC",
+      "rgb": [
+        255,
+        244,
+        220
+      ],
+      "note": "Cream Panel - badan panel dan popup"
+    },
+    "text": {
+      "hex": "#FFFFFF",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "note": "White - teks di atas warna/dunia, selalu dengan outline"
+    },
+    "outline": {
+      "hex": "#1B2233",
+      "rgb": [
+        27,
+        34,
+        51
+      ],
+      "note": "Ink Navy - UIStroke semua UI, teks di atas panel krem"
+    }
+  },
+  "functional": {
+    "danger": {
+      "hex": "#FF4B4B",
+      "rgb": [
+        255,
+        75,
+        75
+      ],
+      "note": "Sell, tutup (X), peringatan kandang penuh"
+    },
+    "panelShade": {
+      "hex": "#F2DFB8",
+      "rgb": [
+        242,
+        223,
+        184
+      ],
+      "note": "Baris/kartu di dalam panel, tab tidak aktif"
+    },
+    "disabled": {
+      "hex": "#C9C2B3",
+      "rgb": [
+        201,
+        194,
+        179
+      ],
+      "note": "Tombol tidak bisa dipakai"
+    },
+    "silhouette": {
+      "hex": "#3A4256",
+      "rgb": [
+        58,
+        66,
+        86
+      ],
+      "note": "Siluet hewan belum didapat di Index"
+    }
+  },
+  "uiShade": {
+    "primary": {
+      "hex": "#C2560B",
+      "rgb": [
+        194,
+        86,
+        11
+      ],
+      "note": "sisi bawah tombol oranye"
+    },
+    "secondary": {
+      "hex": "#2A9D4B",
+      "rgb": [
+        42,
+        157,
+        75
+      ],
+      "note": "sisi bawah tombol hijau"
+    },
+    "accent": {
+      "hex": "#C2245A",
+      "rgb": [
+        194,
+        36,
+        90
+      ],
+      "note": "sisi bawah tombol pink"
+    },
+    "danger": {
+      "hex": "#C23030",
+      "rgb": [
+        194,
+        48,
+        48
+      ],
+      "note": "sisi bawah tombol merah"
+    },
+    "panel": {
+      "hex": "#F2DFB8",
+      "rgb": [
+        242,
+        223,
+        184
+      ],
+      "note": "sisi bawah panel krem"
+    },
+    "disabled": {
+      "hex": "#A39C8D",
+      "rgb": [
+        163,
+        156,
+        141
+      ],
+      "note": "sisi bawah tombol nonaktif"
+    }
+  },
+  "rarity": {
+    "Common": {
+      "hex": "#B8C2CC",
+      "rgb": [
+        184,
+        194,
+        204
+      ],
+      "note": "Common - warna utama"
+    },
+    "CommonDark": {
+      "hex": "#5E6B78",
+      "rgb": [
+        94,
+        107,
+        120
+      ],
+      "note": "Common - outline/teks"
+    },
+    "Rare": {
+      "hex": "#2F8CFF",
+      "rgb": [
+        47,
+        140,
+        255
+      ],
+      "note": "Rare - warna utama"
+    },
+    "RareDark": {
+      "hex": "#1A4F99",
+      "rgb": [
+        26,
+        79,
+        153
+      ],
+      "note": "Rare - outline/teks"
+    },
+    "Epic": {
+      "hex": "#A24BFF",
+      "rgb": [
+        162,
+        75,
+        255
+      ],
+      "note": "Epic - warna utama"
+    },
+    "EpicDark": {
+      "hex": "#5A2299",
+      "rgb": [
+        90,
+        34,
+        153
+      ],
+      "note": "Epic - outline/teks"
+    },
+    "Legendary": {
+      "hex": "#FFC21A",
+      "rgb": [
+        255,
+        194,
+        26
+      ],
+      "note": "Legendary - warna utama"
+    },
+    "LegendaryDark": {
+      "hex": "#A66F00",
+      "rgb": [
+        166,
+        111,
+        0
+      ],
+      "note": "Legendary - outline/teks"
+    },
+    "Mythic": {
+      "hex": "#19E6C1",
+      "rgb": [
+        25,
+        230,
+        193
+      ],
+      "note": "Mythic - warna utama (mint-toska, disetujui Art Director 9 Nov 2026)"
+    },
+    "MythicDark": {
+      "hex": "#0B7A66",
+      "rgb": [
+        11,
+        122,
+        102
+      ],
+      "note": "Mythic - outline/teks"
+    }
+  },
+  "mutation": {
+    "Gold": {
+      "hex": "#FFD54A",
+      "rgb": [
+        255,
+        213,
+        74
+      ],
+      "note": "x1.8, dengan kilau putih"
+    },
+    "Diamond": {
+      "hex": "#9BEBFF",
+      "rgb": [
+        155,
+        235,
+        255
+      ],
+      "note": "x3.5"
+    },
+    "Emerald": {
+      "hex": "#2EE59D",
+      "rgb": [
+        46,
+        229,
+        157
+      ],
+      "note": "x6"
+    },
+    "Rainbow": {
+      "gradient": [
+        "#FF4B4B",
+        "#FF8A1F",
+        "#FFE14D",
+        "#3CCB5A",
+        "#2F8CFF",
+        "#A24BFF"
+      ],
+      "note": "x12, gradasi beranimasi"
+    }
+  },
+  "powerMeter": {
+    "segment1": {
+      "hex": "#FF3B3B",
+      "rgb": [
+        255,
+        59,
+        59
+      ],
+      "note": "bawah / lemah"
+    },
+    "segment2": {
+      "hex": "#FF8A1F",
+      "rgb": [
+        255,
+        138,
+        31
+      ]
+    },
+    "segment3": {
+      "hex": "#FFE14D",
+      "rgb": [
+        255,
+        225,
+        77
+      ]
+    },
+    "segment4": {
+      "hex": "#A6E33C",
+      "rgb": [
+        166,
+        227,
+        60
+      ]
+    },
+    "segment5": {
+      "hex": "#3CCB5A",
+      "rgb": [
+        60,
+        203,
+        90
+      ],
+      "note": "atas / maksimal"
+    }
+  },
+  "character": {
+    "hat": {
+      "hex": "#D9B77A",
+      "rgb": [
+        217,
+        183,
+        122
+      ],
+      "note": "topi safari"
+    },
+    "hatBand": {
+      "hex": "#FF7A1A",
+      "rgb": [
+        255,
+        122,
+        26
+      ],
+      "note": "pita topi"
+    },
+    "skin": {
+      "hex": "#F5C99B",
+      "rgb": [
+        245,
+        201,
+        155
+      ],
+      "note": "kulit"
+    },
+    "shirt": {
+      "hex": "#FF7A1A",
+      "rgb": [
+        255,
+        122,
+        26
+      ],
+      "note": "kemeja"
+    },
+    "pocket": {
+      "hex": "#C2560B",
+      "rgb": [
+        194,
+        86,
+        11
+      ],
+      "note": "kantong kemeja"
+    },
+    "shorts": {
+      "hex": "#FFF4DC",
+      "rgb": [
+        255,
+        244,
+        220
+      ],
+      "note": "celana pendek"
+    },
+    "boots": {
+      "hex": "#8B5A2B",
+      "rgb": [
+        139,
+        90,
+        43
+      ],
+      "note": "sepatu bot"
+    },
+    "bag": {
+      "hex": "#8B5A2B",
+      "rgb": [
+        139,
+        90,
+        43
+      ],
+      "note": "tas selempang"
+    },
+    "eye": {
+      "hex": "#1B2233",
+      "rgb": [
+        27,
+        34,
+        51
+      ],
+      "note": "mata"
+    },
+    "shine": {
+      "hex": "#FFFFFF",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "note": "kilau mata"
+    },
+    "hair": {
+      "hex": "#5A3A22",
+      "rgb": [
+        90,
+        58,
+        34
+      ],
+      "note": "rambut"
+    },
+    "blush": {
+      "hex": "#FF8FB1",
+      "rgb": [
+        255,
+        143,
+        177
+      ],
+      "note": "pipi"
+    }
+  },
+  "biomeOrder": [
+    "Lobby",
+    "Farm",
+    "Jungle",
+    "Toxic",
+    "Lava",
+    "GlowSea",
+    "Christmas",
+    "Frost",
+    "Galaxy"
+  ],
+  "biome": {
+    "Lobby": {
+      "ground1": {
+        "hex": "#8EE06A",
+        "rgb": [
+          142,
+          224,
+          106
+        ]
+      },
+      "ground2": {
+        "hex": "#7AD15A",
+        "rgb": [
+          122,
+          209,
+          90
+        ]
+      },
+      "path": {
+        "hex": "#F2D9A6",
+        "rgb": [
+          242,
+          217,
+          166
+        ]
+      }
+    },
+    "Farm": {
+      "ground1": {
+        "hex": "#B8EFA0",
+        "rgb": [
+          184,
+          239,
+          160
+        ]
+      },
+      "ground2": {
+        "hex": "#A3E38A",
+        "rgb": [
+          163,
+          227,
+          138
+        ]
+      },
+      "hay": {
+        "hex": "#FFE29A",
+        "rgb": [
+          255,
+          226,
+          154
+        ]
+      },
+      "animalPack": "Pastel Farm"
+    },
+    "Jungle": {
+      "ground1": {
+        "hex": "#2FA84F",
+        "rgb": [
+          47,
+          168,
+          79
+        ]
+      },
+      "ground2": {
+        "hex": "#23913F",
+        "rgb": [
+          35,
+          145,
+          63
+        ]
+      },
+      "foliage": {
+        "hex": "#13703A",
+        "rgb": [
+          19,
+          112,
+          58
+        ]
+      },
+      "flower": {
+        "hex": "#FF9A3D",
+        "rgb": [
+          255,
+          154,
+          61
+        ]
+      },
+      "animalPack": "Sunset Jungle"
+    },
+    "Toxic": {
+      "ground1": {
+        "hex": "#3A2F4F",
+        "rgb": [
+          58,
+          47,
+          79
+        ]
+      },
+      "ground2": {
+        "hex": "#2C2340",
+        "rgb": [
+          44,
+          35,
+          64
+        ]
+      },
+      "slime": {
+        "hex": "#8CFF3A",
+        "rgb": [
+          140,
+          255,
+          58
+        ]
+      },
+      "deadTree": {
+        "hex": "#5B4A6B",
+        "rgb": [
+          91,
+          74,
+          107
+        ]
+      },
+      "animalPack": "Toxic Halloween"
+    },
+    "Lava": {
+      "ground1": {
+        "hex": "#3B2A2A",
+        "rgb": [
+          59,
+          42,
+          42
+        ]
+      },
+      "ground2": {
+        "hex": "#2A1D1D",
+        "rgb": [
+          42,
+          29,
+          29
+        ]
+      },
+      "lava": {
+        "hex": "#FF5A1F",
+        "rgb": [
+          255,
+          90,
+          31
+        ]
+      },
+      "ember": {
+        "hex": "#FFB33A",
+        "rgb": [
+          255,
+          179,
+          58
+        ]
+      },
+      "animalPack": "Lava Dino"
+    },
+    "GlowSea": {
+      "ground1": {
+        "hex": "#1F3A6B",
+        "rgb": [
+          31,
+          58,
+          107
+        ]
+      },
+      "ground2": {
+        "hex": "#17305A",
+        "rgb": [
+          23,
+          48,
+          90
+        ]
+      },
+      "glow": {
+        "hex": "#3FF0FF",
+        "rgb": [
+          63,
+          240,
+          255
+        ]
+      },
+      "coral": {
+        "hex": "#FF5FD2",
+        "rgb": [
+          255,
+          95,
+          210
+        ]
+      },
+      "animalPack": "Glow Sea"
+    },
+    "Christmas": {
+      "ground1": {
+        "hex": "#F2E6D8",
+        "rgb": [
+          242,
+          230,
+          216
+        ],
+        "note": "salju hangat (revisi 9 Nov 2026, sebelumnya merah #E8384F)"
+      },
+      "ground2": {
+        "hex": "#E3D2C0",
+        "rgb": [
+          227,
+          210,
+          192
+        ],
+        "note": "salju hangat, tone 2 (sebelumnya putih #FFF6F0)"
+      },
+      "pine": {
+        "hex": "#1E8C4E",
+        "rgb": [
+          30,
+          140,
+          78
+        ]
+      },
+      "animalPack": "Peppermint Christmas",
+      "candy": {
+        "hex": "#E8384F",
+        "rgb": [
+          232,
+          56,
+          79
+        ],
+        "note": "dekorasi permen tongkat/ornamen saja, bukan tanah"
+      }
+    },
+    "Frost": {
+      "ground1": {
+        "hex": "#CFEFFF",
+        "rgb": [
+          207,
+          239,
+          255
+        ]
+      },
+      "ground2": {
+        "hex": "#A9DDF7",
+        "rgb": [
+          169,
+          221,
+          247
+        ]
+      },
+      "ice": {
+        "hex": "#7FD3FF",
+        "rgb": [
+          127,
+          211,
+          255
+        ]
+      },
+      "snow": {
+        "hex": "#F2F7FF",
+        "rgb": [
+          242,
+          247,
+          255
+        ]
+      },
+      "animalPack": "Frost Dragon"
+    },
+    "Galaxy": {
+      "ground1": {
+        "hex": "#2A1B4F",
+        "rgb": [
+          42,
+          27,
+          79
+        ]
+      },
+      "ground2": {
+        "hex": "#1E1440",
+        "rgb": [
+          30,
+          20,
+          64
+        ]
+      },
+      "star": {
+        "hex": "#FFF27A",
+        "rgb": [
+          255,
+          242,
+          122
+        ]
+      },
+      "nebula": {
+        "hex": "#B57BFF",
+        "rgb": [
+          181,
+          123,
+          255
+        ]
+      },
+      "animalPack": "Galaxy Mythical"
+    },
+    "Shared": {
+      "cliff": {
+        "hex": "#9C8F84",
+        "rgb": [
+          156,
+          143,
+          132
+        ]
+      },
+      "cliffDark": {
+        "hex": "#7A6F66",
+        "rgb": [
+          122,
+          111,
+          102
+        ]
+      },
+      "cloud": {
+        "hex": "#FFFFFF",
+        "rgb": [
+          255,
+          255,
+          255
+        ]
+      },
+      "trunk": {
+        "hex": "#8B5A2B",
+        "rgb": [
+          139,
+          90,
+          43
+        ]
+      }
+    }
+  }
+}

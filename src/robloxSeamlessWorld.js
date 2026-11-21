@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { ZONES, MUTATION_DATA, SKY_COLOR } from './gameData.js';
-import { buildVoxelAnimal } from './animalModels.js';
+import { buildVoxelAnimal, buildPlayerZookeeper, animateAnimal } from './animalModels.js';
+import { setupLighting } from './zt-lighting.js';
 
 export class RobloxSeamlessWorld {
   constructor(container) {
     this.container = container;
 
-    // Player Avatar
-    this.playerPos = new THREE.Vector3(0, 0, 5);
+    // Player Avatar starting position
+    this.playerPos = new THREE.Vector3(0, 0, 0);
     this.playerRot = 0;
     this.moveSpeed = 18.0;
     this.stamina = 100;
@@ -18,12 +19,25 @@ export class RobloxSeamlessWorld {
     this.windDirection = 1;
     this.windChangeTimer = 0;
 
-    // Key inputs
+    // Key inputs (WASD & Arrow Keys)
     this.keys = { w: false, a: false, s: false, d: false, shift: false, space: false };
 
-    // Throw State
+    // Camera orbit & zoom controls (Right mouse drag or Left mouse drag)
+    this.cameraOrbit = {
+      yaw: 0.25,        // horizontal rotation around player (radians)
+      pitch: 0.65,      // vertical angle (radians)
+      distance: 45,     // zoom distance
+      targetDistance: 45,
+      isDragging: false,
+      lastMouseX: 0,
+      lastMouseY: 0
+    };
+
+    // Throw State & Stages: 'idle' | 'flight' | 'attract' | 'eating' | 'catch'
     this.isThrowing = false;
+    this.throwStage = 'idle';
     this.throwProgress = 0;
+    this.flightDuration = 2.0; // Dynamic duration based on distance
     this.maxDistance = 100;
     this.currentDistance = 0;
     this.targetZone = ZONES[0];
@@ -32,27 +46,38 @@ export class RobloxSeamlessWorld {
     this.onFinishCallback = null;
     this.isTraining = false;
 
-    // Interactive In-World Trigger Stations
+    // Attract and eating stages state
+    this.attractAnimalMesh = null;
+    this.attractTimer = 0;
+    this.attractDuration = 2.5;
+    this.eatingTimer = 0;
+    this.eatingDuration = 2.2; // Extended eating animation
+    this.landingPos = new THREE.Vector3();
+    this.animalSpawnPos = new THREE.Vector3();
+
+    // Dedicated Village/Courtyard Behind the Throw Line (-Z Area)
     this.worldStations = [
-      { id: 'throw', name: 'Garis Lempar', pos: new THREE.Vector3(0, 0, 10), radius: 7, actionKey: 'SPACE', actionLabel: 'LEMPAR MAKANAN', desc: 'Tekan [SPASI] atau klik tombol' },
-      { id: 'gym', name: 'Gym Pull-Up', pos: new THREE.Vector3(-18, 0, 12), radius: 6, actionKey: 'E', actionLabel: 'LATIHAN PULL-UP', desc: 'Tekan [E] untuk auto-train power' },
-      { id: 'shop', name: 'Master NPC Booth', pos: new THREE.Vector3(18, 0, 12), radius: 6, actionKey: 'T', actionLabel: 'BUKA TOKO / JUAL', desc: 'Beli makanan & upgrade' },
-      { id: 'plot', name: 'Kandang Plot Hewan', pos: new THREE.Vector3(-35, 0, 32), radius: 16, actionKey: 'P', actionLabel: 'KELOLA HEWAN', desc: 'Pasang & lihat hewan 3D' },
+      { id: 'throw', name: 'Throw Line', pos: new THREE.Vector3(0, 0, 10), radius: 7, actionKey: 'SPACE', actionLabel: 'THROW FOOD', desc: 'Press [SPACE] to throw bait' },
+      { id: 'plot', name: 'Animal Pen Courtyard', pos: new THREE.Vector3(0, 0, -42), radius: 18, actionKey: 'P', actionLabel: 'MANAGE ANIMALS', desc: 'Inspect & equip 3D animals' },
+      { id: 'gym', name: 'Training Grounds', pos: new THREE.Vector3(-24, 0, -22), radius: 8, actionKey: 'E', actionLabel: 'TRAIN POWER', desc: 'Press [E] to build pull-up power' },
+      { id: 'shop', name: 'Zookeeper Merchant Plaza', pos: new THREE.Vector3(24, 0, -22), radius: 8, actionKey: 'T', actionLabel: 'SHOP & SELL', desc: 'Buy food bait & upgrades' },
     ];
 
     this.initScene();
     this.buildSeamlessTrack();
+    this.buildCourtyardHub();
     this.buildCharacter();
     this.buildInWorldStations();
     this.buildFoodProjectile();
     this.setupInputs();
+    this.setupCameraMouseControls();
 
     this.lastTime = performance.now();
     this.animate = (time) => {
       this.reqId = requestAnimationFrame(this.animate);
       const dt = Math.min((time - this.lastTime) / 1000, 0.1);
       this.lastTime = time;
-      this.update(dt);
+      this.update(dt, time * 0.001);
       this.render();
     };
     this.reqId = requestAnimationFrame(this.animate);
@@ -63,67 +88,132 @@ export class RobloxSeamlessWorld {
     this.height = window.innerHeight;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(SKY_COLOR); // Exact Sky Blue (#70c5ff) from image
-    this.scene.fog = new THREE.Fog(SKY_COLOR, 120, 450);
 
     const aspect = this.width / this.height;
-    const d = 28;
-    this.camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, -1000, 2500);
-    this.camera.position.set(65, 80, 65);
-    this.camera.lookAt(0, 0, 0);
+    this.camera = new THREE.PerspectiveCamera(50, aspect, 0.5, 3000);
+    this.camera.position.set(20, 35, -35);
+    this.camera.lookAt(0, 2, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     this.renderer.setSize(this.width, this.height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.BasicShadowMap;
-
     this.container.innerHTML = '';
     this.container.appendChild(this.renderer.domElement);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.85);
-    this.scene.add(ambient);
-
-    this.sun = new THREE.DirectionalLight(0xfffaed, 1.2);
-    this.sun.position.set(80, 160, 60);
-    this.sun.castShadow = true;
-    this.sun.shadow.mapSize.width = 1024;
-    this.sun.shadow.mapSize.height = 1024;
-    this.scene.add(this.sun);
+    // Setup Art Direction Lighting (Sunny Day Preset A)
+    this.lighting = setupLighting({
+      renderer: this.renderer,
+      scene: this.scene,
+      preset: 'sunnyDay',
+      quality: 'auto'
+    });
 
     window.addEventListener('resize', () => {
       this.width = window.innerWidth;
       this.height = window.innerHeight;
-      const asp = this.width / this.height;
-      this.camera.left = -d * asp;
-      this.camera.right = d * asp;
-      this.camera.top = d;
-      this.camera.bottom = -d;
+      this.camera.aspect = this.width / this.height;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(this.width, this.height);
     });
   }
 
-  // Build the 9 Distinct Biome Zones with Exact Color Stripes from the User Image
+  setupCameraMouseControls() {
+    const dom = this.renderer.domElement;
+    dom.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    dom.addEventListener('mousedown', (e) => {
+      if (e.button === 2 || e.button === 0) {
+        this.cameraOrbit.isDragging = true;
+        this.cameraOrbit.lastMouseX = e.clientX;
+        this.cameraOrbit.lastMouseY = e.clientY;
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!this.cameraOrbit.isDragging || this.isThrowing) return;
+      const dx = e.clientX - this.cameraOrbit.lastMouseX;
+      const dy = e.clientY - this.cameraOrbit.lastMouseY;
+      this.cameraOrbit.lastMouseX = e.clientX;
+      this.cameraOrbit.lastMouseY = e.clientY;
+
+      this.cameraOrbit.yaw -= dx * 0.008;
+      this.cameraOrbit.pitch = Math.max(0.15, Math.min(1.4, this.cameraOrbit.pitch + dy * 0.006));
+    });
+
+    window.addEventListener('mouseup', () => {
+      this.cameraOrbit.isDragging = false;
+    });
+
+    dom.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomDelta = e.deltaY * 0.05;
+      this.cameraOrbit.targetDistance = Math.max(
+        12,
+        Math.min(95, this.cameraOrbit.targetDistance + zoomDelta)
+      );
+    }, { passive: false });
+  }
+
+  buildCourtyardHub() {
+    this.hubGroup = new THREE.Group();
+
+    const plazaMat = new THREE.MeshLambertMaterial({ color: 0xF2D9A6 });
+    const plazaFloor = new THREE.Mesh(new THREE.BoxGeometry(84, 0.4, 65), plazaMat);
+    plazaFloor.position.set(0, -0.05, -42.5);
+    plazaFloor.receiveShadow = true;
+
+    const grassBorderMat = new THREE.MeshLambertMaterial({ color: 0x7AD15A });
+    const grassBorder = new THREE.Mesh(new THREE.BoxGeometry(94, 0.3, 75), grassBorderMat);
+    grassBorder.position.set(0, -0.15, -42.5);
+    grassBorder.receiveShadow = true;
+
+    const cliffMat = new THREE.MeshLambertMaterial({ color: 0x9C8F84 });
+    const backCliff = new THREE.Mesh(new THREE.BoxGeometry(100, 16, 12), cliffMat);
+    backCliff.position.set(0, 8, -78);
+    backCliff.castShadow = true;
+    backCliff.receiveShadow = true;
+
+    const fenceMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
+    const fenceL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3, 65), fenceMat);
+    fenceL.position.set(-42, 1.5, -42.5);
+    const fenceR = fenceL.clone();
+    fenceR.position.x = 42;
+
+    this.hubGroup.add(plazaFloor, grassBorder, backCliff, fenceL, fenceR);
+    this.scene.add(this.hubGroup);
+  }
+
   buildSeamlessTrack() {
     const trackWidth = 24;
     const stripeWidth = 2.4;
+
+    const BIOME_PROPS = {
+      lobby: { rockColor: 0x94a3b8, plantColor: 0x22c55e, trunkColor: 0x8B5A2B },
+      farm: { rockColor: 0xbac5d1, plantColor: 0x84cc16, trunkColor: 0x78350f },
+      jungle: { rockColor: 0x475569, plantColor: 0x13703A, trunkColor: 0x78350f },
+      toxic: { rockColor: 0x5B4A6B, plantColor: 0x8CFF3A, trunkColor: 0x3A2F4F },
+      lava: { rockColor: 0x2A1D1D, plantColor: 0xFF5A1F, trunkColor: 0x1a0f0d },
+      glow_sea: { rockColor: 0x17305A, plantColor: 0x3FF0FF, trunkColor: 0x0284c7 },
+      christmas: { rockColor: 0xCFEFFF, plantColor: 0x1E8C4E, trunkColor: 0x8B5A2B },
+      frost: { rockColor: 0x7FD3FF, plantColor: 0xF2F7FF, trunkColor: 0x94a3b8 },
+      galaxy: { rockColor: 0x2A1B4F, plantColor: 0xFFF27A, trunkColor: 0xB57BFF }
+    };
 
     ZONES.forEach((zone, zIdx) => {
       const startZ = Math.max(0, zone.minDist / 12);
       const endZ = zone.maxDist / 12;
       const lengthZ = endZ - startZ;
       const centerZ = startZ + lengthZ / 2;
+      const props = BIOME_PROPS[zone.id] || BIOME_PROPS.lobby;
 
-      // 1. Surrounding Ground for this Biome
+      // 1. Base Ground
       const groundMat = new THREE.MeshLambertMaterial({ color: zone.stripes[0] });
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(320, lengthZ), groundMat);
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(360, lengthZ), groundMat);
       ground.rotation.x = -Math.PI / 2;
       ground.position.set(0, -0.05, centerZ);
       ground.receiveShadow = true;
       this.scene.add(ground);
 
-      // 2. Striped Main Runway (Alternate color vertical lines matching user image!)
+      // 2. Checkerboard Runway
       const numStripes = Math.floor(trackWidth / stripeWidth);
       for (let s = 0; s < numStripes; s++) {
         const color = zone.stripes[s % 2];
@@ -134,7 +224,7 @@ export class RobloxSeamlessWorld {
         this.scene.add(stripe);
       }
 
-      // 3. Colored Accent Bottom Curb (Matching pink, orange, lime, cyan, yellow borders in image)
+      // 3. Colored Accent Bottom Curb
       const curbMat = new THREE.MeshLambertMaterial({ color: zone.accent });
       const curbL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, lengthZ), curbMat);
       curbL.position.set(-trackWidth / 2 - 0.6, 0.35, centerZ);
@@ -142,69 +232,99 @@ export class RobloxSeamlessWorld {
       curbR.position.x = trackWidth / 2 + 0.6;
       this.scene.add(curbL, curbR);
 
-      // 4. Biome Entrance Archway Monument & Giant Voxel Guardian
-      const archMat = new THREE.MeshLambertMaterial({ color: zone.accent });
-      const pL = new THREE.Mesh(new THREE.BoxGeometry(3, 18, 3), archMat);
-      pL.position.set(-trackWidth / 2 - 2, 9, startZ);
-      const pR = pL.clone();
-      pR.position.x = trackWidth / 2 + 2;
+      // 4. NATURAL VOXEL CLIFFS & HILLS
+      const cliffMat = new THREE.MeshLambertMaterial({ color: 0x9C8F84 });
+      const cliffDarkMat = new THREE.MeshLambertMaterial({ color: 0x7A6F66 });
 
-      const topArch = new THREE.Mesh(new THREE.BoxGeometry(trackWidth + 8, 3.5, 3.5), archMat);
-      topArch.position.set(0, 18, startZ);
+      const cliffSegments = Math.max(1, Math.floor(lengthZ / 24));
+      for (let c = 0; c < cliffSegments; c++) {
+        const segZ = startZ + c * 24 + 12;
 
-      // Zone Animal Statue
+        const hillL1 = new THREE.Mesh(new THREE.BoxGeometry(22, 6, 24), cliffMat);
+        hillL1.position.set(-trackWidth / 2 - 13, 3, segZ);
+        hillL1.castShadow = true;
+        hillL1.receiveShadow = true;
+
+        const hillL2 = new THREE.Mesh(new THREE.BoxGeometry(18, 10, 20), cliffDarkMat);
+        hillL2.position.set(-trackWidth / 2 - 24, 8, segZ);
+        hillL2.castShadow = true;
+        hillL2.receiveShadow = true;
+
+        const hillR1 = new THREE.Mesh(new THREE.BoxGeometry(22, 6, 24), cliffMat);
+        hillR1.position.set(trackWidth / 2 + 13, 3, segZ);
+        hillR1.castShadow = true;
+        hillR1.receiveShadow = true;
+
+        const hillR2 = new THREE.Mesh(new THREE.BoxGeometry(18, 10, 20), cliffDarkMat);
+        hillR2.position.set(trackWidth / 2 + 24, 8, segZ);
+        hillR2.castShadow = true;
+        hillR2.receiveShadow = true;
+
+        this.scene.add(hillL1, hillL2, hillR1, hillR2);
+
+        // 5. THEMED ROCKS & NATURE
+        const rock1 = this.createVoxelBoulder(props.rockColor, 3.5);
+        rock1.position.set(-trackWidth / 2 - 4 - Math.sin(c) * 3, 1.5, segZ - 4);
+        const rock2 = this.createVoxelBoulder(props.rockColor, 2.5);
+        rock2.position.set(trackWidth / 2 + 4 + Math.cos(c) * 3, 1.2, segZ + 5);
+
+        const plant1 = this.createVoxelTree(props.trunkColor, props.plantColor);
+        plant1.position.set(-trackWidth / 2 - 8, 0, segZ + 6);
+        const plant2 = this.createVoxelTree(props.trunkColor, props.plantColor);
+        plant2.position.set(trackWidth / 2 + 8, 0, segZ - 6);
+
+        this.scene.add(rock1, rock2, plant1, plant2);
+      }
+
       const guardian = buildVoxelAnimal(zone.animals[zone.animals.length - 1].id, 'Legendary');
-      guardian.scale.set(1.4, 1.4, 1.4);
-      guardian.position.set(trackWidth / 2 + 8, 0, startZ + 8);
-
-      this.scene.add(pL, pR, topArch, guardian);
+      guardian.scale.set(1.3, 1.3, 1.3);
+      guardian.position.set(trackWidth / 2 + 6, 2.5, startZ + 8);
+      this.scene.add(guardian);
     });
+  }
+
+  createVoxelBoulder(colorHex, size = 3) {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshLambertMaterial({ color: colorHex });
+    const b1 = new THREE.Mesh(new THREE.BoxGeometry(size, size * 0.8, size), mat);
+    b1.castShadow = true;
+    b1.receiveShadow = true;
+    const b2 = new THREE.Mesh(new THREE.BoxGeometry(size * 0.7, size * 0.5, size * 0.7), mat);
+    b2.position.set(size * 0.2, size * 0.6, -size * 0.1);
+    b2.castShadow = true;
+    group.add(b1, b2);
+    return group;
+  }
+
+  createVoxelTree(trunkColor, leafColor) {
+    const group = new THREE.Group();
+    const trunkMat = new THREE.MeshLambertMaterial({ color: trunkColor });
+    const leafMat = new THREE.MeshLambertMaterial({ color: leafColor });
+
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 6, 1.6), trunkMat);
+    trunk.position.y = 3;
+    trunk.castShadow = true;
+
+    const leaf1 = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3.5, 5.5), leafMat);
+    leaf1.position.y = 7;
+    leaf1.castShadow = true;
+
+    const leaf2 = new THREE.Mesh(new THREE.BoxGeometry(3.5, 3, 3.5), leafMat);
+    leaf2.position.y = 9.5;
+    leaf2.castShadow = true;
+
+    group.add(trunk, leaf1, leaf2);
+    return group;
   }
 
   buildCharacter() {
     this.avatar = new THREE.Group();
     this.avatar.position.copy(this.playerPos);
 
-    const skinMat = new THREE.MeshLambertMaterial({ color: 0xfde047 });
-    const shirtMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
-    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x16a34a });
+    this.zookeeper = buildPlayerZookeeper();
+    this.avatar.add(this.zookeeper.group);
 
-    this.head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), skinMat);
-    this.head.position.set(0, 4.4, 0);
-    this.head.castShadow = true;
-
-    // Face eyes
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x181425 });
-    const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.1), eyeMat);
-    eyeL.position.set(-0.35, 4.5, 0.8);
-    const eyeR = eyeL.clone();
-    eyeR.position.x = 0.35;
-    this.avatar.add(eyeL, eyeR);
-
-    this.torso = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 1.3), shirtMat);
-    this.torso.position.set(0, 2.7, 0);
-    this.torso.castShadow = true;
-
-    const limbGeo = new THREE.BoxGeometry(0.85, 1.8, 0.85);
-    limbGeo.translate(0, -0.9, 0);
-
-    this.armL = new THREE.Mesh(limbGeo, skinMat);
-    this.armL.position.set(-1.5, 3.5, 0);
-    this.armL.castShadow = true;
-
-    this.armR = new THREE.Mesh(limbGeo, skinMat);
-    this.armR.position.set(1.5, 3.5, 0);
-    this.armR.castShadow = true;
-
-    this.legL = new THREE.Mesh(limbGeo, pantsMat);
-    this.legL.position.set(-0.6, 1.8, 0);
-    this.legL.castShadow = true;
-
-    this.legR = new THREE.Mesh(limbGeo, pantsMat);
-    this.legR.position.set(0.6, 1.8, 0);
-    this.legR.castShadow = true;
-
-    this.avatar.add(this.head, this.torso, this.armL, this.armR, this.legL, this.legR);
+    this.parts = this.zookeeper.parts || {};
     this.scene.add(this.avatar);
 
     this.petCompanionsGroup = new THREE.Group();
@@ -212,40 +332,69 @@ export class RobloxSeamlessWorld {
   }
 
   buildInWorldStations() {
-    // 1. Throw Pad (Garis Lempar)
-    const pad = new THREE.Mesh(new THREE.BoxGeometry(10, 0.3, 10), new THREE.MeshLambertMaterial({ color: 0xec4899 }));
-    pad.position.set(0, 0.16, 10);
+    // 1. Throw Pad (Z = 10)
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(12, 0.35, 8), new THREE.MeshLambertMaterial({ color: 0xFF3D7F }));
+    pad.position.set(0, 0.18, 10);
+    pad.receiveShadow = true;
     this.scene.add(pad);
 
-    // 2. Gym Pull-Up Stand
+    // 2. Training Grounds Stand (-24, 0, -22)
     this.gymGroup = new THREE.Group();
-    this.gymGroup.position.set(-18, 0, 12);
-    const gymFloor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.3, 12), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+    this.gymGroup.position.set(-24, 0, -22);
+    const gymFloor = new THREE.Mesh(new THREE.BoxGeometry(14, 0.3, 14), new THREE.MeshLambertMaterial({ color: 0x1B2233 }));
     gymFloor.position.y = 0.15;
-    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 8, 0.6), new THREE.MeshLambertMaterial({ color: 0x64748b }));
-    p1.position.set(-2.5, 4, 0);
+    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8, 0.8), new THREE.MeshLambertMaterial({ color: 0x8B5A2B }));
+    p1.position.set(-3, 4, 0);
     const p2 = p1.clone();
-    p2.position.x = 2.5;
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.5, 0.5), new THREE.MeshLambertMaterial({ color: 0xf1f5f9 }));
+    p2.position.x = 3;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.5, 0.5), new THREE.MeshLambertMaterial({ color: 0xFFF4DC }));
     bar.position.set(0, 7.8, 0);
-    this.gymGroup.add(gymFloor, p1, p2, bar);
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(6, 1.2, 0.4), new THREE.MeshLambertMaterial({ color: 0xFF7A1A }));
+    sign.position.set(0, 9.2, 0);
+
+    // Sweat / Energy particle aura gimmick above gym
+    this.gymSweatParticles = new THREE.Group();
+    const sweatMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    for (let s = 0; s < 5; s++) {
+      const sw = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 0.4), sweatMat);
+      sw.position.set((Math.random() - 0.5) * 3, 8 + Math.random() * 2, (Math.random() - 0.5) * 2);
+      this.gymSweatParticles.add(sw);
+    }
+    this.gymSweatParticles.visible = false;
+
+    this.gymGroup.add(gymFloor, p1, p2, bar, sign, this.gymSweatParticles);
     this.scene.add(this.gymGroup);
 
-    // 3. Master NPC Booth
+    // 3. Zookeeper Merchant Plaza (24, 0, -22)
     this.shopGroup = new THREE.Group();
-    this.shopGroup.position.set(18, 0, 12);
-    const shopBase = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 6), new THREE.MeshLambertMaterial({ color: 0x78350f }));
+    this.shopGroup.position.set(24, 0, -22);
+    const shopBase = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 8), new THREE.MeshLambertMaterial({ color: 0x8B5A2B }));
     shopBase.position.y = 2.5;
-    const shopRoof = new THREE.Mesh(new THREE.BoxGeometry(9, 1.5, 7), new THREE.MeshLambertMaterial({ color: 0xf97316 }));
-    shopRoof.position.y = 5.7;
-    this.shopGroup.add(shopBase, shopRoof);
+    shopBase.castShadow = true;
+    const shopRoof = new THREE.Mesh(new THREE.BoxGeometry(14, 2, 10), new THREE.MeshLambertMaterial({ color: 0xFF7A1A }));
+    shopRoof.position.y = 6.2;
+    shopRoof.castShadow = true;
+    const awning = new THREE.Mesh(new THREE.BoxGeometry(12, 0.5, 3), new THREE.MeshLambertMaterial({ color: 0xFFF4DC }));
+    awning.position.set(0, 4.2, 4.5);
+    this.shopGroup.add(shopBase, shopRoof, awning);
     this.scene.add(this.shopGroup);
 
-    // 4. Animal Pen Plot
+    // 4. Animal Pen Courtyard (0, 0, -42)
     this.plotGroup = new THREE.Group();
-    this.plotGroup.position.set(-35, 0, 32);
-    const plotFloor = new THREE.Mesh(new THREE.BoxGeometry(26, 0.3, 26), new THREE.MeshLambertMaterial({ color: 0x166534 }));
+    this.plotGroup.position.set(0, 0, -42);
+    const plotFloor = new THREE.Mesh(new THREE.BoxGeometry(32, 0.3, 26), new THREE.MeshLambertMaterial({ color: 0x3CCB5A }));
     plotFloor.position.y = 0.15;
+    plotFloor.receiveShadow = true;
+
+    const fenceMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
+    const fBack = new THREE.Mesh(new THREE.BoxGeometry(32, 2, 0.8), fenceMat);
+    fBack.position.set(0, 1.2, -13);
+    const fLeft = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2, 26), fenceMat);
+    fLeft.position.set(-16, 1.2, 0);
+    const fRight = fLeft.clone();
+    fRight.position.x = 16;
+    this.plotGroup.add(fBack, fLeft, fRight);
+
     this.plotAnimals = new THREE.Group();
     this.plotGroup.add(plotFloor, this.plotAnimals);
     this.scene.add(this.plotGroup);
@@ -253,12 +402,33 @@ export class RobloxSeamlessWorld {
 
   buildFoodProjectile() {
     this.foodGroup = new THREE.Group();
-    const bun = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 1.6), new THREE.MeshLambertMaterial({ color: 0xf59e0b }));
-    const meat = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.4, 1.7), new THREE.MeshLambertMaterial({ color: 0x7c2d12 }));
-    bun.position.y = 0.4;
-    this.foodGroup.add(bun, meat);
+    this.foodMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 2, 2),
+      new THREE.MeshLambertMaterial({ color: 0xFF7A1A })
+    );
+    this.foodMesh.castShadow = true;
+    this.foodGroup.add(this.foodMesh);
     this.foodGroup.position.set(0, -60, 0);
     this.scene.add(this.foodGroup);
+
+    // Eating heart particles
+    this.eatHeartsGroup = new THREE.Group();
+    const heartMat = new THREE.MeshBasicMaterial({ color: 0xFF3D7F });
+    for (let i = 0; i < 4; i++) {
+      const h = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), heartMat);
+      this.eatHeartsGroup.add(h);
+    }
+    this.eatHeartsGroup.position.set(0, -50, 0);
+    this.scene.add(this.eatHeartsGroup);
+
+    this.lureEmoji = new THREE.Group();
+    const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.6, 0.8), heartMat);
+    b1.position.set(0, 0.4, 0);
+    const b2 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), heartMat);
+    b2.position.set(0, -1.2, 0);
+    this.lureEmoji.add(b1, b2);
+    this.lureEmoji.position.set(0, -50, 0);
+    this.scene.add(this.lureEmoji);
   }
 
   setupInputs() {
@@ -268,27 +438,8 @@ export class RobloxSeamlessWorld {
       if (k === 's' || k === 'arrowdown') this.keys.s = true;
       if (k === 'a' || k === 'arrowleft') this.keys.a = true;
       if (k === 'd' || k === 'arrowright') this.keys.d = true;
-      if (k === 'shift') this.keys.shift = true;
-      if (k === ' ') {
-        if (this.currentStation?.id === 'throw') {
-          window.dispatchEvent(new CustomEvent('roblox:throw'));
-        }
-      }
-      if (k === 'e') {
-        if (this.currentStation?.id === 'gym') {
-          window.dispatchEvent(new CustomEvent('roblox:pullup'));
-        }
-      }
-      if (k === 't') {
-        if (this.currentStation?.id === 'shop') {
-          window.dispatchEvent(new CustomEvent('roblox:shop'));
-        }
-      }
-      if (k === 'p') {
-        if (this.currentStation?.id === 'plot') {
-          window.dispatchEvent(new CustomEvent('roblox:plot'));
-        }
-      }
+      if (e.key === 'Shift') this.keys.shift = true;
+      if (e.code === 'Space') this.keys.space = true;
     });
 
     window.addEventListener('keyup', (e) => {
@@ -297,54 +448,72 @@ export class RobloxSeamlessWorld {
       if (k === 's' || k === 'arrowdown') this.keys.s = false;
       if (k === 'a' || k === 'arrowleft') this.keys.a = false;
       if (k === 'd' || k === 'arrowright') this.keys.d = false;
-      if (k === 'shift') this.keys.shift = false;
+      if (e.key === 'Shift') this.keys.shift = false;
+      if (e.code === 'Space') this.keys.space = false;
     });
   }
 
-  startThrow({ food, power, timingScore, onFinish }) {
+  throwFood(distance, targetZone, foodItem, onFinish) {
+    if (this.isThrowing) return;
     this.isThrowing = true;
+    this.throwStage = 'flight';
     this.throwProgress = 0;
-    this.foodItem = food;
+    this.maxDistance = distance;
+    this.targetZone = targetZone;
+    this.foodItem = foodItem;
     this.onFinishCallback = onFinish;
 
-    const timingFactor = Math.pow(Math.max(1, timingScore) / 20, 1.4);
-    const staminaFactor = 0.5 + (this.stamina / this.maxStamina) * 0.5;
-    const windEffect = 1 + (this.windSpeed * this.windDirection * 0.03);
+    // Immersion flight speed scaling:
+    // Close zones (0-1000m) take ~2.0s, far zones (up to 30,000m+) smoothly scale up to 4.5s
+    const distFactor = Math.min(1, Math.max(0, (distance - 300) / 15000));
+    this.flightDuration = 2.0 + distFactor * 2.5;
 
-    this.maxDistance = Math.max(50, Math.floor(power * timingFactor * staminaFactor * windEffect * 42));
-    this.stamina = Math.max(0, this.stamina - 25);
-
-    this.targetZone = ZONES[0];
-    for (let i = ZONES.length - 1; i >= 0; i--) {
-      if (this.maxDistance >= ZONES[i].minDist) {
-        this.targetZone = ZONES[i];
-        break;
-      }
+    if (this.foodMesh && foodItem && foodItem.color) {
+      this.foodMesh.material.color.set(foodItem.color);
     }
 
-    this.caughtAnimal = this.rollAnimal(this.targetZone, food.luckBonus);
-    this.foodGroup.position.set(this.avatar.position.x + 1.2, 3.5, this.avatar.position.z);
+    this.caughtAnimal = this.determineCatch(targetZone, foodItem);
+
+    const targetZ = Math.min(4800, this.maxDistance / 12);
+    this.landingPos.set(0, 0.5, 10 + targetZ);
+
+    this.avatar.position.set(0, 0, 10);
+    this.avatar.rotation.y = 0;
+
+    if (this.attractAnimalMesh) {
+      this.scene.remove(this.attractAnimalMesh);
+      this.attractAnimalMesh = null;
+    }
   }
 
-  rollAnimal(zone, luckBonus) {
-    const totalWeight = zone.animals.reduce((acc, a) => acc + a.weight, 0);
-    let chosen = zone.animals[0];
-    const sorted = [...zone.animals].reverse();
-    for (const an of sorted) {
-      const adjusted = an.weight * luckBonus;
-      if (Math.random() * 100 < (adjusted / totalWeight) * 100) {
-        chosen = an;
+  determineCatch(zone, food) {
+    const animals = zone.animals;
+    const luck = (food ? food.luckBonus : 1.0);
+    const weights = animals.map(a => {
+      let w = a.weight;
+      if (a.rarity === 'Legendary' || a.rarity === 'Mythic') w *= luck;
+      if (a.rarity === 'Epic') w *= Math.sqrt(luck);
+      return w;
+    });
+
+    const totalWeight = weights.reduce((acc, v) => acc + v, 0);
+    let rand = Math.random() * totalWeight;
+    let chosen = animals[0];
+
+    for (let i = 0; i < animals.length; i++) {
+      if (rand < weights[i]) {
+        chosen = animals[i];
         break;
       }
+      rand -= weights[i];
     }
 
-    let mutation = 'Normal';
     const mutRoll = Math.random() * 100;
-    const effLuck = Math.min(3, Math.sqrt(luckBonus));
-    if (mutRoll < (MUTATION_DATA.Rainbow.chance * effLuck)) mutation = 'Rainbow';
-    else if (mutRoll < (MUTATION_DATA.Emerald.chance * effLuck)) mutation = 'Emerald';
-    else if (mutRoll < (MUTATION_DATA.Diamond.chance * effLuck)) mutation = 'Diamond';
-    else if (mutRoll < (MUTATION_DATA.Gold.chance * effLuck)) mutation = 'Gold';
+    let mutation = 'Normal';
+    if (mutRoll < 0.3) mutation = 'Rainbow';
+    else if (mutRoll < 1.5) mutation = 'Emerald';
+    else if (mutRoll < 5.0) mutation = 'Diamond';
+    else if (mutRoll < 15.0) mutation = 'Gold';
 
     return {
       id: chosen.id,
@@ -365,11 +534,11 @@ export class RobloxSeamlessWorld {
     inventory.forEach((item, i) => {
       const row = Math.floor(i / 3);
       const col = i % 3;
-      const x = -8 + col * 7.5;
-      const z = -8 + row * 7.5;
+      const x = -9 + col * 9;
+      const z = -6 + row * 8;
 
       const mesh = buildVoxelAnimal(item.id, item.rarity, item.mutation);
-      mesh.scale.set(0.75, 0.75, 0.75);
+      mesh.scale.set(0.5, 0.5, 0.5);
       mesh.position.set(x, 0.3, z);
       this.plotAnimals.add(mesh);
     });
@@ -384,7 +553,7 @@ export class RobloxSeamlessWorld {
       const pet = inventory.find(p => p.uid === uid);
       if (pet) {
         const mesh = buildVoxelAnimal(pet.id, pet.rarity, pet.mutation);
-        mesh.scale.set(0.4, 0.4, 0.4);
+        mesh.scale.set(0.35, 0.35, 0.35);
         this.petCompanionsGroup.add(mesh);
       }
     });
@@ -392,11 +561,23 @@ export class RobloxSeamlessWorld {
 
   setTrainingMode(active) {
     this.isTraining = active;
-    if (active) this.avatar.position.set(-18, 0, 12);
+    if (active) {
+      this.avatar.position.set(-24, 0, -22);
+      if (this.gymSweatParticles) this.gymSweatParticles.visible = true;
+    } else {
+      if (this.gymSweatParticles) this.gymSweatParticles.visible = false;
+    }
   }
 
-  update(dt) {
+  update(dt, secTime) {
     const time = performance.now() * 0.005;
+
+    this.cameraOrbit.distance += (this.cameraOrbit.targetDistance - this.cameraOrbit.distance) * (dt * 8);
+
+    if (this.lighting && this.lighting.update) {
+      const focusTarget = this.isThrowing ? this.foodGroup.position : this.avatar.position;
+      this.lighting.update(focusTarget);
+    }
 
     // Wind dynamics
     this.windChangeTimer += dt;
@@ -414,42 +595,68 @@ export class RobloxSeamlessWorld {
 
     const speed = isSprinting ? this.moveSpeed * 1.8 : this.moveSpeed;
 
-    // Player Walk
+    // FIXED: Correct intuitive screen-space direction mapping:
+    // A / Left key -> Left relative to screen (-X)
+    // D / Right key -> Right relative to screen (+X)
     if (!this.isTraining && !this.isThrowing) {
-      let dx = (this.keys.d ? 1 : 0) - (this.keys.a ? 1 : 0);
-      let dz = (this.keys.s ? 1 : 0) - (this.keys.w ? 1 : 0);
+      let inputX = (this.keys.d ? 1 : 0) - (this.keys.a ? 1 : 0);
+      let inputZ = (this.keys.w ? 1 : 0) - (this.keys.s ? 1 : 0);
 
-      if (dx !== 0 || dz !== 0) {
-        const len = Math.hypot(dx, dz);
-        dx /= len;
-        dz /= len;
+      if (inputX !== 0 || inputZ !== 0) {
+        const len = Math.hypot(inputX, inputZ);
+        inputX /= len;
+        inputZ /= len;
 
-        this.avatar.position.x += dx * speed * dt;
-        this.avatar.position.z += dz * speed * dt;
-        this.avatar.rotation.y = Math.atan2(dx, dz);
+        // Camera yaw offset
+        const cosYaw = Math.cos(this.cameraOrbit.yaw);
+        const sinYaw = Math.sin(this.cameraOrbit.yaw);
 
-        const legAngle = Math.sin(time * (isSprinting ? 18 : 10)) * 0.6;
-        this.legL.rotation.x = legAngle;
-        this.legR.rotation.x = -legAngle;
-        this.armL.rotation.x = -legAngle;
-        this.armR.rotation.x = legAngle;
+        const worldDx = inputX * cosYaw - inputZ * sinYaw;
+        const worldDz = inputX * sinYaw + inputZ * cosYaw;
+
+        this.avatar.position.x += worldDx * speed * dt;
+        this.avatar.position.z += worldDz * speed * dt;
+        this.avatar.rotation.y = Math.atan2(worldDx, worldDz);
+
+        if (this.zookeeper) {
+          animateAnimal(this.zookeeper.instance, secTime * 2.5, { walking: true });
+        }
       } else {
-        this.legL.rotation.x = 0;
-        this.legR.rotation.x = 0;
-        this.armL.rotation.x = 0;
-        this.armR.rotation.x = 0;
+        if (this.zookeeper) {
+          animateAnimal(this.zookeeper.instance, secTime, { walking: false });
+        }
       }
 
-      this.avatar.position.x = Math.max(-120, Math.min(120, this.avatar.position.x));
-      this.avatar.position.z = Math.max(-10, Math.min(5000, this.avatar.position.z));
+      this.avatar.position.x = Math.max(-50, Math.min(50, this.avatar.position.x));
+      this.avatar.position.z = Math.max(-70, Math.min(5000, this.avatar.position.z));
     }
 
-    // Pull-up Training
+    // TRAINING GIMMICK ANIMATIONS (Pull-up bobbing, flexing & workout energy aura)
     if (this.isTraining) {
-      this.avatar.position.y = (Math.sin(time * 3) + 1) * 1.1;
-      this.armL.rotation.x = Math.PI - 0.2;
-      this.armR.rotation.x = Math.PI - 0.2;
-    } else {
+      // Vigorous pull-up pump
+      const pullCycle = Math.sin(time * 6);
+      this.avatar.position.y = (pullCycle + 1) * 1.4;
+
+      if (this.parts.armR && this.parts.armL) {
+        this.parts.armR.rotation.x = Math.PI - 0.2 + pullCycle * 0.4;
+        this.parts.armL.rotation.x = Math.PI - 0.2 + pullCycle * 0.4;
+      }
+      if (this.parts.legR && this.parts.legL) {
+        this.parts.legR.rotation.x = pullCycle * 0.3;
+        this.parts.legL.rotation.x = -pullCycle * 0.3;
+      }
+
+      // Animated sweat drops
+      if (this.gymSweatParticles) {
+        this.gymSweatParticles.children.forEach((drop, i) => {
+          drop.position.y -= dt * 4;
+          if (drop.position.y < 3) {
+            drop.position.y = 8 + Math.random() * 2;
+            drop.position.x = (Math.random() - 0.5) * 3;
+          }
+        });
+      }
+    } else if (!this.isThrowing) {
       this.avatar.position.y = 0;
     }
 
@@ -462,40 +669,175 @@ export class RobloxSeamlessWorld {
         const ty = 1.2 + Math.sin(time * 3 + i) * 0.3;
         pet.position.lerp(new THREE.Vector3(tx, ty, tz), dt * 6);
         pet.rotation.y = this.avatar.rotation.y;
+
+        if (pet.userData && pet.userData.animalInstance) {
+          animateAnimal(pet.userData.animalInstance, secTime + i);
+        }
       });
     }
 
-    // Throwing Flight
+    // Plot Animals Animation
+    if (this.plotAnimals.children.length > 0) {
+      this.plotAnimals.children.forEach((pet, i) => {
+        if (pet.userData && pet.userData.animalInstance) {
+          animateAnimal(pet.userData.animalInstance, secTime + i * 0.3);
+        }
+      });
+    }
+
+    // THROWING LOGIC
     if (this.isThrowing) {
-      this.throwProgress += dt / 2.2;
-      this.currentDistance = Math.floor(this.maxDistance * Math.min(1, this.throwProgress));
+      if (this.throwStage === 'flight') {
+        // Slow immersive flight speed for far zones
+        this.throwProgress += dt / this.flightDuration;
+        this.currentDistance = Math.floor(this.maxDistance * Math.min(1, this.throwProgress));
 
-      const targetZ = Math.min(4800, this.maxDistance / 12);
-      const currZ = this.avatar.position.z + targetZ * this.throwProgress;
-      const currY = 2 + Math.sin(Math.min(1, this.throwProgress) * Math.PI) * 45;
+        const targetZ = this.landingPos.z;
+        const currZ = 10 + (targetZ - 10) * this.throwProgress;
+        const arcY = 2 + Math.sin(Math.min(1, this.throwProgress) * Math.PI) * 35;
 
-      this.foodGroup.position.set(0, currY, currZ);
-      this.foodGroup.rotation.x += dt * 8;
+        this.foodGroup.position.set(0, arcY, currZ);
+        this.foodGroup.rotation.x += dt * 8;
+        this.foodGroup.rotation.y += dt * 6;
 
-      this.camera.position.set(currZ * 0.05 + 65, 80, currZ + 65);
-      this.camera.lookAt(0, 0, currZ);
+        // FPV & Dynamic Chase Camera
+        if (this.throwProgress < 0.35) {
+          const fpPos = new THREE.Vector3(0, 4.2, 10.8);
+          this.camera.position.lerp(fpPos, dt * 12);
+          this.camera.lookAt(0, arcY + 2, currZ + 25);
+        } else {
+          const chaseCam = new THREE.Vector3(0, arcY + 12, currZ - 18);
+          this.camera.position.lerp(chaseCam, dt * 7);
+          this.camera.lookAt(0, arcY, currZ + 15);
+        }
 
-      if (this.throwProgress >= 1) {
-        this.isThrowing = false;
-        this.foodGroup.position.y = -60;
-        if (this.onFinishCallback) {
-          this.onFinishCallback(this.caughtAnimal, this.maxDistance);
+        // When food lands on ground -> Stage Attract
+        if (this.throwProgress >= 1) {
+          this.throwStage = 'attract';
+          this.attractTimer = 0;
+          this.foodGroup.position.copy(this.landingPos);
+
+          const sideX = (Math.random() > 0.5 ? 1 : -1) * (14 + Math.random() * 4);
+          this.animalSpawnPos.set(
+            sideX,
+            1.5,
+            this.landingPos.z + (Math.random() * 6 - 3)
+          );
+
+          this.attractAnimalMesh = buildVoxelAnimal(
+            this.caughtAnimal.id,
+            this.caughtAnimal.rarity,
+            this.caughtAnimal.mutation
+          );
+          this.attractAnimalMesh.position.copy(this.animalSpawnPos);
+          this.attractAnimalMesh.scale.set(0.65, 0.65, 0.65);
+          this.scene.add(this.attractAnimalMesh);
+
+          this.lureEmoji.position.set(this.landingPos.x, this.landingPos.y + 4.5, this.landingPos.z);
+        }
+      } else if (this.throwStage === 'attract') {
+        // ANIMAL APPROACH GIMMICK
+        this.attractTimer += dt;
+        const progress = Math.min(1, this.attractTimer / this.attractDuration);
+
+        if (this.attractAnimalMesh) {
+          this.attractAnimalMesh.position.lerpVectors(this.animalSpawnPos, this.landingPos, progress);
+          const dir = new THREE.Vector3().subVectors(this.landingPos, this.animalSpawnPos).normalize();
+          this.attractAnimalMesh.rotation.y = Math.atan2(dir.x, dir.z);
+
+          if (this.attractAnimalMesh.userData?.animalInstance) {
+            animateAnimal(this.attractAnimalMesh.userData.animalInstance, secTime * 3, { walking: true });
+          }
+          this.attractAnimalMesh.position.y = 0.3 + Math.abs(Math.sin(this.attractTimer * 8)) * 1.2;
+        }
+
+        this.lureEmoji.position.y = this.landingPos.y + 4.5 + Math.sin(time * 6) * 0.4;
+        this.lureEmoji.rotation.y += dt * 4;
+
+        const camFocusPos = new THREE.Vector3(
+          this.landingPos.x + 8,
+          this.landingPos.y + 6,
+          this.landingPos.z - 10
+        );
+        this.camera.position.lerp(camFocusPos, dt * 6);
+        this.camera.lookAt(this.landingPos.x, this.landingPos.y + 1.5, this.landingPos.z);
+
+        // When animal arrives at food -> Transition to EXTENDED EATING GIMMICK
+        if (progress >= 1) {
+          this.throwStage = 'eating';
+          this.eatingTimer = 0;
+          this.lureEmoji.position.set(0, -50, 0); // Hide lure alert
+        }
+      } else if (this.throwStage === 'eating') {
+        // EXTENDED EATING ANIMATION GIMMICK
+        this.eatingTimer += dt;
+        const eatProgress = Math.min(1, this.eatingTimer / this.eatingDuration);
+
+        // Animal eating head bob and happy wiggles
+        if (this.attractAnimalMesh) {
+          const munch = Math.sin(this.eatingTimer * 12);
+          this.attractAnimalMesh.position.y = 0.3 + Math.abs(munch) * 0.35;
+          this.attractAnimalMesh.rotation.z = Math.sin(this.eatingTimer * 8) * 0.12;
+        }
+
+        // Food shrinks as it gets eaten
+        if (this.foodMesh) {
+          const remainingScale = Math.max(0.1, 1 - eatProgress);
+          this.foodMesh.scale.set(remainingScale, remainingScale, remainingScale);
+        }
+
+        // Joyful heart particles bursting around animal
+        this.eatHeartsGroup.position.set(this.landingPos.x, this.landingPos.y + 2.5, this.landingPos.z);
+        this.eatHeartsGroup.children.forEach((h, i) => {
+          const a = this.eatingTimer * 4 + i * (Math.PI / 2);
+          h.position.set(Math.cos(a) * 2.2, Math.sin(this.eatingTimer * 6 + i) * 1.2 + 1, Math.sin(a) * 2.2);
+          h.rotation.y += dt * 5;
+        });
+
+        // Close-up eating camera
+        const camEatPos = new THREE.Vector3(
+          this.landingPos.x + 6,
+          this.landingPos.y + 4.5,
+          this.landingPos.z - 7
+        );
+        this.camera.position.lerp(camEatPos, dt * 6);
+        this.camera.lookAt(this.landingPos.x, this.landingPos.y + 1.2, this.landingPos.z);
+
+        if (eatProgress >= 1) {
+          this.throwStage = 'idle';
+          this.isThrowing = false;
+          this.foodGroup.position.set(0, -60, 0);
+          this.foodMesh.scale.set(1, 1, 1);
+          this.eatHeartsGroup.position.set(0, -50, 0);
+
+          if (this.attractAnimalMesh) {
+            this.scene.remove(this.attractAnimalMesh);
+            this.attractAnimalMesh = null;
+          }
+
+          if (this.onFinishCallback) {
+            this.onFinishCallback(this.caughtAnimal, this.maxDistance);
+          }
         }
       }
     } else {
-      // Follow Player
-      const targetCam = new THREE.Vector3(
-        this.avatar.position.x + 65,
-        80,
-        this.avatar.position.z + 65
+      // FREELY ADJUSTABLE ORBIT & POV ZOOM CAMERA
+      const r = this.cameraOrbit.distance;
+      const pitch = this.cameraOrbit.pitch;
+      const yaw = this.cameraOrbit.yaw;
+
+      const camOffsetX = r * Math.sin(yaw) * Math.cos(pitch);
+      const camOffsetY = r * Math.sin(pitch);
+      const camOffsetZ = -r * Math.cos(yaw) * Math.cos(pitch);
+
+      const targetCamPos = new THREE.Vector3(
+        this.avatar.position.x + camOffsetX,
+        this.avatar.position.y + camOffsetY + 2,
+        this.avatar.position.z + camOffsetZ
       );
-      this.camera.position.lerp(targetCam, dt * 6);
-      this.camera.lookAt(this.avatar.position.x, 0, this.avatar.position.z);
+
+      this.camera.position.lerp(targetCamPos, dt * 8);
+      this.camera.lookAt(this.avatar.position.x, this.avatar.position.y + 2.5, this.avatar.position.z);
     }
 
     this.detectProximityStation();
