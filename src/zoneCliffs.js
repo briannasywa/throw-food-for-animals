@@ -1,8 +1,6 @@
 // Zoo Toss — tebing voxel bertingkat di kiri-kanan lintasan, bertema per zona.
-// Warna dari art-direction/palette.json (biome + Shared.cliff). Semua kotak satu zona digabung per bahan
-// (mergeGeometries) supaya ribuan blok tetap hanya beberapa draw call.
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+// Warna dari art-direction/palette.json (biome + Shared.cliff). Kotak tidak langsung jadi mesh: semuanya masuk ke
+// ChunkBatcher (chunkBatcher.js) yang menggabungkannya per potongan 100 unit supaya bisa di-cull oleh far clip.
 
 // rock = badan tebing, dark = teras paling belakang, cap = lapisan atas, band = garis lapisan batu,
 // deco = jenis hiasan di atas teras, glow = warna hiasan yang berpendar (bloom)
@@ -28,19 +26,29 @@ const TIERS = [
 // angka acak tetap (sama setiap kali dimuat), supaya bentuk tebing tidak berubah-ubah
 const rnd = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
-export function buildZoneCliffs(scene, zone, startZ, endZ) {
+/**
+ * @param batcher ChunkBatcher bersama untuk seluruh lintasan
+ * @param lite  mode ringan (HP / perangkat lemah): tanpa teras ke-3 dan tanpa detail kecil
+ */
+export function buildZoneCliffs(batcher, zone, startZ, endZ, { lite = false } = {}) {
   const t = THEMES[zone.id] || THEMES.lobby;
-  const parts = {}; // nama bahan -> daftar geometri
-  const box = (mat, w, h, d, x, y, z) => {
-    const g = new THREE.BoxGeometry(w, h, d);
-    g.translate(x, y, z);
-    (parts[mat] ||= []).push(g);
+  const COLORS = {
+    rock: t.rock, dark: t.dark, cap: t.cap, band: t.band,
+    leaf: t.leaf || '#3CCB5A', trunk: t.trunk || '#8B5A2B', ice: t.ice || '#CFEFFF',
+    accent: t.flower || t.coral || t.candy || t.ember || t.nebula || t.ice || '#FF3D7F',
   };
+  const glowPower = 1 + (t.glowStrength ?? 0.7);
+  const box = (mat, w, h, d, x, y, z) => {
+    if (mat === 'glow') batcher.box('glow', t.glow || '#FFFFFF', w, h, d, x, y, z, glowPower);
+    else batcher.box('solid', COLORS[mat], w, h, d, x, y, z);
+  };
+  box.lite = lite;
   const seed = zone.minDist * 0.37 + 1;
   const lengthZ = endZ - startZ;
 
   for (const side of [-1, 1]) {
     TIERS.forEach((tier, ti) => {
+      if (lite && ti === 2) return; // HP: teras paling belakang tidak dibuat
       const n = Math.ceil(lengthZ / tier.step);
       for (let i = 0; i < n; i++) {
         const k = seed + side * 1000 + ti * 100 + i;
@@ -58,11 +66,11 @@ export function buildZoneCliffs(scene, zone, startZ, endZ) {
         // lapisan atas (rumput/salju/kerak) sedikit lebih lebar → terlihat seperti tepi voxel
         box('cap', w + 0.6, 1.2, d + 0.2, xc, h + 0.6, zc);
         // garis lapisan batu di muka tebing yang menghadap lintasan
-        if (ti > 0 && rnd(k + 1.3) > 0.35) {
+        if (!lite && ti > 0 && rnd(k + 1.3) > 0.35) {
           box('band', 0.4, 1.0, d * 0.9, side * (tier.inner + jx) - side * 0.15, h * (0.35 + rnd(k + 2) * 0.3), zc);
         }
         // batu pecahan di kaki teras pertama
-        if (ti === 0 && rnd(k + 3.1) > 0.6) {
+        if (!lite && ti === 0 && rnd(k + 3.1) > 0.6) {
           const s = 1.6 + rnd(k + 4) * 1.6;
           box('rock', s, s * 0.8, s, side * (tier.inner - 0.9), s * 0.4, zc + (rnd(k + 5) - 0.5) * d * 0.6);
         }
@@ -72,28 +80,6 @@ export function buildZoneCliffs(scene, zone, startZ, endZ) {
     });
   }
 
-  const mats = {
-    rock: new THREE.MeshLambertMaterial({ color: t.rock }),
-    dark: new THREE.MeshLambertMaterial({ color: t.dark }),
-    cap: new THREE.MeshLambertMaterial({ color: t.cap }),
-    band: new THREE.MeshLambertMaterial({ color: t.band }),
-    leaf: new THREE.MeshLambertMaterial({ color: t.leaf || '#3CCB5A' }),
-    trunk: new THREE.MeshLambertMaterial({ color: t.trunk || '#8B5A2B' }),
-    accent: new THREE.MeshLambertMaterial({ color: t.flower || t.coral || t.candy || t.ember || t.nebula || t.ice || '#FF3D7F' }),
-    ice: new THREE.MeshLambertMaterial({ color: t.ice || '#CFEFFF', transparent: true, opacity: 0.85 }),
-    glow: new THREE.MeshLambertMaterial({ color: t.glow || '#FFFFFF', emissive: t.glow || '#000000', emissiveIntensity: t.glow ? (t.glowStrength ?? 0.7) : 0 }),
-  };
-  const group = new THREE.Group();
-  group.name = `cliffs-${zone.id}`;
-  for (const [name, geos] of Object.entries(parts)) {
-    const mesh = new THREE.Mesh(mergeGeometries(geos), mats[name]);
-    mesh.castShadow = name !== 'glow';
-    mesh.receiveShadow = true;
-    group.add(mesh);
-    geos.forEach(g => g.dispose());
-  }
-  scene.add(group);
-  return group;
 }
 
 // Hiasan di atas teras, sesuai tema zona
@@ -112,7 +98,7 @@ function addDeco(box, t, side, tier, ti, k, xc, top, zc, d, w) {
         if (t.deco === 'jungle' && rnd(k + 11) > 0.5) box('accent', 1, 1, 1, ox + 2.4 * s, top + 5.5 * s, oz);
       }
       // sulur hijau menjuntai di muka tebing (Jungle)
-      if (t.deco === 'jungle' && ti > 0 && rnd(k + 12) > 0.4) {
+      if (!box.lite && t.deco === 'jungle' && ti > 0 && rnd(k + 12) > 0.4) {
         const len = 3 + rnd(k + 13) * 5;
         box('leaf', 0.6, len, 1.4, side * (tier.inner) - side * 0.2, top - 1.2 - len / 2, zc + (rnd(k + 14) - 0.5) * d * 0.6);
       }
@@ -179,7 +165,7 @@ function addDeco(box, t, side, tier, ti, k, xc, top, zc, d, w) {
         box('accent', 0.8, h * 0.7, 0.8, ox + 1, top + h * 0.35, oz + 0.5);
       }
       // bintang kecil melayang di atas tebing
-      if (rnd(k + 11) > 0.7) box('glow', 0.6, 0.6, 0.6, ox, top + 8 + rnd(k + 12) * 8, oz);
+      if (!box.lite && rnd(k + 11) > 0.7) box('glow', 0.6, 0.6, 0.6, ox, top + 8 + rnd(k + 12) * 8, oz);
       break;
   }
 }

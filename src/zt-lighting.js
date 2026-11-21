@@ -52,14 +52,23 @@ const QUALITY = {
   low: { pixelRatio: 1.5, shadowMap: 1024, shadowArea: 50, bloom: false },
 };
 
+// Layar kecil / sentuh (HP): pandangan dipendekkan. Kabut dan far clip dikali VIEW_SCALE,
+// jadi tebing & lintasan yang jauh tidak digambar sama sekali (lebih ringan, layar kecil tidak butuh jarak pandang jauh).
+const COMPACT_VIEW_SCALE = 0.65;
+function detectCompact() {
+  return matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 600;
+}
+
 function detectQuality() {
   const touch = matchMedia('(pointer: coarse)').matches;
   const weakCpu = (navigator.hardwareConcurrency || 4) <= 4;
   return touch || weakCpu ? 'low' : 'high';
 }
 
-export function setupLighting({ renderer, scene, preset = 'sunnyDay', quality = 'auto' }) {
+export function setupLighting({ renderer, scene, preset = 'sunnyDay', quality = 'auto', compact = 'auto' }) {
   const q = quality === 'auto' ? detectQuality() : quality;
+  const isCompact = compact === 'auto' ? detectCompact() : compact;
+  const viewScale = isCompact ? COMPACT_VIEW_SCALE : 1;
   const Q = QUALITY[q];
 
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -86,7 +95,10 @@ export function setupLighting({ renderer, scene, preset = 'sunnyDay', quality = 
     if (!p) { console.warn('[zt-lighting] Preset tidak dikenal:', name); return; }
     current = name;
     scene.background = new THREE.Color(p.background);
-    scene.fog = new THREE.Fog(p.fog.color, p.fog.near, p.fog.far);
+    scene.fog = new THREE.Fog(p.fog.color, p.fog.near * viewScale, p.fog.far * viewScale);
+    // Far clip kamera = sedikit di belakang titik kabut penuh: di baliknya semua sudah berwarna kabut, jadi tidak perlu digambar
+    api.viewFar = p.fog.far * viewScale + 30;
+    api.onViewChange?.(api.viewFar);
     hemi.color.set(p.hemi.sky);
     hemi.groundColor.set(p.hemi.ground);
     hemi.intensity = p.hemi.intensity;
@@ -106,7 +118,7 @@ export function setupLighting({ renderer, scene, preset = 'sunnyDay', quality = 
     sun.position.copy(focus).add(sunOffset);
   }
 
-  const api = { quality: q, hemi, sun, setPreset, update, get preset() { return current; }, bloomPass: null };
+  const api = { quality: q, compact: isCompact, viewFar: 0, onViewChange: null, hemi, sun, setPreset, update, get preset() { return current; }, bloomPass: null };
   setPreset(preset);
   update(new THREE.Vector3());
   return api;

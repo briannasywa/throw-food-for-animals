@@ -248,6 +248,24 @@ const world = new RobloxSeamlessWorld(viewportContainer);
 // Hanya di dev server (npm run dev): akses dari console untuk cek visual, mis. __zt.world.avatar.position.z = 300
 if (import.meta.env.DEV) window.__zt = { world, state };
 
+// Dev saja: tombol ` (backtick) menampilkan FPS, draw call, segitiga, dan far clip
+if (import.meta.env.DEV) {
+  const box = document.createElement('div');
+  box.className = 'zt-devstats hidden';
+  document.querySelector('.zt-root').appendChild(box);
+  let frames = 0, last = performance.now();
+  const count = () => { frames++; requestAnimationFrame(count); };
+  requestAnimationFrame(count);
+  setInterval(() => {
+    const now = performance.now();
+    const fps = Math.round(frames * 1000 / (now - last));
+    frames = 0; last = now;
+    const r = world.renderer.info.render;
+    box.textContent = `${fps} FPS · ${r.calls} calls · ${(r.triangles / 1000).toFixed(1)}k tris · far ${Math.round(world.camera.far)} · ${world.lighting.quality}${world.lighting.compact ? ' compact' : ''}`;
+  }, 500);
+  window.addEventListener('keydown', (e) => { if (e.code === 'Backquote') box.classList.toggle('hidden'); });
+}
+
 // Prompt stasiun: seluruh panel bisa di-tap (di HP keycap disembunyikan)
 document.querySelector('#context-action-bar').onclick = () => {
   if (world.currentStation?.id === 'throw') triggerThrow();

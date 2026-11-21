@@ -4,6 +4,7 @@ import { ZONES, MUTATION_DATA, SKY_COLOR } from './gameData.js';
 import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal } from './voxelAnimals.js';
 import { setupLighting, createBloom } from './zt-lighting.js';
 import { buildZoneCliffs } from './zoneCliffs.js';
+import { ChunkBatcher } from './chunkBatcher.js';
 
 export class RobloxSeamlessWorld {
   constructor(container) {
@@ -83,6 +84,7 @@ export class RobloxSeamlessWorld {
       this.reqId = requestAnimationFrame(this.animate);
       const dt = Math.min((time - this.lastTime) / 1000, 0.1);
       this.lastTime = time;
+      this.renderer.info.reset();
       this.update(dt, time * 0.001);
       this.render();
     };
@@ -113,6 +115,13 @@ export class RobloxSeamlessWorld {
       quality: 'auto'
     });
     // Bloom hanya di PC (kualitas 'high'): aksen zona yang emissive jadi berpendar
+    // Far clip mengikuti kabut (lihat zt-lighting.js): 430 di PC/laptop, ±290 di HP
+    const applyFar = (far) => { this.camera.far = far; this.camera.updateProjectionMatrix(); };
+    applyFar(this.lighting.viewFar);
+    this.lighting.onViewChange = applyFar;
+    // Statistik render dihitung per frame (bloom memanggil render beberapa kali); dipakai overlay dev
+    this.renderer.info.autoReset = false;
+
     this.bloom = this.lighting.quality === 'high'
       ? createBloom(this.renderer, this.scene, this.camera, this.lighting)
       : null;
@@ -212,47 +221,42 @@ export class RobloxSeamlessWorld {
   buildSeamlessTrack() {
     const trackWidth = 24;
     const stripeWidth = 2.4;
+    // Semua kotak statis lintasan + tebing digabung per potongan 100 unit (lihat chunkBatcher.js),
+    // supaya hanya potongan di dalam far clip yang digambar.
+    const batcher = new ChunkBatcher(100);
+    const lite = this.lighting.quality === 'low';
 
-
-    ZONES.forEach((zone, zIdx) => {
+    ZONES.forEach((zone) => {
       const startZ = Math.max(0, zone.minDist / 12);
       const endZ = zone.maxDist / 12;
       const lengthZ = endZ - startZ;
       const centerZ = startZ + lengthZ / 2;
 
-      // 1. Base Ground
-      const groundMat = new THREE.MeshLambertMaterial({ color: zone.stripes[0] });
-      const ground = new THREE.Mesh(new THREE.PlaneGeometry(360, lengthZ), groundMat);
+      // 1. Tanah dasar: satu bidang per zona (2 segitiga; zona jauh tetap di-cull oleh far clip)
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(360, lengthZ), new THREE.MeshLambertMaterial({ color: zone.stripes[0] }));
       ground.rotation.x = -Math.PI / 2;
       ground.position.set(0, -0.05, centerZ);
       ground.receiveShadow = true;
       this.scene.add(ground);
 
-      // 2. Checkerboard Runway
+      // 2. Lintasan kotak-kotak (garis selang-seling)
       const numStripes = Math.floor(trackWidth / stripeWidth);
       for (let s = 0; s < numStripes; s++) {
-        const color = zone.stripes[s % 2];
-        const stripeMat = new THREE.MeshLambertMaterial({ color });
-        const stripe = new THREE.Mesh(new THREE.BoxGeometry(stripeWidth, 0.35, lengthZ), stripeMat);
-        stripe.position.set(-trackWidth / 2 + stripeWidth / 2 + (s * stripeWidth), 0.15, centerZ);
-        stripe.receiveShadow = true;
-        this.scene.add(stripe);
+        batcher.longBox('track', zone.stripes[s % 2], stripeWidth, 0.35,
+          -trackWidth / 2 + stripeWidth / 2 + s * stripeWidth, 0.15, startZ, endZ);
       }
 
-      // 3. Colored Accent Bottom Curb
-      // Aksen dari palette.json; aksen bercahaya (lendir Toxic, lava, cahaya laut, bintang) pakai emissive
-      const curbMat = new THREE.MeshLambertMaterial(zone.accentGlow
-        ? { color: zone.accent, emissive: zone.accent, emissiveIntensity: 0.9 }
-        : { color: zone.accent });
-      const curbL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, lengthZ), curbMat);
-      curbL.position.set(-trackWidth / 2 - 0.6, 0.35, centerZ);
-      const curbR = curbL.clone();
-      curbR.position.x = trackWidth / 2 + 0.6;
-      this.scene.add(curbL, curbR);
+      // 3. Curb aksen (palette.json); aksen bercahaya (Toxic, Lava, Glow Sea, Galaxy) masuk lapisan glow
+      for (const side of [-1, 1]) {
+        batcher.longBox(zone.accentGlow ? 'glow' : 'track', zone.accent, 1.2, 0.7,
+          side * (trackWidth / 2 + 0.6), 0.35, startZ, endZ, zone.accentGlow ? 1.6 : 1);
+      }
 
-      // 4. Tebing voxel bertingkat bertema zona (zoneCliffs.js). Patung hewan penjaga di tebing dihapus.
-      buildZoneCliffs(this.scene, zone, startZ, endZ);
+      // 4. Tebing voxel bertingkat bertema zona (zoneCliffs.js)
+      buildZoneCliffs(batcher, zone, startZ, endZ, { lite });
     });
+
+    this.staticChunks = batcher.build(this.scene, 'track-and-cliffs');
   }
 
   createVoxelBoulder(colorHex, size = 3) {
