@@ -230,3 +230,50 @@ body { font-family: var(--zt-font-ui, 'Fredoka', sans-serif); font-weight: 600; 
 .zt-root.is-touch:not(.area-throw) .zt-foodbag { display: none !important; }
 .zt-root.is-touch .zt-onboard { bottom: 170px; }
 .zt-root.is-touch.area-throw .zt-onboard { bottom: calc(var(--zt-throw-h, 90px) + 92px); }
+
+/* ---------- HP: HUD atas sederhana (Status + Menu) ---------- */
+#btn-mobile-menu { display: none; }
+.zt-menu__burger { gap: 6px; align-items: center; }
+.zt-root.is-touch .zt-menu > button:not(#btn-mobile-menu) { display: none !important; }
+.zt-root.is-touch #btn-mobile-menu { display: inline-flex; min-height: 48px; font-size: 14px; padding: .4em .8em .6em; }
+.zt-root.is-touch .zt-menu { flex-direction: row; }
+.zt-root.is-touch .zt-zonechip, .zt-root.is-touch .zt-stat--rebirth { display: none !important; }
+.zt-root.is-touch .zt-stats { display: flex; width: calc(100vw - 24px - 112px); padding: 6px 4px 9px; }
+.zt-root.is-touch .zt-stat { flex: 1; min-width: 0; padding: 0 8px; border-right: 2px solid var(--zt-panel-d); }
+.zt-root.is-touch .zt-stat:nth-child(3) { border-right: 0; }
+.zt-root.is-touch .zt-stat__label { font-size: 10px; }
+.zt-root.is-touch .zt-stat__value { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zt-root.is-touch .zt-key--sm { display: none; }
+
+/* overlay menu dari atas */
+.zt-mmenu { position: absolute; inset: 0; z-index: 55; background: rgba(27, 34, 51, .45); animation: zt-fade .15s ease-out; }
+.zt-mmenu__sheet { position: absolute; left: 8px; right: 8px; top: 8px; padding: 12px 12px 16px; display: flex; flex-direction: column; gap: 12px;
+  animation: zt-sheet-down .22s ease-out; }
+@keyframes zt-sheet-down { from { transform: translateY(-110%); } }
+.zt-mmenu__head { display: flex; align-items: center; justify-content: space-between; }
+.zt-mmenu__title { font-size: 24px; color: var(--zt-ink); }
+.zt-mmenu__head .zt-modal__close { position: static; }
+.zt-mmenu__zone { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--zt-ink); }
+.zt-mmenu__zone .zt-title { text-transform: none; }
+.zt-mmenu__rebirth { display: flex; align-items: center; gap: 10px; padding: 10px 12px 13px; background: #F3E6FF; border: 2px solid var(--zt-ink);
+  border-radius: var(--zt-radius); box-shadow: inset 0 -4px 0 rgba(27,34,51,.12); }
+.zt-mmenu__rb-main { flex: 1; min-width: 0; }
+.zt-mmenu__rb-title { font-size: 17px; color: var(--zt-ink); }
+.zt-mmenu__rb-title span { color: var(--zt-accent-d); }
+.zt-mmenu__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.zt-mmenu__grid .zt-btn { min-height: 52px; font-size: 16px; position: relative; }
+.zt-mmenu__wide { grid-column: 1 / -1; }
+
+/* ---------- HP: mode lempar (Throw → meter → Food Bag | Exit) ---------- */
+.zt-root.is-touch.area-throw .zt-throw { left: 12px !important; right: 12px; width: auto; translate: none !important; transform: none;
+  bottom: 88px; flex-direction: column-reverse; align-items: stretch; gap: 14px; padding: 12px 12px 16px; }
+.zt-root.is-touch.area-throw .zt-throw__btn { min-height: 58px; font-size: 24px; justify-content: center; }
+.zt-root.is-touch.area-throw .zt-foodbag { left: 12px; bottom: 12px; width: calc((100vw - 34px) * .62); height: 64px; min-width: 0;
+  flex-direction: row; align-items: center; padding: 6px 10px 10px; }
+.zt-root.is-touch.area-throw .zt-foodbag__label { display: none; }
+.zt-root.is-touch.area-throw .zt-foodbag__name { font-size: 16px; }
+.zt-root.is-touch.area-throw .zt-areabar { left: auto; right: 12px; translate: none; width: calc((100vw - 34px) * .38); bottom: 12px; height: 64px;
+  padding: 0; background: none; border: 0; box-shadow: none; }
+.zt-root.is-touch.area-throw .zt-areabar__title, .zt-root.is-touch.area-throw .zt-areabar__actions { display: none; }
+.zt-root.is-touch.area-throw #area-exit { width: 100%; height: 61px; font-size: 18px; }
+.zt-root.is-touch.area-throw .zt-onboard { bottom: calc(var(--zt-throw-h, 140px) + 100px); }

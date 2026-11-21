@@ -28,6 +28,7 @@ const SPEAKER_OFF = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
 
 // Keycap hotkey kecil di tombol menu (tampil saat camera lock aktif; disembunyikan di layar sentuh)
 const hk = (key, always = false) => `<kbd class="zt-hk ${always ? 'is-always' : ''}">${key}</kbd>`;
+const BURGER_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="3" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
 const CAMLOCK_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1.6" fill="#1B2233"/></svg>`;
 
 const modal = (id, title, body, sub = '') => `
@@ -54,7 +55,7 @@ app.innerHTML = `
       <div class="zt-stat"><div class="zt-stat__label">Cash</div><div id="hud-money" class="zt-stat__value">$0</div></div>
       <div class="zt-stat"><div class="zt-stat__label">Power</div><div id="hud-power" class="zt-stat__value" style="color:var(--zt-primary-d)">10</div></div>
       <div class="zt-stat"><div class="zt-stat__label">Income</div><div id="hud-cps" class="zt-stat__value" style="color:var(--zt-good-d)">+$0/s</div></div>
-      <div class="zt-stat"><div class="zt-stat__label">Rebirth</div><div id="hud-rebirth" class="zt-stat__value" style="color:var(--zt-accent-d)">0x</div></div>
+      <div class="zt-stat zt-stat--rebirth"><div class="zt-stat__label">Rebirth</div><div id="hud-rebirth" class="zt-stat__value" style="color:var(--zt-accent-d)">0x</div></div>
     </div>
     <div class="zt-panel zt-zonechip pointer-events-auto">
       <span id="hud-zone-swatch" class="zt-swatch" style="background:${hex(ZONES[0].stripes[0])}"></span>
@@ -79,6 +80,7 @@ app.innerHTML = `
     <button id="btn-open-index" class="zt-btn zt-btn--accent">Index${hk('I')}</button>
     <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank${hk('R')}</button>
     <button id="btn-toggle-camlock" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Camera lock" title="Camera lock (L)">${CAMLOCK_ICON}${hk('L')}</button>
+    <button id="btn-mobile-menu" class="zt-btn zt-btn--plain zt-menu__burger" aria-label="Menu">${BURGER_ICON}<span>Menu</span></button>
     <button id="btn-toggle-sound" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Sound" title="Sound (M)"><span id="sound-icon">${SPEAKER_ON}</span>${hk('M')}</button>
   </div>
 
@@ -229,6 +231,32 @@ app.innerHTML = `
     </div>
   `)}
 
+  <!-- HP: menu overlay dari atas (Quests, Index, Rank, Sound, Wallet + detail Rebirth) -->
+  <div id="modal-menu" class="zt-mmenu hidden">
+    <div class="zt-panel zt-mmenu__sheet">
+      <div class="zt-mmenu__head">
+        <span class="zt-title zt-mmenu__title">Menu</span>
+        <button id="btn-close-menu" class="zt-btn zt-btn--danger zt-btn--icon zt-modal__close" aria-label="Close">✕</button>
+      </div>
+      <div class="zt-mmenu__zone"><span id="mmenu-zone-swatch" class="zt-swatch"></span><span id="mmenu-zone" class="zt-title"></span></div>
+      <div class="zt-mmenu__rebirth">
+        <div class="zt-mmenu__rb-main">
+          <div class="zt-title zt-mmenu__rb-title">Rebirth <span id="mmenu-rb-count">0x</span></div>
+          <div id="mmenu-rb-desc" class="zt-row__desc">Income &amp; Power ×1.0</div>
+          <div id="mmenu-rb-next" class="zt-row__desc">Next: ×1.5 for $50K</div>
+        </div>
+        <button id="mmenu-rebirth" class="zt-btn zt-btn--accent zt-btn--sm">Rebirth</button>
+      </div>
+      <div class="zt-mmenu__grid">
+        <button class="zt-btn zt-btn--primary" data-mm="quests">Quests</button>
+        <button class="zt-btn zt-btn--accent" data-mm="index">Index</button>
+        <button class="zt-btn zt-btn--good" data-mm="rank">Rank</button>
+        <button class="zt-btn zt-btn--plain" data-mm="sound" id="mmenu-sound">Sound: On</button>
+        <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="wallet" id="mmenu-wallet">Connect Wallet</button>
+      </div>
+    </div>
+  </div>
+
   ${modal('food', 'Food Bag', `<div id="food-bag-list" class="flex flex-col gap-2.5"></div>`,
     `<div class="zt-modal__sub">Better food = luckier catches</div>`)}
 
@@ -369,6 +397,7 @@ let indexHasNew = false;
 function updateDots() {
   document.querySelector('#btn-open-quests').classList.toggle('zt-dot', state.quests.some(q => q.completed && !q.claimed));
   document.querySelector('#btn-open-index').classList.toggle('zt-dot', indexHasNew);
+  document.querySelector('#btn-mobile-menu').classList.toggle('zt-dot', indexHasNew || state.quests.some(q => q.completed && !q.claimed));
 }
 
 // Update UI
@@ -892,7 +921,7 @@ document.querySelector('#btn-throw').onclick = () => triggerThrow();
 state.autoThrow = false;
 
 // Modal helpers — hanya satu panel terbuka; tutup dengan X, klik latar, atau Esc
-const MODALS = ['shop', 'plot', 'quests', 'index', 'rank', 'food'];
+const MODALS = ['shop', 'plot', 'quests', 'index', 'rank', 'food', 'menu'];
 const anyModalOpen = () => MODALS.some(id => !document.querySelector(`#modal-${id}`).classList.contains('hidden'))
   || !document.querySelector('#modal-confirm').classList.contains('hidden');
 
@@ -992,6 +1021,33 @@ document.querySelector('#btn-open-quests').onclick = () => { renderQuestsModal()
 document.querySelector('#btn-open-index').onclick = () => { indexHasNew = false; updateDots(); renderIndexModal(); openModal('index'); };
 document.querySelector('#btn-open-rank').onclick = () => { updateRankModal(); openModal('rank'); };
 
+// ---------- Menu HP ----------
+function renderMobileMenu() {
+  const z = zoneOfDistance(0);
+  document.querySelector('#mmenu-zone').textContent = document.querySelector('#hud-zone-name').textContent || z.name;
+  document.querySelector('#mmenu-zone-swatch').style.background = document.querySelector('#hud-zone-swatch').style.background;
+  const mult = state.getRebirthMultiplier();
+  document.querySelector('#mmenu-rb-count').textContent = `${state.rebirthCount}x`;
+  document.querySelector('#mmenu-rb-desc').textContent = `Income & Power ×${mult.toFixed(1)} · keeps animals, food & Index`;
+  document.querySelector('#mmenu-rb-next').textContent = `Next: ×${(mult + 0.5).toFixed(1)} for $${formatNum(state.rebirthCost)}`;
+  const rb = document.querySelector('#mmenu-rebirth');
+  rb.classList.toggle('is-short', !state.canRebirth());
+  document.querySelector('#mmenu-sound').textContent = `Sound: ${sfx.enabled ? 'On' : 'Off'}`;
+  document.querySelector('#mmenu-wallet').textContent = document.querySelector('#wallet-btn-text').textContent;
+  document.querySelectorAll('[data-mm="quests"], [data-mm="index"]').forEach(b =>
+    b.classList.toggle('zt-dot', document.querySelector(`#btn-open-${b.dataset.mm}`).classList.contains('zt-dot')));
+}
+document.querySelector('#btn-mobile-menu').onclick = () => { renderMobileMenu(); openModal('menu'); };
+document.querySelector('#mmenu-rebirth').onclick = () => document.querySelector('#btn-shop-rebirth').click();
+document.querySelectorAll('[data-mm]').forEach(b => {
+  b.onclick = () => {
+    const id = b.dataset.mm;
+    if (id === 'sound') { toggleSound(); renderMobileMenu(); return; }
+    if (id === 'wallet') { closeModal('menu'); document.querySelector('#btn-connect-wallet').click(); return; }
+    document.querySelector(`#btn-open-${id}`).click(); // membuka modal tujuan (menu tertutup otomatis)
+  };
+});
+
 function toggleSound() {
   sfx.enabled = !sfx.enabled;
   document.querySelector('#sound-icon').innerHTML = sfx.enabled ? SPEAKER_ON : SPEAKER_OFF;
@@ -1087,6 +1143,7 @@ document.querySelector('#btn-shop-rebirth').onclick = async () => {
       state.doRebirth();
       sfx.playLevelUp();
       updateUI();
+      renderMobileMenu();
     }
   } else {
     showNotice(`NEED $${formatNum(state.rebirthCost)} TO REBIRTH`);
