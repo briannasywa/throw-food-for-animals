@@ -190,3 +190,24 @@ body { font-family: var(--zt-font-ui, 'Fredoka', sans-serif); font-weight: 600; 
 /* overlay statistik render (dev server saja, tombol `) */
 .zt-devstats { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); z-index: 90; pointer-events: none;
   font: 12px/1.2 ui-monospace, monospace; color: #fff; background: rgba(27,34,51,.8); padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+
+/* ---------- mode sinematik (latihan pull-up & View Biome) ---------- */
+.zt-root.is-cinematic .zt-stats, .zt-root.is-cinematic .zt-zonechip, .zt-root.is-cinematic .zt-stamina,
+.zt-root.is-cinematic .zt-menu, .zt-root.is-cinematic .zt-foodbag, .zt-root.is-cinematic .zt-throw,
+.zt-root.is-cinematic #context-action-bar, .zt-root.is-cinematic .zt-onboard, .zt-root.is-cinematic .zt-crosshair,
+.zt-root.is-cinematic .zt-camlock-hint { display: none !important; }
+.zt-cine { position: absolute; inset: 0; z-index: 45; pointer-events: none; }
+.zt-cine__bar { position: absolute; left: 0; right: 0; height: 12vh; min-height: 64px; background: #0B0F18;
+  display: flex; align-items: center; justify-content: center; gap: 18px; padding: 0 24px; animation: zt-cine-in .5s ease-out both; }
+.zt-cine__bar--top { top: 0; flex-direction: column; gap: 2px; }
+.zt-cine__bar--bottom { bottom: 0; animation-name: zt-cine-in-b; }
+@keyframes zt-cine-in { from { transform: translateY(-100%); } }
+@keyframes zt-cine-in-b { from { transform: translateY(100%); } }
+.zt-cine__kicker { font-family: var(--zt-font-title); font-size: 12px; letter-spacing: .18em; color: #FFC21A; }
+.zt-cine__title { font-size: clamp(22px, 3.4vw, 34px); color: #fff; line-height: 1; }
+.zt-cine__info { font-family: var(--zt-font-ui); font-size: 15px; color: #D7DEE8; text-align: center; }
+.zt-cine__info b { font-family: var(--zt-font-title); font-weight: 400; color: #fff; font-size: 18px; }
+.zt-cine__gain { font-family: var(--zt-font-title); color: #3CCB5A; }
+.zt-cine button { pointer-events: auto; display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.zt-zoneinfo__view { margin-left: auto; }
+@media (max-width: 640px) { .zt-cine__bar--bottom { flex-direction: column; gap: 6px; height: auto; padding: 10px 16px; } }

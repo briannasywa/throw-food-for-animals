@@ -117,6 +117,18 @@ app.innerHTML = `
     </span>
   </button>
 
+  <!-- Mode sinematik: pita hitam atas-bawah (latihan pull-up & View Biome) -->
+  <div id="cine" class="zt-cine hidden">
+    <div class="zt-cine__bar zt-cine__bar--top">
+      <div id="cine-kicker" class="zt-cine__kicker">TRAINING</div>
+      <div id="cine-title" class="zt-title zt-cine__title">Pull-Up</div>
+    </div>
+    <div class="zt-cine__bar zt-cine__bar--bottom">
+      <div id="cine-info" class="zt-cine__info"></div>
+      <button id="cine-exit" class="zt-btn zt-btn--plain zt-btn--sm">Stop <span id="cine-exit-key" class="zt-key zt-key--sm">E</span></button>
+    </div>
+  </div>
+
   <!-- Onboarding kunjungan pertama -->
   <div id="onboarding" class="zt-panel zt-onboard hidden">
     <div class="zt-onboard__steps" id="onboard-dots"></div>
@@ -364,7 +376,8 @@ function updateUI() {
   document.querySelector('#plot-capacity-text').textContent =
     `${state.inventory.length} / ${state.maxBaseSlots} SLOTS · ${state.equippedPets.length} / 2 PETS EQUIPPED`;
 
-  // Sync 3D in-world plot
+  // Sync 3D in-world plot (kandang membesar saat Expand Pen)
+  world.setPenSize(state.maxBaseSlots);
   world.updatePlotAnimals(state.inventory);
   world.updateEquippedPets(state.inventory, state.equippedPets);
 
@@ -619,8 +632,58 @@ function togglePullUp() {
   sfx.playPop();
   state.isTraining = !state.isTraining;
   world.setTrainingMode(state.isTraining);
+  if (state.isTraining) showCinematic('training');
+  else hideCinematic();
   updateUI();
 }
+
+// ---------- Mode sinematik ----------
+// 'training': kamera rendah berputar pelan di pull-up bar, HUD disembunyikan, info Power di pita bawah.
+// 'biome': kamera menyusuri zona (dari Index → View Biome), keluar dengan Esc / tombol Exit.
+let cineMode = null;
+function showCinematic(mode, zone) {
+  cineMode = mode;
+  document.querySelector('.zt-root').classList.add('is-cinematic');
+  document.querySelector('#cine').classList.remove('hidden');
+  if (camLock) world.setCameraLock(false);
+  if (mode === 'training') {
+    document.querySelector('#cine-kicker').textContent = 'TRAINING';
+    document.querySelector('#cine-title').textContent = 'Pull-Up';
+    document.querySelector('#cine-exit').firstChild.textContent = 'Stop ';
+    document.querySelector('#cine-exit-key').textContent = 'E';
+    updateCineInfo();
+  } else {
+    document.querySelector('#cine-kicker').textContent = `BIOME PREVIEW · ${zoneRange(zone)}`;
+    document.querySelector('#cine-title').textContent = zone.name;
+    document.querySelector('#cine-info').textContent = zone.gimmick;
+    document.querySelector('#cine-exit').firstChild.textContent = 'Exit ';
+    document.querySelector('#cine-exit-key').textContent = 'Esc';
+  }
+}
+function hideCinematic() {
+  cineMode = null;
+  document.querySelector('.zt-root').classList.remove('is-cinematic');
+  document.querySelector('#cine').classList.add('hidden');
+  if (camLock) world.setCameraLock(!anyModalOpen());
+}
+function updateCineInfo() {
+  if (cineMode !== 'training') return;
+  document.querySelector('#cine-info').innerHTML =
+    `POWER <b>${formatNum(state.power)}</b> · <span class="zt-cine__gain">+${formatNum(state.getPullUpRate())} / SEC</span>`;
+}
+function startBiomeView(zone) {
+  if (world.isThrowing) return;
+  if (state.isTraining) togglePullUp();
+  MODALS.forEach(id => closeModal(id, true));
+  syncModalState();
+  world.startBiomeView(zone);
+  showCinematic('biome', zone);
+}
+function exitCinematic() {
+  if (cineMode === 'training') togglePullUp();
+  else if (cineMode === 'biome') { world.stopBiomeView(); hideCinematic(); }
+}
+document.querySelector('#cine-exit').onclick = () => { sfx.playPop(); exitCinematic(); };
 
 // ---------- Onboarding (kunjungan pertama) ----------
 // 1 jalan ke pad pink → 2 hentikan jarum di hijau & lempar → 3 tunggu tangkapan → 4 penjelasan kandang & Food Bag.
@@ -791,6 +854,7 @@ window.addEventListener('keydown', (e) => {
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || '')) return;
   if (e.key === 'Escape') {
     if (confirmResolve) { confirmResolve(false); return; }
+    if (cineMode && !anyModalOpen()) { exitCinematic(); return; }
     MODALS.forEach(id => closeModal(id, true));
     syncModalState();
     return;
@@ -804,6 +868,8 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (e.repeat || confirmResolve) return;
+  if (cineMode === 'biome') return;                          // selama View Biome hanya Esc
+  if (cineMode === 'training' && e.code !== 'KeyE') return;  // selama latihan hanya E (berhenti) / Esc
   if (MENU_KEYS[e.code]) { MENU_KEYS[e.code](); return; }
   const st = STATION_KEYS[e.code];
   if (st && world.currentStation?.id === st[0]) st[1]();
@@ -988,6 +1054,7 @@ function renderIndexModal() {
     <div class="zt-zoneinfo">
       <span class="zt-title zt-zoneinfo__name">${z.name}</span>
       <span class="zt-zoneinfo__dist">${zoneRange(z)}</span>
+      <button id="btn-view-biome" class="zt-btn zt-btn--primary zt-btn--sm zt-zoneinfo__view">View Biome</button>
     </div>
     <div class="zt-zoneinfo__fx" style="margin-top:-8px">${z.gimmick}</div>
     <div class="zt-grid">${cards}</div>
@@ -996,6 +1063,7 @@ function renderIndexModal() {
       <div class="zt-bar"><i style="width:${(found / z.animals.length) * 100}%"></i></div>
     </div>
   `;
+  document.querySelector('#btn-view-biome').onclick = () => { sfx.playPop(); startBiomeView(z); };
 }
 
 function updateRankModal() {
@@ -1020,6 +1088,7 @@ setInterval(() => {
     state.power += gain;
     state.checkQuest('pullup', gain);
     setStat('#hud-power', formatNum(state.power));
+    updateCineInfo();
   }
   const cps = state.getCurrentCps();
   if (cps > 0) {

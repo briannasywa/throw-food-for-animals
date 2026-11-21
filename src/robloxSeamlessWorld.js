@@ -5,6 +5,7 @@ import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal } f
 import { setupLighting, createBloom } from './zt-lighting.js';
 import { buildZoneCliffs } from './zoneCliffs.js';
 import { ChunkBatcher } from './chunkBatcher.js';
+import { buildGym, buildShop, buildPen, PULLUP } from './courtyardProps.js';
 
 export class RobloxSeamlessWorld {
   constructor(container) {
@@ -333,66 +334,28 @@ export class RobloxSeamlessWorld {
     this.padMarker.visible = false;
     this.scene.add(this.padMarker);
 
-    // 2. Training Grounds Stand (-24, 0, -22)
-    this.gymGroup = new THREE.Group();
+    // 2. Area latihan pull-up (-24, 0, -22) — courtyardProps.js
+    const gym = buildGym();
+    this.gymGroup = gym.group;
     this.gymGroup.position.set(-24, 0, -22);
-    const gymFloor = new THREE.Mesh(new THREE.BoxGeometry(14, 0.3, 14), new THREE.MeshLambertMaterial({ color: 0x1B2233 }));
-    gymFloor.position.y = 0.15;
-    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8, 0.8), new THREE.MeshLambertMaterial({ color: 0x8B5A2B }));
-    p1.position.set(-3, 4, 0);
-    const p2 = p1.clone();
-    p2.position.x = 3;
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.5, 0.5), new THREE.MeshLambertMaterial({ color: 0xFFF4DC }));
-    bar.position.set(0, 7.8, 0);
-    const sign = new THREE.Mesh(new THREE.BoxGeometry(6, 1.2, 0.4), new THREE.MeshLambertMaterial({ color: 0xFF7A1A }));
-    sign.position.set(0, 9.2, 0);
-
-    // Sweat / Energy particle aura gimmick above gym
-    this.gymSweatParticles = new THREE.Group();
-    const sweatMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-    for (let s = 0; s < 5; s++) {
-      const sw = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, 0.4), sweatMat);
-      sw.position.set((Math.random() - 0.5) * 3, 8 + Math.random() * 2, (Math.random() - 0.5) * 2);
-      this.gymSweatParticles.add(sw);
-    }
-    this.gymSweatParticles.visible = false;
-
-    this.gymGroup.add(gymFloor, p1, p2, bar, sign, this.gymSweatParticles);
+    this.gymSweatParticles = gym.sweat;
     this.scene.add(this.gymGroup);
 
-    // 3. Zookeeper Merchant Plaza (24, 0, -22)
-    this.shopGroup = new THREE.Group();
+    // 3. Toko (24, 0, -22), menghadap +Z
+    const shop = buildShop();
+    this.shopGroup = shop.group;
     this.shopGroup.position.set(24, 0, -22);
-    const shopBase = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 8), new THREE.MeshLambertMaterial({ color: 0x8B5A2B }));
-    shopBase.position.y = 2.5;
-    shopBase.castShadow = true;
-    const shopRoof = new THREE.Mesh(new THREE.BoxGeometry(14, 2, 10), new THREE.MeshLambertMaterial({ color: 0xFF7A1A }));
-    shopRoof.position.y = 6.2;
-    shopRoof.castShadow = true;
-    const awning = new THREE.Mesh(new THREE.BoxGeometry(12, 0.5, 3), new THREE.MeshLambertMaterial({ color: 0xFFF4DC }));
-    awning.position.set(0, 4.2, 4.5);
-    this.shopGroup.add(shopBase, shopRoof, awning);
+    this.shopCoin = shop.coin;
     this.scene.add(this.shopGroup);
 
-    // 4. Animal Pen Courtyard (0, 0, -42)
+    // 4. Kandang: gerbang di z = -29, memanjang ke belakang; ukuran ikut slot (setPenSize)
     this.plotGroup = new THREE.Group();
-    this.plotGroup.position.set(0, 0, -42);
-    const plotFloor = new THREE.Mesh(new THREE.BoxGeometry(32, 0.3, 26), new THREE.MeshLambertMaterial({ color: 0x3CCB5A }));
-    plotFloor.position.y = 0.15;
-    plotFloor.receiveShadow = true;
-
-    const fenceMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
-    const fBack = new THREE.Mesh(new THREE.BoxGeometry(32, 2, 0.8), fenceMat);
-    fBack.position.set(0, 1.2, -13);
-    const fLeft = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2, 26), fenceMat);
-    fLeft.position.set(-16, 1.2, 0);
-    const fRight = fLeft.clone();
-    fRight.position.x = 16;
-    this.plotGroup.add(fBack, fLeft, fRight);
-
+    this.plotGroup.position.set(0, 0, -29);
     this.plotAnimals = new THREE.Group();
-    this.plotGroup.add(plotFloor, this.plotAnimals);
+    this.plotGroup.add(this.plotAnimals);
+    this.penAnimals = new Map(); // uid -> { mesh, target, wait }
     this.scene.add(this.plotGroup);
+    this.setPenSize(4);
   }
 
   buildFoodProjectile() {
@@ -571,22 +534,86 @@ export class RobloxSeamlessWorld {
     };
   }
 
-  updatePlotAnimals(inventory) {
-    while (this.plotAnimals.children.length > 0) {
-      this.plotAnimals.remove(this.plotAnimals.children[0]);
+  /** Bangun ulang kandang saat jumlah slot berubah (Expand Pen); hewan tetap di tempat, dijepit ke batas baru. */
+  setPenSize(slots) {
+    if (this.penSlots === slots) return;
+    this.penSlots = slots;
+    if (this.penStatic) this.plotGroup.remove(this.penStatic);
+    const pen = buildPen(slots);
+    this.penStatic = pen.group;
+    this.penBounds = pen.bounds;
+    this.penShelter = pen.shelter;
+    this.plotGroup.add(this.penStatic);
+    // Titik & jangkauan prompt "MANAGE PEN" mengikuti ukuran kandang
+    const st = this.worldStations.find(s => s.id === 'plot');
+    st.pos.set(0, 0, this.plotGroup.position.z - pen.d / 2);
+    st.radius = Math.max(pen.w, pen.d) / 2 + 2;
+    for (const a of this.penAnimals.values()) {
+      this.clampToPen(a.mesh.position);
+      a.target = this.randomPenPoint();
     }
+  }
 
-    inventory.forEach((item, i) => {
-      const row = Math.floor(i / 3);
-      const col = i % 3;
-      const x = -9 + col * 9;
-      const z = -6 + row * 8;
+  randomPenPoint() {
+    const b = this.penBounds;
+    for (let i = 0; i < 8; i++) {
+      const p = new THREE.Vector3(b.minX + Math.random() * (b.maxX - b.minX), 0.3, b.minZ + Math.random() * (b.maxZ - b.minZ));
+      if (Math.hypot(p.x - this.penShelter.x, p.z - this.penShelter.z) > this.penShelter.r) return p;
+    }
+    return new THREE.Vector3(0, 0.3, (b.minZ + b.maxZ) / 2);
+  }
 
+  clampToPen(v) {
+    const b = this.penBounds;
+    v.x = Math.max(b.minX, Math.min(b.maxX, v.x));
+    v.z = Math.max(b.minZ, Math.min(b.maxZ, v.z));
+  }
+
+  /** Hewan di kandang: hanya yang baru ditambah / yang hilang dihapus, supaya jalan-jalannya tidak ter-reset. */
+  updatePlotAnimals(inventory) {
+    const keep = new Set(inventory.map(it => it.uid));
+    for (const [uid, a] of this.penAnimals) {
+      if (!keep.has(uid)) { this.plotAnimals.remove(a.mesh); this.penAnimals.delete(uid); }
+    }
+    inventory.forEach((item) => {
+      if (this.penAnimals.has(item.uid)) return;
       const mesh = buildVoxelAnimal(item.id, item.rarity, item.mutation);
       mesh.scale.set(0.5, 0.5, 0.5);
-      mesh.position.set(x, 0.3, z);
+      mesh.position.copy(this.randomPenPoint());
+      mesh.rotation.y = Math.random() * Math.PI * 2;
       this.plotAnimals.add(mesh);
+      this.penAnimals.set(item.uid, { mesh, target: this.randomPenPoint(), wait: Math.random() * 3, phase: Math.random() * 10 });
     });
+  }
+
+  /** Hewan kandang berjalan ke titik acak, berhenti sebentar, lalu lanjut. */
+  tickPenAnimals(dt, secTime) {
+    for (const a of this.penAnimals.values()) {
+      const m = a.mesh;
+      const inst = m.userData.animalInstance;
+      if (a.wait > 0) {
+        a.wait -= dt;
+        if (inst) animateAnimal(inst, secTime + a.phase, { walking: false });
+        continue;
+      }
+      const dx = a.target.x - m.position.x;
+      const dz = a.target.z - m.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.3) {
+        a.wait = 1.2 + Math.random() * 3.5;
+        a.target = this.randomPenPoint();
+        continue;
+      }
+      const step = Math.min(dist, 2.4 * dt);
+      m.position.x += (dx / dist) * step;
+      m.position.z += (dz / dist) * step;
+      // belok halus ke arah jalan
+      const want = Math.atan2(dx, dz);
+      let diff = want - m.rotation.y;
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      m.rotation.y += diff * Math.min(1, dt * 6);
+      if (inst) animateAnimal(inst, (secTime + a.phase) * 1.6, { walking: true });
+    }
   }
 
   updateEquippedPets(inventory, equippedUids) {
@@ -610,12 +637,31 @@ export class RobloxSeamlessWorld {
 
   setTrainingMode(active) {
     this.isTraining = active;
+    this.trainTime = 0;
     if (active) {
-      this.avatar.position.set(-24, 0, -22);
-      if (this.gymSweatParticles) this.gymSweatParticles.visible = true;
+      // Berdiri di bawah palang, menghadap +Z (arah kamera sinematik mulai)
+      this.avatar.position.set(-24, PULLUP.hangY, -22);
+      this.avatar.rotation.y = 0;
+      this.releaseKeys();
     } else {
-      if (this.gymSweatParticles) this.gymSweatParticles.visible = false;
+      this.avatar.position.y = 0;
+      this.avatar.position.z = -22 + 2.5; // turun & mundur sedikit dari palang
+      if (this.parts.armR) { this.parts.armR.rotation.set(0, 0, 0); this.parts.armL.rotation.set(0, 0, 0); }
+      if (this.parts.legR) { this.parts.legR.rotation.set(0, 0, 0); this.parts.legL.rotation.set(0, 0, 0); }
     }
+    if (this.gymSweatParticles) this.gymSweatParticles.visible = active;
+  }
+
+  /** View Biome dari Index: kamera terbang pelan menyusuri zona (tanpa memindahkan pemain). */
+  startBiomeView(zone) {
+    const z0 = Math.max(0, zone.minDist / 12);
+    const z1 = zone.maxDist / 12;
+    this.biomeView = { z0: z0 + 8, z1: Math.min(z1 - 30, z0 + 320), t: 0, focus: new THREE.Vector3() };
+    this.releaseKeys();
+  }
+
+  stopBiomeView() {
+    this.biomeView = null;
   }
 
   update(dt, secTime) {
@@ -648,7 +694,7 @@ export class RobloxSeamlessWorld {
     //   maju  (W) = (-sin yaw, +cos yaw)   → menjauhi kamera
     //   kanan (D) = (-cos yaw, -sin yaw)   → kanan layar (di yaw 0 itu −X, bukan +X)
     // Versi sebelumnya memakai (+cos, +sin) untuk kanan, sehingga A/D terbalik.
-    if (!this.isTraining && !this.isThrowing) {
+    if (!this.isTraining && !this.isThrowing && !this.biomeView) {
       let inputX = (this.keys.d ? 1 : 0) - (this.keys.a ? 1 : 0);
       let inputZ = (this.keys.w ? 1 : 0) - (this.keys.s ? 1 : 0);
       const cosYaw = Math.cos(this.cameraOrbit.yaw);
@@ -687,29 +733,34 @@ export class RobloxSeamlessWorld {
       this.parts.armR.rotation.x = -2.5;
     }
 
-    // TRAINING GIMMICK ANIMATIONS (Pull-up bobbing, flexing & workout energy aura)
+    // Latihan pull-up: 1 repetisi = 2,6 dtk (naik 1 dtk, tahan, turun 1 dtk, tahan di bawah)
     if (this.isTraining) {
-      // Vigorous pull-up pump
-      const pullCycle = Math.sin(time * 6);
-      this.avatar.position.y = (pullCycle + 1) * 1.4;
-
+      this.trainTime += dt;
+      const p = (this.trainTime % 2.6) / 2.6;
+      const ease = (x) => x * x * (3 - 2 * x);
+      const lift = p < 0.38 ? ease(p / 0.38) : p < 0.5 ? 1 : p < 0.88 ? 1 - ease((p - 0.5) / 0.38) : 0;
+      this.avatar.position.set(-24, PULLUP.hangY + (PULLUP.topY - PULLUP.hangY) * lift, -22 - 0.12 * (1 - lift));
+      this.avatar.rotation.y = 0;
+      // Lengan: lurus ke atas saat menggantung, ditekuk ke depan saat naik (tangan tetap di palang)
+      const arm = (0.3 + lift * 0.85) - Math.PI;
       if (this.parts.armR && this.parts.armL) {
-        this.parts.armR.rotation.x = Math.PI - 0.2 + pullCycle * 0.4;
-        this.parts.armL.rotation.x = Math.PI - 0.2 + pullCycle * 0.4;
+        this.parts.armR.rotation.set(arm, 0, -0.12);
+        this.parts.armL.rotation.set(arm, 0, 0.12);
       }
+      // Kaki sedikit ditekuk & berayun pelan
       if (this.parts.legR && this.parts.legL) {
-        this.parts.legR.rotation.x = pullCycle * 0.3;
-        this.parts.legL.rotation.x = -pullCycle * 0.3;
+        this.parts.legR.rotation.x = 0.25 + lift * 0.35;
+        this.parts.legL.rotation.x = 0.25 + lift * 0.35 + Math.sin(this.trainTime * 2) * 0.05;
       }
-
-      // Animated sweat drops
+      // Tetes keringat jatuh dari kepala
       if (this.gymSweatParticles) {
-        this.gymSweatParticles.children.forEach((drop, i) => {
-          drop.position.y -= dt * 4;
-          if (drop.position.y < 3) {
-            drop.position.y = 8 + Math.random() * 2;
-            drop.position.x = (Math.random() - 0.5) * 3;
-          }
+        const headY = this.avatar.position.y + 2.9;
+        this.gymSweatParticles.children.forEach((drop) => {
+          drop.userData.phase += dt * 0.7;
+          if (drop.userData.phase > 1) { drop.userData.phase = 0; drop.userData.x = (Math.random() - 0.5) * 1.4; drop.userData.z = (Math.random() - 0.5) * 0.8; }
+          const ph = drop.userData.phase;
+          drop.position.set(drop.userData.x || 0, headY - ph * 3, (drop.userData.z || 0) - 0.1);
+          drop.visible = ph < 0.9;
         });
       }
     } else if (!this.isThrowing) {
@@ -734,13 +785,11 @@ export class RobloxSeamlessWorld {
 
     // Patung penjaga zona
 
-    // Plot Animals Animation
-    if (this.plotAnimals.children.length > 0) {
-      this.plotAnimals.children.forEach((pet, i) => {
-        if (pet.userData && pet.userData.animalInstance) {
-          animateAnimal(pet.userData.animalInstance, secTime + i * 0.3);
-        }
-      });
+    // Hewan kandang berkeliling
+    this.tickPenAnimals(dt, secTime);
+    if (this.shopCoin) {
+      this.shopCoin.rotation.y = secTime * 1.8;
+      this.shopCoin.position.y = 12 + Math.sin(secTime * 2) * 0.25;
     }
 
     // THROWING LOGIC
@@ -878,6 +927,27 @@ export class RobloxSeamlessWorld {
           }
         }
       }
+    } else if (this.biomeView) {
+      // View Biome: dolly pelan menyusuri zona, sedikit bergoyang ke kiri-kanan
+      const bv = this.biomeView;
+      bv.t += dt;
+      const span = Math.max(40, bv.z1 - bv.z0);
+      const z = bv.z0 + ((bv.t * 9) % span);
+      const camPos = new THREE.Vector3(Math.sin(bv.t * 0.25) * 7, 15 + Math.sin(bv.t * 0.18) * 4, z);
+      if (bv.t < 0.05 || (bv.t * 9) % span < 9 * dt * 1.5) this.camera.position.copy(camPos); // potong langsung saat mulai / ulang
+      else this.camera.position.lerp(camPos, dt * 4);
+      bv.focus.set(Math.sin(bv.t * 0.25 + 1) * 4, 3, z + 38);
+      this.camera.lookAt(bv.focus);
+      this.lighting?.update(bv.focus);
+    } else if (this.isTraining) {
+      // Sinematik latihan: kamera rendah berputar pelan di depan pemain, lalu mendekat
+      const t = this.trainTime;
+      const ang = Math.sin(t * 0.22) * 1.1;          // menyapu ±63° di depan pemain
+      const r = 11 - Math.min(1, t / 6) * 2.5;        // perlahan mendekat (11 → 8.5)
+      const ax = this.avatar.position.x, az = -22;
+      const camPos = new THREE.Vector3(ax + Math.sin(ang) * r, 2.6 + Math.sin(t * 0.3) * 0.6, az + Math.cos(ang) * r);
+      this.camera.position.lerp(camPos, dt * 2.5);
+      this.camera.lookAt(ax, 3.2, az);
     } else {
       // FREELY ADJUSTABLE ORBIT & POV ZOOM CAMERA
       const r = this.cameraOrbit.distance;
