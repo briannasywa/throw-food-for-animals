@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ZONES, MUTATION_DATA, SKY_COLOR } from './gameData.js';
-import { buildVoxelAnimal } from './animalModels.js';
+import { createAnimal, tickAnimal } from './voxelAnimals.js';
 
 export class RobloxSeamlessWorld {
   constructor(container) {
@@ -39,6 +39,11 @@ export class RobloxSeamlessWorld {
       { id: 'shop', name: 'Master NPC Booth', pos: new THREE.Vector3(18, 0, 12), radius: 6, actionKey: 'T', actionLabel: 'BUKA TOKO / JUAL', desc: 'Beli makanan & upgrade' },
       { id: 'plot', name: 'Kandang Plot Hewan', pos: new THREE.Vector3(-35, 0, 32), radius: 16, actionKey: 'P', actionLabel: 'KELOLA HEWAN', desc: 'Pasang & lihat hewan 3D' },
     ];
+
+    // Hewan voxel yang dianimasikan tiap frame
+    this.guardians = [];
+    this.plotAnimalObjs = [];
+    this.petObjs = [];
 
     this.initScene();
     this.buildSeamlessTrack();
@@ -153,11 +158,12 @@ export class RobloxSeamlessWorld {
       topArch.position.set(0, 18, startZ);
 
       // Zone Animal Statue
-      const guardian = buildVoxelAnimal(zone.animals[zone.animals.length - 1].id, 'Legendary');
-      guardian.scale.set(1.4, 1.4, 1.4);
-      guardian.position.set(trackWidth / 2 + 8, 0, startZ + 8);
+      const guardian = createAnimal(zone.animals[zone.animals.length - 1].id, { scale: 0.9 });
+      guardian.group.position.set(trackWidth / 2 + 8, 0, startZ + 8);
+      guardian.group.rotation.y = Math.PI / 4; // menghadap kamera
+      this.guardians.push(guardian);
 
-      this.scene.add(pL, pR, topArch, guardian);
+      this.scene.add(pL, pR, topArch, guardian.group);
     });
   }
 
@@ -361,6 +367,7 @@ export class RobloxSeamlessWorld {
     while (this.plotAnimals.children.length > 0) {
       this.plotAnimals.remove(this.plotAnimals.children[0]);
     }
+    this.plotAnimalObjs = [];
 
     inventory.forEach((item, i) => {
       const row = Math.floor(i / 3);
@@ -368,24 +375,31 @@ export class RobloxSeamlessWorld {
       const x = -8 + col * 7.5;
       const z = -8 + row * 7.5;
 
-      const mesh = buildVoxelAnimal(item.id, item.rarity, item.mutation);
-      mesh.scale.set(0.75, 0.75, 0.75);
-      mesh.position.set(x, 0.3, z);
-      this.plotAnimals.add(mesh);
+      const animal = createAnimal(item.id, { mutation: item.mutation, scale: 0.45 });
+      animal.group.position.set(x, 0.3, z);
+      animal.group.rotation.y = Math.PI / 4; // menghadap kamera
+      this.plotAnimals.add(animal.group);
+      this.plotAnimalObjs.push(animal);
     });
   }
 
   updateEquippedPets(inventory, equippedUids) {
+    // Simpan posisi lama supaya pet tidak "teleport" setiap UI di-refresh
+    const prevPos = this.petObjs.map(p => p.group.position.clone());
     while (this.petCompanionsGroup.children.length > 0) {
       this.petCompanionsGroup.remove(this.petCompanionsGroup.children[0]);
     }
+    this.petObjs = [];
 
     equippedUids.forEach((uid) => {
       const pet = inventory.find(p => p.uid === uid);
       if (pet) {
-        const mesh = buildVoxelAnimal(pet.id, pet.rarity, pet.mutation);
-        mesh.scale.set(0.4, 0.4, 0.4);
-        this.petCompanionsGroup.add(mesh);
+        const animal = createAnimal(pet.id, { mutation: pet.mutation, scale: 0.3 });
+        const prev = prevPos[this.petObjs.length];
+        if (prev) animal.group.position.copy(prev);
+        else animal.group.position.copy(this.avatar.position);
+        this.petCompanionsGroup.add(animal.group);
+        this.petObjs.push(animal);
       }
     });
   }
@@ -454,12 +468,13 @@ export class RobloxSeamlessWorld {
     }
 
     // Floating Pet Companions
-    if (this.petCompanionsGroup.children.length > 0) {
-      this.petCompanionsGroup.children.forEach((pet, i) => {
+    if (this.petObjs.length > 0) {
+      this.petObjs.forEach((petObj, i) => {
+        const pet = petObj.group;
         const ang = this.avatar.rotation.y + Math.PI + (i === 0 ? -0.6 : 0.6);
         const tx = this.avatar.position.x + Math.sin(ang) * 3;
         const tz = this.avatar.position.z + Math.cos(ang) * 3;
-        const ty = 1.2 + Math.sin(time * 3 + i) * 0.3;
+        const ty = 0;
         pet.position.lerp(new THREE.Vector3(tx, ty, tz), dt * 6);
         pet.rotation.y = this.avatar.rotation.y;
       });
@@ -497,6 +512,12 @@ export class RobloxSeamlessWorld {
       this.camera.position.lerp(targetCam, dt * 6);
       this.camera.lookAt(this.avatar.position.x, 0, this.avatar.position.z);
     }
+
+    // Animasi hewan voxel
+    const t = performance.now() / 1000;
+    this.guardians.forEach(a => tickAnimal(a, t, { walking: false }));
+    this.plotAnimalObjs.forEach(a => tickAnimal(a, t, { walking: false }));
+    this.petObjs.forEach(a => tickAnimal(a, t, { walking: true }));
 
     this.detectProximityStation();
   }
