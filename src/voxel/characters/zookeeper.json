@@ -1,0 +1,50 @@
+{
+  "id": "zookeeper",
+  "name": "Zookeeper",
+  "role": "player",
+  "frame": "upright",
+  "note": "Karakter pemain original (art-direction v3 Bagian 7). Menggantikan karakter prototype yang mirip avatar default Roblox. Warna dari palette.json -> character (+ secondary untuk daun wortel). Menghadap +Z, tinggi ±10.9 voxel.",
+  "colors": {
+    "hat": "#D9B77A", "hatBand": "#FF7A1A", "skin": "#F5C99B", "shirt": "#FF7A1A", "pocket": "#C2560B",
+    "shorts": "#FFF4DC", "boots": "#8B5A2B", "bag": "#8B5A2B", "hair": "#5A3A22",
+    "eye": "#1B2233", "shine": "#FFFFFF", "blush": "#FF8FB1", "carrot": "#FF8A1F", "leaf": "#3CCB5A"
+  },
+  "parts": [
+    { "name": "body", "pivot": [0, 0, 0], "anim": null, "boxes": [
+      [0, 3.4, 0, 2.8, 1.2, 1.6, "shorts"],
+      [0, 5.0, 0, 3.0, 2.2, 1.8, "shirt"],
+      [0, 6.0, 0.62, 1.6, 0.3, 0.6, "pocket"],
+      [0.8, 5.25, 0.93, 0.8, 0.7, 0.06, "pocket"],
+      [-0.75, 5.75, 0.93, 0.35, 0.35, 0.06, "bag"], [-0.35, 5.35, 0.93, 0.35, 0.35, 0.06, "bag"],
+      [0.05, 4.95, 0.93, 0.35, 0.35, 0.06, "bag"], [0.45, 4.55, 0.93, 0.35, 0.35, 0.06, "bag"],
+      [0.85, 4.3, -1.2, 1.5, 1.3, 0.6, "bag"],
+      [0.85, 4.85, -1.2, 1.55, 0.3, 0.65, "pocket"],
+      [0.5, 5.25, -1.2, 0.3, 0.6, 0.3, "carrot"], [0.5, 5.65, -1.2, 0.35, 0.25, 0.35, "leaf"]
+    ]},
+    { "name": "head", "pivot": [0, 6.1, 0], "anim": "head", "boxes": [
+      [0, 7.9, 0, 3.6, 3.4, 3.2, "skin"],
+      [0, 8.7, -1.35, 3.7, 2.0, 0.6, "hair"],
+      [-1.85, 8.5, -0.4, 0.25, 1.4, 2.0, "hair"], [1.85, 8.5, -0.4, 0.25, 1.4, 2.0, "hair"],
+      [0, 9.35, 1.0, 3.0, 0.5, 1.4, "hair"],
+      [-0.8, 8.0, 1.62, 0.55, 0.75, 0.08, "eye"], [0.8, 8.0, 1.62, 0.55, 0.75, 0.08, "eye"],
+      [-0.95, 8.2, 1.67, 0.2, 0.2, 0.05, "shine"], [0.65, 8.2, 1.67, 0.2, 0.2, 0.05, "shine"],
+      [-1.25, 7.35, 1.62, 0.55, 0.3, 0.05, "blush"], [1.25, 7.35, 1.62, 0.55, 0.3, 0.05, "blush"],
+      [0, 7.15, 1.62, 0.6, 0.15, 0.05, "pocket"],
+      [0, 9.7, 0, 4.8, 0.3, 4.4, "hat"],
+      [0, 10.35, 0, 3.4, 1.1, 3.0, "hat"],
+      [0, 9.98, 0, 3.45, 0.35, 3.05, "hatBand"]
+    ]},
+    { "name": "armL", "pivot": [-1.75, 5.9, 0], "anim": "armL", "boxes": [
+      [-1.9, 5.5, 0, 0.9, 0.9, 1.1, "shirt"], [-1.9, 4.55, 0, 0.75, 1.2, 0.8, "skin"]
+    ]},
+    { "name": "armR", "pivot": [1.75, 5.9, 0], "anim": "armR", "boxes": [
+      [1.9, 5.5, 0, 0.9, 0.9, 1.1, "shirt"], [1.9, 4.55, 0, 0.75, 1.2, 0.8, "skin"]
+    ]},
+    { "name": "legL", "pivot": [-0.7, 3.0, 0], "anim": "legL", "boxes": [
+      [-0.7, 1.9, 0, 1.1, 1.8, 1.1, "skin"], [-0.7, 0.5, 0.15, 1.35, 1.0, 1.6, "boots"]
+    ]},
+    { "name": "legR", "pivot": [0.7, 3.0, 0], "anim": "legR", "boxes": [
+      [0.7, 1.9, 0, 1.1, 1.8, 1.1, "skin"], [0.7, 0.5, 0.15, 1.35, 1.0, 1.6, "boots"]
+    ]}
+  ]
+}

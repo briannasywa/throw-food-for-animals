@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ZONES, MUTATION_DATA, SKY_COLOR } from './gameData.js';
-import { createAnimal, tickAnimal } from './voxelAnimals.js';
+import { createAnimal, tickAnimal, createZookeeper, animateAnimal } from './voxelAnimals.js';
 
 export class RobloxSeamlessWorld {
   constructor(container) {
@@ -171,46 +171,11 @@ export class RobloxSeamlessWorld {
     this.avatar = new THREE.Group();
     this.avatar.position.copy(this.playerPos);
 
-    const skinMat = new THREE.MeshLambertMaterial({ color: 0xfde047 });
-    const shirtMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
-    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x16a34a });
-
-    this.head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 1.5), skinMat);
-    this.head.position.set(0, 4.4, 0);
-    this.head.castShadow = true;
-
-    // Face eyes
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x181425 });
-    const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.1), eyeMat);
-    eyeL.position.set(-0.35, 4.5, 0.8);
-    const eyeR = eyeL.clone();
-    eyeR.position.x = 0.35;
-    this.avatar.add(eyeL, eyeR);
-
-    this.torso = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 1.3), shirtMat);
-    this.torso.position.set(0, 2.7, 0);
-    this.torso.castShadow = true;
-
-    const limbGeo = new THREE.BoxGeometry(0.85, 1.8, 0.85);
-    limbGeo.translate(0, -0.9, 0);
-
-    this.armL = new THREE.Mesh(limbGeo, skinMat);
-    this.armL.position.set(-1.5, 3.5, 0);
-    this.armL.castShadow = true;
-
-    this.armR = new THREE.Mesh(limbGeo, skinMat);
-    this.armR.position.set(1.5, 3.5, 0);
-    this.armR.castShadow = true;
-
-    this.legL = new THREE.Mesh(limbGeo, pantsMat);
-    this.legL.position.set(-0.6, 1.8, 0);
-    this.legL.castShadow = true;
-
-    this.legR = new THREE.Mesh(limbGeo, pantsMat);
-    this.legR.position.set(0.6, 1.8, 0);
-    this.legR.castShadow = true;
-
-    this.avatar.add(this.head, this.torso, this.armL, this.armR, this.legL, this.legR);
+    // Karakter pemain original: Zookeeper (art-direction/voxel/characters/zookeeper.json).
+    // Tinggi ±10.9 voxel; skala 0.48 → ±5.2 unit, sama dengan tinggi avatar lama.
+    this.keeper = createZookeeper(0.48);
+    this.throwPoseTimer = 0;
+    this.avatar.add(this.keeper.group);
     this.scene.add(this.avatar);
 
     this.petCompanionsGroup = new THREE.Group();
@@ -329,6 +294,7 @@ export class RobloxSeamlessWorld {
     }
 
     this.caughtAnimal = this.rollAnimal(this.targetZone, food.luckBonus);
+    this.throwPoseTimer = 0.45;
     this.foodGroup.position.set(this.avatar.position.x + 1.2, 3.5, this.avatar.position.z);
   }
 
@@ -441,28 +407,27 @@ export class RobloxSeamlessWorld {
         this.avatar.position.x += dx * speed * dt;
         this.avatar.position.z += dz * speed * dt;
         this.avatar.rotation.y = Math.atan2(dx, dz);
-
-        const legAngle = Math.sin(time * (isSprinting ? 18 : 10)) * 0.6;
-        this.legL.rotation.x = legAngle;
-        this.legR.rotation.x = -legAngle;
-        this.armL.rotation.x = -legAngle;
-        this.armR.rotation.x = legAngle;
-      } else {
-        this.legL.rotation.x = 0;
-        this.legR.rotation.x = 0;
-        this.armL.rotation.x = 0;
-        this.armR.rotation.x = 0;
       }
 
       this.avatar.position.x = Math.max(-120, Math.min(120, this.avatar.position.x));
       this.avatar.position.z = Math.max(-10, Math.min(5000, this.avatar.position.z));
     }
 
+    // Animasi Zookeeper: jalan (lengan & kaki berayun otomatis), lari lebih cepat
+    const walking = isMoving && !this.isTraining && !this.isThrowing;
+    this.walkClock = (this.walkClock || 0) + dt * (isSprinting ? 1.8 : 1);
+    animateAnimal(this.keeper, this.walkClock, { walking });
+    if (this.throwPoseTimer > 0) {
+      // Pose melempar: lengan kanan diayun ke atas
+      this.throwPoseTimer -= dt;
+      this.keeper.parts.armR.rotation.x = -2.5;
+    }
+
     // Pull-up Training
     if (this.isTraining) {
       this.avatar.position.y = (Math.sin(time * 3) + 1) * 1.1;
-      this.armL.rotation.x = Math.PI - 0.2;
-      this.armR.rotation.x = Math.PI - 0.2;
+      this.keeper.parts.armL.rotation.x = Math.PI - 0.2;
+      this.keeper.parts.armR.rotation.x = Math.PI - 0.2;
     } else {
       this.avatar.position.y = 0;
     }
@@ -517,7 +482,7 @@ export class RobloxSeamlessWorld {
     const t = performance.now() / 1000;
     this.guardians.forEach(a => tickAnimal(a, t, { walking: false }));
     this.plotAnimalObjs.forEach(a => tickAnimal(a, t, { walking: false }));
-    this.petObjs.forEach(a => tickAnimal(a, t, { walking: true }));
+    this.petObjs.forEach(a => tickAnimal(a, t, { walking: isMoving && !this.isTraining }));
 
     this.detectProximityStation();
   }
