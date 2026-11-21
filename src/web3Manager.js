@@ -16,10 +16,16 @@ class Web3Manager {
     this.usdcContract = null;
     this.account = null;
     this.isConnecting = false;
-    this.shopAddress = SHOP_CONTRACT_ADDRESS;
+    this.shopAddress = ethers.utils.getAddress(SHOP_CONTRACT_ADDRESS);
 
     const saved = localStorage.getItem('zootoss_shop_addr');
-    if (saved) this.shopAddress = saved;
+    if (saved) {
+      try {
+        this.shopAddress = ethers.utils.getAddress(saved);
+      } catch (e) {
+        localStorage.removeItem('zootoss_shop_addr');
+      }
+    }
   }
 
   isMetaMaskAvailable() {

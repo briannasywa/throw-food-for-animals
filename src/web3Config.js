@@ -21,8 +21,8 @@ export const BASE_SEPOLIA_CONFIG = {
 // Official Circle USDC Contract on Base Sepolia
 export const USDC_CONTRACT_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
-// Deployed ZooTossShop Contract on Base Sepolia
-export const SHOP_CONTRACT_ADDRESS = '0x4F8bE5164d2Fe26a9Bf71d53f66D467d3e236F6D';
+// Deployed ZooTossShop Contract on Base Sepolia (Valid Checksum)
+export const SHOP_CONTRACT_ADDRESS = '0x4f8bE5164D2Fe26a9Bf71d53f66d467d3e236f6D';
 
 // Standard ERC20 ABI (for USDC approval & balance)
 export const ERC20_ABI = [
