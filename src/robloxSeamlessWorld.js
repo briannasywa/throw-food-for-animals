@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ZONES, MUTATION_DATA, SKY_COLOR } from './gameData.js';
+import { setupLighting, createBloom } from './zt-lighting.js';
 import { createAnimal, tickAnimal, createZookeeper, animateAnimal } from './voxelAnimals.js';
 
 export class RobloxSeamlessWorld {
@@ -68,8 +69,7 @@ export class RobloxSeamlessWorld {
     this.height = window.innerHeight;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(SKY_COLOR); // Exact Sky Blue (#70c5ff) from image
-    this.scene.fog = new THREE.Fog(SKY_COLOR, 120, 450);
+    // Langit & kabut diatur oleh zt-lighting.js (Preset A "Sunny Day")
 
     const aspect = this.width / this.height;
     const d = 28;
@@ -79,22 +79,16 @@ export class RobloxSeamlessWorld {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     this.renderer.setSize(this.width, this.height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.BasicShadowMap;
 
     this.container.innerHTML = '';
     this.container.appendChild(this.renderer.domElement);
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.85);
-    this.scene.add(ambient);
-
-    this.sun = new THREE.DirectionalLight(0xfffaed, 1.2);
-    this.sun.position.set(80, 160, 60);
-    this.sun.castShadow = true;
-    this.sun.shadow.mapSize.width = 1024;
-    this.sun.shadow.mapSize.height = 1024;
-    this.scene.add(this.sun);
+    // Lighting art-direction: Preset A "Sunny Day" (lampu lama prototype dihapus)
+    this.lighting = setupLighting({ renderer: this.renderer, scene: this.scene, preset: 'sunnyDay', quality: 'auto' });
+    this.bloom = this.lighting.quality === 'high'
+      ? createBloom(this.renderer, this.scene, this.camera, this.lighting)
+      : null;
+    this.focus = new THREE.Vector3(0, 0, 0); // titik yang dilihat kamera; matahari & bayangan ikut titik ini
 
     window.addEventListener('resize', () => {
       this.width = window.innerWidth;
@@ -106,6 +100,7 @@ export class RobloxSeamlessWorld {
       this.camera.bottom = -d;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(this.width, this.height);
+      this.bloom?.setSize(this.width, this.height);
     });
   }
 
@@ -463,6 +458,7 @@ export class RobloxSeamlessWorld {
 
       this.camera.position.set(currZ * 0.05 + 65, 80, currZ + 65);
       this.camera.lookAt(0, 0, currZ);
+      this.focus.set(0, 0, currZ);
 
       if (this.throwProgress >= 1) {
         this.isThrowing = false;
@@ -480,6 +476,7 @@ export class RobloxSeamlessWorld {
       );
       this.camera.position.lerp(targetCam, dt * 6);
       this.camera.lookAt(this.avatar.position.x, 0, this.avatar.position.z);
+      this.focus.set(this.avatar.position.x, 0, this.avatar.position.z);
     }
 
     // Animasi hewan voxel
@@ -520,6 +517,8 @@ export class RobloxSeamlessWorld {
   }
 
   render() {
-    this.renderer.render(this.scene, this.camera);
+    this.lighting.update(this.focus);
+    if (this.bloom) this.bloom.render();
+    else this.renderer.render(this.scene, this.camera);
   }
 }
