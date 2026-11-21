@@ -4,6 +4,7 @@ import { GameState, formatNum } from './gameState.js';
 import { FOOD_TIERS, ZONES, MUTATION_DATA, RARITY_COLORS } from './gameData.js';
 import { RobloxSeamlessWorld } from './robloxSeamlessWorld.js';
 import { sfx } from './audio.js';
+import { web3Manager } from './web3Manager.js';
 
 const state = new GameState();
 
@@ -53,6 +54,10 @@ app.innerHTML = `
   <!-- TOP RIGHT: QUICK SHORTCUTS & CAMERA HINT -->
   <div class="absolute top-4 right-4 z-20 flex flex-col items-end gap-1.5">
     <div class="flex items-center gap-2">
+      <!-- Web3 Connect Button -->
+      <button id="btn-connect-wallet" class="zt-btn zt-btn--accent text-xs py-1.5 px-3 flex items-center gap-1.5">
+        🦊 <span id="wallet-btn-text">CONNECT WALLET</span>
+      </button>
       <button id="btn-open-quests" class="zt-btn zt-btn--primary text-xs py-1.5 px-3">
         📜 QUEST
       </button>
@@ -66,8 +71,13 @@ app.innerHTML = `
         🔊
       </button>
     </div>
-    <div class="zt-card px-2.5 py-1 text-[10px] text-[#1B2233]/80 font-ui shadow-sm">
-      🖱️ Drag mouse to rotate view • Scroll to zoom POV
+    <div class="flex items-center gap-2">
+      <div id="web3-chain-tag" class="zt-card px-2 py-0.5 text-[9px] font-display text-[#1A4F99] border-[#2F8CFF]">
+        BASE SEPOLIA
+      </div>
+      <div class="zt-card px-2.5 py-1 text-[10px] text-[#1B2233]/80 font-ui shadow-sm">
+        🖱️ Drag mouse to rotate view • Scroll to zoom POV
+      </div>
     </div>
   </div>
 
@@ -138,12 +148,53 @@ app.innerHTML = `
       <div class="flex justify-between items-center border-b-2 border-[#1B2233]/20 pb-3">
         <div>
           <h2 class="font-display text-sm text-[#FF7A1A]">ZOOKEEPER MERCHANT STAND</h2>
-          <p class="text-xs text-[#1B2233]/70 font-ui">Sell caught animals & upgrade your strength!</p>
+          <p class="text-xs text-[#1B2233]/70 font-ui">Sell caught animals & buy Web3 power items on Base Sepolia!</p>
         </div>
         <button id="btn-close-shop" class="zt-btn zt-btn--danger text-xs py-1 px-2.5">&times;</button>
       </div>
 
-      <div class="mt-4 overflow-y-auto space-y-3 flex-1 pr-1">
+      <div class="mt-4 overflow-y-auto space-y-3.5 flex-1 pr-1">
+        
+        <!-- WEB3 ON-CHAIN ITEMS SECTION (BASE SEPOLIA) -->
+        <div class="p-3 bg-[#FFF4DC] border-2 border-[#2F8CFF] rounded-xl flex flex-col gap-2.5 shadow-sm">
+          <div class="flex justify-between items-center">
+            <span class="font-display text-xs text-[#1A4F99] flex items-center gap-1.5">
+              <span>⚡</span> BASE SEPOLIA WEB3 SHOP
+            </span>
+            <span id="shop-wallet-status" class="text-[10px] font-ui text-[#1B2233]/70">Wallet: Not Connected</span>
+          </div>
+
+          <!-- Web3 Item 1: +100 Power Buff -->
+          <div class="zt-card p-3 flex justify-between items-center bg-white/70">
+            <div>
+              <div class="font-display text-xs text-[#FF7A1A] flex items-center gap-1">
+                <span>💪</span> +100 POWER BOOST
+              </div>
+              <div class="text-[11px] text-[#1B2233]/70 font-ui">Instant permanent +100 throwing power</div>
+            </div>
+            <button id="btn-buy-web3-power" class="zt-btn zt-btn--primary text-xs py-1.5 px-3">
+              0.0001 ETH
+            </button>
+          </div>
+
+          <!-- Web3 Item 2: Legendary Tier Bait (1x purchase = 5 Qty) -->
+          <div class="zt-card p-3 flex justify-between items-center bg-white/70">
+            <div>
+              <div class="font-display text-xs text-[#FFC21A] flex items-center gap-1">
+                <span>⭐</span> LEGENDARY BAIT (5x QTY)
+              </div>
+              <div class="text-[11px] text-[#1B2233]/70 font-ui">Guarantees Legendary animal catch on next 5 throws!</div>
+              <div class="text-[10px] font-display text-[#3CCB5A] mt-0.5" id="legendary-baits-owned">Owned: 0 bait</div>
+            </div>
+            <button id="btn-buy-web3-bait" class="zt-btn zt-btn--secondary text-xs py-1.5 px-3">
+              0.00025 ETH
+            </button>
+          </div>
+        </div>
+
+        <!-- In-game Cash Section Header -->
+        <div class="font-display text-xs text-[#1B2233]/60 pt-1">IN-GAME CASH UPGRADES</div>
+
         <!-- Quick Sell All -->
         <div class="zt-card p-3 flex justify-between items-center">
           <div>
@@ -303,6 +354,10 @@ function updateUI() {
   document.querySelector('#btn-shop-rebirth').textContent = `$${formatNum(state.rebirthCost)}`;
 
   document.querySelector('#plot-capacity-text').textContent = `Slots: ${state.inventory.length} / ${state.maxBaseSlots} Used`;
+  const legOwnedEl = document.querySelector('#legendary-baits-owned');
+  if (legOwnedEl) {
+    legOwnedEl.textContent = `Owned: ${state.legendaryBaits || 0} bait`;
+  }
 
   // Sync 3D in-world plot
   world.updatePlotAnimals(state.inventory);
@@ -315,6 +370,30 @@ function updateUI() {
 function renderMiniFoodSelector() {
   const container = document.querySelector('#mini-food-selector');
   container.innerHTML = '';
+
+  // Render Web3 Legendary Bait Option if owned or available
+  const legCount = state.legendaryBaits || 0;
+  const isLegSelected = state.selectedFoodIndex === 'web3_legendary';
+  const legBtn = document.createElement('button');
+  legBtn.className = `px-2.5 py-1 text-[10px] font-display rounded-md border-2 border-[#1B2233] transition whitespace-nowrap cursor-pointer ${
+    isLegSelected
+      ? 'bg-[#FFC21A] text-[#1B2233] scale-105 border-[#A66F00]'
+      : legCount > 0
+      ? 'bg-[#FFF4DC] text-[#FFC21A] hover:bg-[#F2DFB8]'
+      : 'bg-[#C9C2B3] text-[#1B2233]/40 opacity-50'
+  }`;
+  legBtn.innerHTML = `⭐ LEGENDARY BAIT <span class="text-[#2F8CFF] font-display">(${legCount})</span>`;
+  legBtn.onclick = () => {
+    sfx.playPop();
+    if (legCount > 0) {
+      state.selectedFoodIndex = 'web3_legendary';
+      state.save();
+      updateUI();
+    } else {
+      openModal('shop');
+    }
+  };
+  container.appendChild(legBtn);
 
   FOOD_TIERS.forEach((f, idx) => {
     const isUnlocked = state.unlockedFoods.includes(idx);
@@ -417,7 +496,31 @@ function showCatchToast(animal, sellPrice = null) {
 
 function triggerThrow() {
   if (world.isThrowing) return;
-  const food = FOOD_TIERS[state.selectedFoodIndex];
+
+  let food;
+  if (state.selectedFoodIndex === 'web3_legendary') {
+    if ((state.legendaryBaits || 0) <= 0) {
+      alert("No Legendary Bait left! Please purchase from the Web3 Shop.");
+      state.selectedFoodIndex = 0;
+      updateUI();
+      return;
+    }
+    // Deduct 1 legendary bait
+    state.legendaryBaits -= 1;
+    state.save();
+    food = {
+      id: 'web3_legendary',
+      name: 'Legendary Bait',
+      iconText: 'LEGENDARY',
+      color: '#FFC21A',
+      luckBonus: 50.0,
+      isLegendaryBait: true,
+      desc: 'Summons legendary beasts guaranteed!'
+    };
+  } else {
+    food = FOOD_TIERS[state.selectedFoodIndex] || FOOD_TIERS[0];
+  }
+
   const score = Math.floor(meterVal);
 
   sfx.playThrow(score);
@@ -506,6 +609,74 @@ document.querySelector('#btn-toggle-sound').onclick = () => {
 };
 
 // Shop actions
+document.querySelector('#btn-connect-wallet').onclick = async () => {
+  sfx.playPop();
+  const acc = await web3Manager.connectWallet();
+  if (acc) {
+    updateWalletUI(acc);
+  }
+};
+
+function updateWalletUI(acc) {
+  const btn = document.querySelector('#wallet-btn-text');
+  const shopStatus = document.querySelector('#shop-wallet-status');
+  if (acc) {
+    const shortAcc = `${acc.slice(0, 6)}...${acc.slice(-4)}`;
+    if (btn) btn.textContent = shortAcc;
+    if (shopStatus) shopStatus.textContent = `Wallet: ${shortAcc}`;
+  } else {
+    if (btn) btn.textContent = 'CONNECT WALLET';
+    if (shopStatus) shopStatus.textContent = 'Wallet: Not Connected';
+  }
+}
+
+window.addEventListener('web3:accountChanged', (e) => updateWalletUI(e.detail));
+window.addEventListener('web3:disconnected', () => updateWalletUI(null));
+
+// Web3 Shop Buy: +100 Power
+document.querySelector('#btn-buy-web3-power').onclick = async () => {
+  const btn = document.querySelector('#btn-buy-web3-power');
+  btn.disabled = true;
+  btn.textContent = 'WAITING TX...';
+  try {
+    const res = await web3Manager.buyShopItem(1, '0.0001');
+    if (res && res.success) {
+      sfx.playLevelUp();
+      state.power += 100;
+      state.save();
+      updateUI();
+      alert(`🎉 Web3 Purchase Confirmed! +100 Power added! TX: ${res.txHash.slice(0, 10)}...`);
+    }
+  } catch (err) {
+    alert("Transaction cancelled or failed: " + (err.message || err));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '0.0001 ETH';
+  }
+};
+
+// Web3 Shop Buy: 5x Legendary Bait
+document.querySelector('#btn-buy-web3-bait').onclick = async () => {
+  const btn = document.querySelector('#btn-buy-web3-bait');
+  btn.disabled = true;
+  btn.textContent = 'WAITING TX...';
+  try {
+    const res = await web3Manager.buyShopItem(2, '0.00025');
+    if (res && res.success) {
+      sfx.playLevelUp();
+      state.legendaryBaits = (state.legendaryBaits || 0) + 5;
+      state.save();
+      updateUI();
+      alert(`🎉 Web3 Purchase Confirmed! 5x Legendary Bait added! TX: ${res.txHash.slice(0, 10)}...`);
+    }
+  } catch (err) {
+    alert("Transaction cancelled or failed: " + (err.message || err));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '0.00025 ETH';
+  }
+};
+
 document.querySelector('#btn-shop-sell-all').onclick = () => {
   if (state.inventory.length === 0) return;
   sfx.playCoins();

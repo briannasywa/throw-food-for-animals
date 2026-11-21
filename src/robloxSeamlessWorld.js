@@ -488,6 +488,28 @@ export class RobloxSeamlessWorld {
 
   determineCatch(zone, food) {
     const animals = zone.animals;
+
+    // Web3 Perk: Legendary Bait guarantees Legendary (or Mythic in Galaxy zone)
+    if (food && food.isLegendaryBait) {
+      const topAnimal = animals.find(a => a.rarity === 'Legendary' || a.rarity === 'Mythic') || animals[animals.length - 1];
+      const mutRoll = Math.random() * 100;
+      let mutation = 'Normal';
+      if (mutRoll < 2.0) mutation = 'Rainbow';
+      else if (mutRoll < 8.0) mutation = 'Emerald';
+      else if (mutRoll < 20.0) mutation = 'Diamond';
+      else if (mutRoll < 45.0) mutation = 'Gold';
+
+      return {
+        id: topAnimal.id,
+        name: topAnimal.name,
+        rarity: topAnimal.rarity,
+        baseCps: topAnimal.baseCps,
+        color: topAnimal.color,
+        zoneName: zone.name,
+        mutation
+      };
+    }
+
     const luck = (food ? food.luckBonus : 1.0);
     const weights = animals.map(a => {
       let w = a.weight;

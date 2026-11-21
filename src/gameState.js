@@ -26,6 +26,9 @@ export class GameState {
     this.autoThrow = false;
     this.rebirthCount = 0;
     this.rebirthCost = 50000;
+
+    // Web3 Inventory Items (Base Sepolia Testnet)
+    this.legendaryBaits = 0; // Count of Legendary Guaranteed Baits available
     
     // Daily & Dynamic Quests System
     this.quests = [
@@ -271,6 +274,7 @@ export class GameState {
       autoThrow: this.autoThrow,
       rebirthCount: this.rebirthCount,
       rebirthCost: this.rebirthCost,
+      legendaryBaits: this.legendaryBaits,
       quests: this.quests,
       equippedPets: this.equippedPets,
       autoSellRarity: this.autoSellRarity
@@ -303,6 +307,7 @@ export class GameState {
         this.autoThrow = d.autoThrow ?? false;
         this.rebirthCount = d.rebirthCount ?? 0;
         this.rebirthCost = d.rebirthCost ?? 50000;
+        this.legendaryBaits = d.legendaryBaits ?? 0;
         if (d.quests) this.quests = d.quests;
         if (d.equippedPets) this.equippedPets = d.equippedPets;
         if (d.autoSellRarity) this.autoSellRarity = d.autoSellRarity;
