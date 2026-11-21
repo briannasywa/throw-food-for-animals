@@ -21,7 +21,9 @@ export class RobloxSeamlessWorld {
     this.windChangeTimer = 0;
 
     // Key inputs (WASD & Arrow Keys)
-    this.keys = { w: false, a: false, s: false, d: false, shift: false, space: false };
+    this.keys = { w: false, a: false, s: false, d: false, shift: false };
+    this.inputBlocked = false;  // true saat modal terbuka
+    this.cameraLocked = false;  // camera lock (Pointer Lock) — toggle dari main.js
 
     // Camera orbit & zoom controls (Right mouse drag or Left mouse drag)
     this.cameraOrbit = {
@@ -129,6 +131,11 @@ export class RobloxSeamlessWorld {
     dom.addEventListener('contextmenu', (e) => e.preventDefault());
 
     dom.addEventListener('mousedown', (e) => {
+      // Camera lock aktif tapi pointer belum terkunci (mis. habis menutup menu): klik layar untuk mengunci lagi
+      if (this.cameraLocked) {
+        if (document.pointerLockElement !== dom) this.setCameraLock(true);
+        return;
+      }
       if (e.button === 2 || e.button === 0) {
         this.cameraOrbit.isDragging = true;
         this.cameraOrbit.lastMouseX = e.clientX;
@@ -137,11 +144,21 @@ export class RobloxSeamlessWorld {
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!this.cameraOrbit.isDragging || this.isThrowing) return;
-      const dx = e.clientX - this.cameraOrbit.lastMouseX;
-      const dy = e.clientY - this.cameraOrbit.lastMouseY;
-      this.cameraOrbit.lastMouseX = e.clientX;
-      this.cameraOrbit.lastMouseY = e.clientY;
+      if (this.isThrowing) return;
+      let dx, dy;
+      if (this.cameraLocked && document.pointerLockElement === dom) {
+        dx = e.movementX; dy = e.movementY;
+      } else if (this.cameraLocked) {
+        // Pointer lock ditolak browser: tetap ikuti gerakan mouse (kursor masih terlihat)
+        if (this.inputBlocked) return;
+        dx = e.movementX; dy = e.movementY;
+      } else {
+        if (!this.cameraOrbit.isDragging) return;
+        dx = e.clientX - this.cameraOrbit.lastMouseX;
+        dy = e.clientY - this.cameraOrbit.lastMouseY;
+        this.cameraOrbit.lastMouseX = e.clientX;
+        this.cameraOrbit.lastMouseY = e.clientY;
+      }
 
       this.cameraOrbit.yaw -= dx * 0.008;
       this.cameraOrbit.pitch = Math.max(0.15, Math.min(1.4, this.cameraOrbit.pitch + dy * 0.006));
@@ -445,33 +462,47 @@ export class RobloxSeamlessWorld {
   }
 
   setupInputs() {
+    // Gerak saja (WASD / panah / Shift). Hotkey menu & aksi stasiun diurus main.js.
+    // Pakai e.code supaya tetap jalan di layout keyboard apa pun dan saat Caps Lock aktif.
+    const MOVE = { KeyW: 'w', ArrowUp: 'w', KeyS: 's', ArrowDown: 's', KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd' };
+    const typing = (e) => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || '');
     window.addEventListener('keydown', (e) => {
-      const k = e.key.toLowerCase();
-      if (k === 'w' || k === 'arrowup') this.keys.w = true;
-      if (k === 's' || k === 'arrowdown') this.keys.s = true;
-      if (k === 'a' || k === 'arrowleft') this.keys.a = true;
-      if (k === 'd' || k === 'arrowright') this.keys.d = true;
+      if (typing(e)) return;
+      if (e.code.startsWith('Arrow')) e.preventDefault();
+      if (this.inputBlocked) return;
+      if (MOVE[e.code]) this.keys[MOVE[e.code]] = true;
       if (e.key === 'Shift') this.keys.shift = true;
-      if (e.code === 'Space') this.keys.space = true;
-
-      // Tombol aksi di stasiun (Space / E / T / P) → ditangani main.js
-      if (e.repeat) return;
-      const st = this.currentStation?.id;
-      if (k === ' ' && st === 'throw') window.dispatchEvent(new CustomEvent('roblox:throw'));
-      if (k === 'e' && st === 'gym') window.dispatchEvent(new CustomEvent('roblox:pullup'));
-      if (k === 't' && st === 'shop') window.dispatchEvent(new CustomEvent('roblox:shop'));
-      if (k === 'p' && st === 'plot') window.dispatchEvent(new CustomEvent('roblox:plot'));
     });
-
     window.addEventListener('keyup', (e) => {
-      const k = e.key.toLowerCase();
-      if (k === 'w' || k === 'arrowup') this.keys.w = false;
-      if (k === 's' || k === 'arrowdown') this.keys.s = false;
-      if (k === 'a' || k === 'arrowleft') this.keys.a = false;
-      if (k === 'd' || k === 'arrowright') this.keys.d = false;
+      if (MOVE[e.code]) this.keys[MOVE[e.code]] = false;
       if (e.key === 'Shift') this.keys.shift = false;
-      if (e.code === 'Space') this.keys.space = false;
     });
+    // Alt-Tab / klik di luar jendela: lepas semua tombol supaya karakter tidak jalan sendiri
+    window.addEventListener('blur', () => this.releaseKeys());
+  }
+
+  releaseKeys() {
+    for (const k in this.keys) this.keys[k] = false;
+  }
+
+  /** Dipanggil main.js: true saat modal terbuka (WASD tidak menggerakkan karakter). */
+  setInputBlocked(blocked) {
+    this.inputBlocked = blocked;
+    if (blocked) this.releaseKeys();
+  }
+
+  /** Camera lock: kamera mengikuti gerakan mouse tanpa drag (Pointer Lock), karakter menghadap arah kamera. */
+  setCameraLock(on) {
+    this.cameraLocked = on;
+    this.cameraOrbit.isDragging = false;
+    const dom = this.renderer.domElement;
+    if (on) {
+      if (document.pointerLockElement !== dom) {
+        try { dom.requestPointerLock()?.catch?.(() => {}); } catch { /* butuh gestur pengguna; klik layar untuk mengunci lagi */ }
+      }
+    } else if (document.pointerLockElement === dom) {
+      document.exitPointerLock();
+    }
   }
 
   throwFood(distance, targetZone, foodItem, onFinish) {
@@ -643,28 +674,29 @@ export class RobloxSeamlessWorld {
 
     const speed = isSprinting ? this.moveSpeed * 1.8 : this.moveSpeed;
 
-    // FIXED: Correct intuitive screen-space direction mapping:
-    // A / Left key -> Left relative to screen (-X)
-    // D / Right key -> Right relative to screen (+X)
+    // Arah gerak relatif ke layar. Kamera ada di (sin yaw, -cos yaw) dari pemain, jadi:
+    //   maju  (W) = (-sin yaw, +cos yaw)   → menjauhi kamera
+    //   kanan (D) = (-cos yaw, -sin yaw)   → kanan layar (di yaw 0 itu −X, bukan +X)
+    // Versi sebelumnya memakai (+cos, +sin) untuk kanan, sehingga A/D terbalik.
     if (!this.isTraining && !this.isThrowing) {
       let inputX = (this.keys.d ? 1 : 0) - (this.keys.a ? 1 : 0);
       let inputZ = (this.keys.w ? 1 : 0) - (this.keys.s ? 1 : 0);
+      const cosYaw = Math.cos(this.cameraOrbit.yaw);
+      const sinYaw = Math.sin(this.cameraOrbit.yaw);
+      // Camera lock: karakter selalu menghadap arah kamera (A/D jadi langkah samping)
+      if (this.cameraLocked) this.avatar.rotation.y = Math.atan2(-sinYaw, cosYaw);
 
       if (inputX !== 0 || inputZ !== 0) {
         const len = Math.hypot(inputX, inputZ);
         inputX /= len;
         inputZ /= len;
 
-        // Camera yaw offset
-        const cosYaw = Math.cos(this.cameraOrbit.yaw);
-        const sinYaw = Math.sin(this.cameraOrbit.yaw);
-
-        const worldDx = inputX * cosYaw - inputZ * sinYaw;
-        const worldDz = inputX * sinYaw + inputZ * cosYaw;
+        const worldDx = -inputX * cosYaw - inputZ * sinYaw;
+        const worldDz = -inputX * sinYaw + inputZ * cosYaw;
 
         this.avatar.position.x += worldDx * speed * dt;
         this.avatar.position.z += worldDz * speed * dt;
-        this.avatar.rotation.y = Math.atan2(worldDx, worldDz);
+        if (!this.cameraLocked) this.avatar.rotation.y = Math.atan2(worldDx, worldDz);
 
         if (this.zookeeper) {
           animateAnimal(this.zookeeper.instance, secTime * 2.5, { walking: true });

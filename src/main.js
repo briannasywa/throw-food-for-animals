@@ -26,6 +26,10 @@ const zoneOfAnimal = (id) => ZONES.find(z => z.animals.some(a => a.id === id));
 const SPEAKER_ON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#1B2233"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>`;
 const SPEAKER_OFF = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#1B2233"/><path d="M17 9l5 6M22 9l-5 6"/></svg>`;
 
+// Keycap hotkey kecil di tombol menu (tampil saat camera lock aktif; disembunyikan di layar sentuh)
+const hk = (key, always = false) => `<kbd class="zt-hk ${always ? 'is-always' : ''}">${key}</kbd>`;
+const CAMLOCK_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1.6" fill="#1B2233"/></svg>`;
+
 const modal = (id, title, body, sub = '') => `
   <div id="modal-${id}" class="zt-modal-shade hidden">
     <div class="zt-panel zt-modal">
@@ -71,10 +75,11 @@ app.innerHTML = `
   <!-- H4 menu (kanan atas) -->
   <div class="zt-menu absolute top-3 right-3 z-20 flex items-center gap-2">
     <button id="btn-connect-wallet" class="zt-btn zt-btn--plain zt-btn--sm"><span id="wallet-btn-text">Connect Wallet</span></button>
-    <button id="btn-open-quests" class="zt-btn zt-btn--primary">Quests</button>
-    <button id="btn-open-index" class="zt-btn zt-btn--accent">Index</button>
-    <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank</button>
-    <button id="btn-toggle-sound" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Sound">${SPEAKER_ON}</button>
+    <button id="btn-open-quests" class="zt-btn zt-btn--primary">Quests${hk('Q')}</button>
+    <button id="btn-open-index" class="zt-btn zt-btn--accent">Index${hk('I')}</button>
+    <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank${hk('R')}</button>
+    <button id="btn-toggle-camlock" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Camera lock" title="Camera lock (L)">${CAMLOCK_ICON}${hk('L')}</button>
+    <button id="btn-toggle-sound" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Sound" title="Sound (M)"><span id="sound-icon">${SPEAKER_ON}</span>${hk('M')}</button>
   </div>
 
   <!-- Prompt stasiun (bawah tengah) -->
@@ -89,28 +94,32 @@ app.innerHTML = `
     </div>
   </div>
 
-  <!-- Panel lempar -->
+  <!-- Panel lempar: meter + tombol Throw (Space) -->
   <div id="throw-control-floating" class="zt-panel zt-throw absolute left-1/2 -translate-x-1/2 z-20">
-    <div class="zt-throw__head">
-      <span class="zt-title zt-throw__title">Throw</span>
-      <span id="floating-wind-val" class="zt-wind is-tail">WIND 0 m/s</span>
-      <span class="zt-throw__count"><small>TIMING</small><span id="floating-meter-val">0 / 20</span></span>
-    </div>
-    <div class="relative">
+    <div class="relative zt-throw__meter">
       <div id="meter-container" class="zt-meter">
         <div id="meter-needle" class="zt-meter__marker" style="left: 0%;"></div>
       </div>
       <div id="meter-result-slot"></div>
     </div>
-    <div class="zt-meter__labels"><span>POOR</span><span>GOOD</span><span>MAX</span></div>
-    <div class="zt-throw__foot">
-      <div id="mini-food-selector" class="zt-food-row"></div>
-      <div class="zt-throw__actions">
-        <button id="btn-toggle-auto" class="zt-btn zt-btn--plain zt-btn--sm">AUTO: OFF</button>
-        <button id="btn-throw" class="zt-btn zt-btn--primary">Throw</button>
-      </div>
-    </div>
+    <button id="btn-throw" class="zt-btn zt-btn--primary zt-throw__btn">Throw <span class="zt-key zt-key--sm">Space</span></button>
   </div>
+
+  <!-- Food Bag (kiri bawah): hanya makanan yang di-equip; klik → inventory -->
+  <button id="btn-food-bag" class="zt-panel zt-foodbag absolute z-20">
+    <span class="zt-foodbag__label">FOOD BAG${hk('F', true)}</span>
+    <span class="zt-foodbag__item">
+      <span id="foodbag-swatch" class="zt-foodbag__swatch"></span>
+      <span class="zt-foodbag__text">
+        <span id="foodbag-name" class="zt-title zt-foodbag__name">Carrot</span>
+        <span id="foodbag-sub" class="zt-foodbag__sub">Luck ×1</span>
+      </span>
+    </span>
+  </button>
+
+  <!-- Camera lock: titik bidik di tengah + petunjuk -->
+  <div id="camlock-crosshair" class="zt-crosshair hidden"></div>
+  <div id="camlock-hint" class="zt-camlock-hint hidden">CAMERA LOCK ON · Press <b>L</b> to turn off</div>
 
   <!-- F1 jarak selama lemparan -->
   <div id="throw-flight-hud" class="zt-flight absolute top-24 left-1/2 -translate-x-1/2 z-30 hidden">
@@ -185,6 +194,9 @@ app.innerHTML = `
     </div>
   `)}
 
+  ${modal('food', 'Food Bag', `<div id="food-bag-list" class="flex flex-col gap-2.5"></div>`,
+    `<div class="zt-modal__sub">Better food = luckier catches</div>`)}
+
   ${modal('plot', 'My Pen', `<div id="plot-animals-list" class="zt-grid"></div>`,
     `<div id="plot-capacity-text" class="zt-modal__sub">0 / 4 SLOTS</div>`)}
 
@@ -223,12 +235,6 @@ app.innerHTML = `
 const viewportContainer = document.querySelector('#full-map-viewport');
 const world = new RobloxSeamlessWorld(viewportContainer);
 
-// Custom Events from in-world keys
-window.addEventListener('roblox:throw', () => triggerThrow());
-window.addEventListener('roblox:pullup', () => togglePullUp());
-window.addEventListener('roblox:shop', () => openModal('shop'));
-window.addEventListener('roblox:plot', () => openModal('plot'));
-
 // Prompt stasiun: seluruh panel bisa di-tap (di HP keycap disembunyikan)
 document.querySelector('#context-action-bar').onclick = () => {
   if (world.currentStation?.id === 'throw') triggerThrow();
@@ -257,7 +263,8 @@ function confirmDialog({ title, html, okLabel, okClass = 'zt-btn--danger' }) {
     ok.className = `zt-btn ${okClass}`;
     ok.textContent = okLabel;
     m.classList.remove('hidden');
-    const done = (v) => { m.classList.add('hidden'); confirmResolve = null; resolve(v); };
+    syncModalState();
+    const done = (v) => { m.classList.add('hidden'); confirmResolve = null; syncModalState(); resolve(v); };
     confirmResolve = done;
     ok.onclick = () => done(true);
     document.querySelector('#confirm-cancel').onclick = () => done(false);
@@ -275,7 +282,6 @@ new ResizeObserver(() => {
 let meterVal = 0;
 let meterDir = 1;
 const needle = document.querySelector('#meter-needle');
-const meterValText = document.querySelector('#floating-meter-val');
 
 function animateMeter() {
   if (!world.isThrowing) {
@@ -284,7 +290,6 @@ function animateMeter() {
     if (meterVal >= 20) { meterVal = 20; meterDir = -1; }
     else if (meterVal <= 0) { meterVal = 0; meterDir = 1; }
     needle.style.left = `${(meterVal / 20) * 100}%`;
-    meterValText.textContent = `${Math.floor(meterVal)} / 20`;
   }
   requestAnimationFrame(animateMeter);
 }
@@ -332,62 +337,84 @@ function updateUI() {
   world.updatePlotAnimals(state.inventory);
   world.updateEquippedPets(state.inventory, state.equippedPets);
 
-  renderMiniFoodSelector();
+  renderFoodBag();
   renderPlotAnimals();
   updateDots();
 }
 
-function renderMiniFoodSelector() {
-  const container = document.querySelector('#mini-food-selector');
-  container.innerHTML = '';
+// ---------- Food Bag ----------
+// Depan: hanya makanan yang di-equip. Klik / F -> modal inventory (equip, beli, Legendary Bait).
+function equippedFood() {
+  if (state.selectedFoodIndex === 'web3_legendary' && (state.legendaryBaits || 0) > 0) return LEGENDARY_BAIT;
+  return FOOD_TIERS[state.selectedFoodIndex] || FOOD_TIERS[0];
+}
 
-  // Umpan Legendary (web3). Kalau stok habis, chip membuka Shop.
+function renderFoodBag() {
+  const f = equippedFood();
+  const leg = f === LEGENDARY_BAIT;
+  document.querySelector('#foodbag-swatch').style.background = f.color;
+  document.querySelector('#foodbag-name').textContent = leg ? `Legendary ×${state.legendaryBaits}` : f.name;
+  document.querySelector('#foodbag-sub').textContent = leg ? 'Guaranteed Legendary' : `Luck ×${f.luckBonus}`;
+  document.querySelector('#btn-food-bag').classList.toggle('is-legend', leg);
+  if (!document.querySelector('#modal-food').classList.contains('hidden')) renderFoodBagModal();
+}
+
+function equipFood(idx) {
+  sfx.playPop();
+  state.selectedFoodIndex = idx;
+  state.save();
+  updateUI();
+}
+
+function renderFoodBagModal() {
+  const list = document.querySelector('#food-bag-list');
+  const cur = equippedFood();
   const legCount = state.legendaryBaits || 0;
-  const legBtn = document.createElement('button');
-  legBtn.className = `zt-chip zt-chip--legend ${state.selectedFoodIndex === 'web3_legendary' ? 'is-active' : ''} ${legCount ? '' : 'is-locked'}`;
-  legBtn.innerHTML = `<span class="zt-chip__swatch" style="background:${LEGENDARY_BAIT.color}"></span>LEGENDARY
-    <span class="zt-chip__price">×${legCount}</span>`;
-  legBtn.onclick = () => {
-    sfx.playPop();
-    if (legCount > 0) {
-      state.selectedFoodIndex = 'web3_legendary';
-      state.save();
-      updateUI();
-    } else {
-      openModal('shop');
-    }
-  };
-  container.appendChild(legBtn);
+  const row = ({ color, title, desc, btn, active, legend }) => `
+    <div class="zt-row zt-foodrow ${active ? 'is-active' : ''} ${legend ? 'zt-foodrow--legend' : ''}">
+      <span class="zt-foodrow__swatch" style="background:${color}"></span>
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title">${title}</div>
+        <div class="zt-row__desc">${desc}</div>
+      </div>
+      ${btn}
+    </div>`;
 
+  const equippedBtn = `<button class="zt-btn zt-btn--plain zt-btn--sm" disabled>✓ Equipped</button>`;
+  let html = row({
+    color: LEGENDARY_BAIT.color, legend: true, active: cur === LEGENDARY_BAIT,
+    title: `Legendary Bait <span class="zt-muted">×${legCount}</span>`,
+    desc: 'Guaranteed Legendary catch · bought with USDC',
+    btn: cur === LEGENDARY_BAIT ? equippedBtn
+      : legCount > 0 ? `<button class="zt-btn zt-btn--accent zt-btn--sm" data-food="legend">Equip</button>`
+      : `<button class="zt-btn zt-btn--plain zt-btn--sm" data-food="shop">Get in Shop</button>`,
+  });
   FOOD_TIERS.forEach((f, idx) => {
-    const isUnlocked = state.unlockedFoods.includes(idx);
-    const isSelected = state.selectedFoodIndex === idx;
+    const owned = state.unlockedFoods.includes(idx);
     const canAfford = state.money >= f.cost;
+    html += row({
+      color: f.color, active: cur === f,
+      title: f.name,
+      desc: `${f.desc} · Luck ×${f.luckBonus}`,
+      btn: cur === f ? equippedBtn
+        : owned ? `<button class="zt-btn zt-btn--good zt-btn--sm" data-food="${idx}">Equip</button>`
+        : `<button class="zt-btn zt-btn--sm ${canAfford ? 'zt-btn--primary' : 'zt-btn--plain is-short'}" data-food="${idx}">Buy $${formatNum(f.cost)}</button>`,
+    });
+  });
+  list.innerHTML = html;
 
-    const btn = document.createElement('button');
-    btn.className = `zt-chip ${isSelected ? 'is-active' : ''} ${!isUnlocked && !canAfford ? 'is-locked' : ''}`;
-    btn.innerHTML = `<span class="zt-chip__swatch" style="background:${f.color}"></span>${f.iconText}
-      ${isUnlocked
-        ? `<span class="zt-chip__check">${isSelected ? '✓' : ''}</span>`
-        : `<span class="zt-chip__price ${canAfford ? '' : 'is-short'}">$${formatNum(f.cost)}</span>`}`;
-
-    btn.onclick = () => {
-      sfx.playPop();
-      if (isUnlocked) {
-        state.selectedFoodIndex = idx;
-        state.save();
-        updateUI();
-      } else {
-        if (state.money >= f.cost) {
-          state.buyFood(idx);
-          sfx.playLevelUp();
-          updateUI();
-        } else {
-          showNotice('NOT ENOUGH CASH!');
-        }
-      }
+  list.querySelectorAll('[data-food]').forEach(b => {
+    b.onclick = () => {
+      const v = b.dataset.food;
+      if (v === 'shop') { openModal('shop'); return; }
+      if (v === 'legend') { equipFood('web3_legendary'); return; }
+      const idx = Number(v);
+      if (state.unlockedFoods.includes(idx)) { equipFood(idx); return; }
+      if (state.money < FOOD_TIERS[idx].cost) { showNotice('NOT ENOUGH CASH!'); return; }
+      state.buyFood(idx);   // beli -> langsung di-equip (perilaku lama dari gameState)
+      sfx.playLevelUp();
+      updateUI();
     };
-    container.appendChild(btn);
   });
 }
 
@@ -529,9 +556,12 @@ function triggerThrow() {
   const windEffect = 1 + (world.windSpeed * 0.03 * world.windDirection);
   const distance = Math.max(15, Math.floor(baseDist * windEffect));
   const targetZone = zoneOfDistance(distance);
+  document.querySelector('#camlock-crosshair').classList.add('hidden');
+  document.querySelector('#camlock-hint').classList.add('hidden');
 
   world.throwFood(distance, targetZone, food, (caughtAnimal, dist) => {
     hud.classList.add('hidden');
+    syncCamLockUI();
     sfx.playCatch(caughtAnimal.rarity, caughtAnimal.mutation);
 
     // Info untuk tampilan (dibaca sebelum state berubah)
@@ -559,7 +589,6 @@ function togglePullUp() {
 }
 
 // Tick loop for distance, wind, zone info & stamina
-let lastWindKey = '';
 let staminaFullSince = 0;
 setInterval(() => {
   if (world.isThrowing) {
@@ -572,16 +601,6 @@ setInterval(() => {
     document.querySelector("#hud-zone-name").textContent = `${z.name.toUpperCase()} · ${zoneRange(z)}`;
     document.querySelector('#hud-zone-gimmick').textContent = z.gimmick;
     document.querySelector('#hud-zone-swatch').style.background = hex(z.stripes[0]);
-  }
-
-  // T2 angin: TAILWIND (dari belakang, hijau) / HEADWIND (dari depan, merah)
-  const tail = world.windDirection > 0;
-  const windKey = `${world.windSpeed}|${tail}`;
-  if (windKey !== lastWindKey) {
-    const w = document.querySelector('#floating-wind-val');
-    w.className = `zt-wind ${tail ? 'is-tail' : 'is-head'} ${lastWindKey ? 'is-flash' : ''}`;
-    w.innerHTML = `<span class="zt-wind__arrow" style="transform:rotate(${tail ? 0 : 180}deg)">➜</span>WIND ${world.windSpeed} m/s · ${tail ? 'TAILWIND' : 'HEADWIND'}`;
-    lastWindKey = windKey;
   }
 
   // H5 stamina: tampil saat berkurang, hilang perlahan 2 dtk setelah penuh
@@ -600,32 +619,41 @@ setInterval(() => {
 document.querySelector('#meter-container').onclick = () => triggerThrow();
 document.querySelector('#btn-throw').onclick = () => triggerThrow();
 
-function renderAutoBtn() {
-  const b = document.querySelector('#btn-toggle-auto');
-  b.textContent = state.autoThrow ? 'AUTO: ON' : 'AUTO: OFF';
-  b.className = `zt-btn zt-btn--sm ${state.autoThrow ? 'zt-btn--good' : 'zt-btn--plain'}`;
-}
-document.querySelector('#btn-toggle-auto').onclick = () => {
-  sfx.playPop();
-  state.autoThrow = !state.autoThrow;
-  state.save();
-  renderAutoBtn();
-};
-renderAutoBtn();
+// Tombol AUTO dihapus dari panel lempar; save lama yang masih AUTO: ON dimatikan supaya tidak melempar sendiri
+state.autoThrow = false;
 
-// Modal helpers — hanya satu panel terbuka; tutup dengan X atau Esc
-const MODALS = ['shop', 'plot', 'quests', 'index', 'rank'];
+// Modal helpers — hanya satu panel terbuka; tutup dengan X, klik latar, atau Esc
+const MODALS = ['shop', 'plot', 'quests', 'index', 'rank', 'food'];
+const anyModalOpen = () => MODALS.some(id => !document.querySelector(`#modal-${id}`).classList.contains('hidden'))
+  || !document.querySelector('#modal-confirm').classList.contains('hidden');
+
+function syncModalState() {
+  const open = anyModalOpen();
+  world.setInputBlocked(open);
+  // Camera lock: lepas kursor selama menu terbuka, kunci lagi setelah ditutup
+  if (camLock) world.setCameraLock(!open);
+  syncCamLockUI();
+}
+
 function openModal(id) {
   sfx.playPop();
-  MODALS.forEach(other => other !== id && closeModal(other));
+  MODALS.forEach(other => other !== id && closeModal(other, true));
+  if (id === 'food') renderFoodBagModal();
   const m = document.querySelector(`#modal-${id}`);
   if (m) m.classList.remove('hidden');
+  syncModalState();
 }
 
-function closeModal(id) {
+function closeModal(id, silent = false) {
   const m = document.querySelector(`#modal-${id}`);
   if (m) m.classList.add('hidden');
+  if (!silent) syncModalState();
 }
+const toggleModal = (id, onOpen) => {
+  if (!document.querySelector(`#modal-${id}`).classList.contains('hidden')) { closeModal(id); return; }
+  onOpen?.();
+  openModal(id);
+};
 
 MODALS.forEach(id => {
   const btnClose = document.querySelector(`#btn-close-${id}`);
@@ -633,20 +661,71 @@ MODALS.forEach(id => {
   // klik di latar gelap juga menutup
   document.querySelector(`#modal-${id}`).addEventListener('click', (e) => { if (e.target.id === `modal-${id}`) closeModal(id); });
 });
+
+// ---------- Camera lock (L) ----------
+let camLock = false;
+function syncCamLockUI() {
+  const locked = camLock && !anyModalOpen();
+  document.querySelector('.zt-root').classList.toggle('is-camlock', camLock);
+  document.querySelector('#btn-toggle-camlock').classList.toggle('is-on', camLock);
+  document.querySelector('#camlock-crosshair').classList.toggle('hidden', !locked || world.isThrowing);
+  document.querySelector('#camlock-hint').classList.toggle('hidden', !locked || world.isThrowing);
+}
+function setCamLock(on) {
+  camLock = on;
+  world.setCameraLock(on && !anyModalOpen());
+  syncCamLockUI();
+}
+document.querySelector('#btn-toggle-camlock').onclick = () => { sfx.playPop(); setCamLock(!camLock); };
+// Esc dari browser melepas pointer lock -> anggap camera lock dimatikan (kecuali sengaja dilepas karena menu terbuka)
+document.addEventListener('pointerlockchange', () => {
+  if (!document.pointerLockElement && camLock && !anyModalOpen()) setCamLock(false);
+});
+
+// ---------- Hotkey ----------
+// Space Throw · F Food Bag · Q Quests · I Index · R Rank · M Sound · L Camera lock · Esc tutup menu
+// Di stasiun: E latihan · T toko · P kandang. WASD/panah/Shift diurus robloxSeamlessWorld.js.
+const STATION_KEYS = { KeyE: ['gym', () => togglePullUp()], KeyT: ['shop', () => toggleModal('shop')], KeyP: ['plot', () => toggleModal('plot')] };
+const MENU_KEYS = {
+  KeyF: () => toggleModal('food'),
+  KeyQ: () => toggleModal('quests', renderQuestsModal),
+  KeyI: () => toggleModal('index', () => { indexHasNew = false; updateDots(); renderIndexModal(); }),
+  KeyR: () => toggleModal('rank', updateRankModal),
+  KeyM: () => toggleSound(),
+  KeyL: () => { sfx.playPop(); setCamLock(!camLock); },
+};
 window.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
-  if (confirmResolve) { confirmResolve(false); return; }
-  MODALS.forEach(closeModal);
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || '')) return;
+  if (e.key === 'Escape') {
+    if (confirmResolve) { confirmResolve(false); return; }
+    MODALS.forEach(id => closeModal(id, true));
+    syncModalState();
+    return;
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.code === 'Space') {
+    // Jangan biarkan Space "mengklik" ulang tombol yang terakhir difokus
+    e.preventDefault();
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    if (!e.repeat && !anyModalOpen()) triggerThrow();
+    return;
+  }
+  if (e.repeat || confirmResolve) return;
+  if (MENU_KEYS[e.code]) { MENU_KEYS[e.code](); return; }
+  const st = STATION_KEYS[e.code];
+  if (st && world.currentStation?.id === st[0]) st[1]();
 });
 
 document.querySelector('#btn-open-quests').onclick = () => { renderQuestsModal(); openModal('quests'); };
 document.querySelector('#btn-open-index').onclick = () => { indexHasNew = false; updateDots(); renderIndexModal(); openModal('index'); };
 document.querySelector('#btn-open-rank').onclick = () => { updateRankModal(); openModal('rank'); };
 
-document.querySelector('#btn-toggle-sound').onclick = () => {
+function toggleSound() {
   sfx.enabled = !sfx.enabled;
-  document.querySelector('#btn-toggle-sound').innerHTML = sfx.enabled ? SPEAKER_ON : SPEAKER_OFF;
-};
+  document.querySelector('#sound-icon').innerHTML = sfx.enabled ? SPEAKER_ON : SPEAKER_OFF;
+}
+document.querySelector('#btn-toggle-sound').onclick = () => toggleSound();
+document.querySelector('#btn-food-bag').onclick = () => openModal('food');
 
 // Web3 (Base Sepolia testnet, USDC) — logika dari tim (web3Manager.js), tampilan versi art direction
 document.querySelector('#btn-connect-wallet').onclick = async () => {
@@ -854,7 +933,7 @@ setInterval(() => {
     state.money += cps;
     state.totalEarned += cps;
     setStat('#hud-money', `$${formatNum(state.money)}`);
-    renderMiniFoodSelector(); // warna harga makanan ikut berubah saat uang cukup
+    if (!document.querySelector('#modal-food').classList.contains('hidden')) renderFoodBagModal(); // harga ikut berubah saat uang cukup
   }
   updateDots();
 }, 1000);
