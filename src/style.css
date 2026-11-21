@@ -277,3 +277,9 @@ body { font-family: var(--zt-font-ui, 'Fredoka', sans-serif); font-weight: 600; 
 .zt-root.is-touch.area-throw .zt-areabar__title, .zt-root.is-touch.area-throw .zt-areabar__actions { display: none; }
 .zt-root.is-touch.area-throw #area-exit { width: 100%; height: 61px; font-size: 18px; }
 .zt-root.is-touch.area-throw .zt-onboard { bottom: calc(var(--zt-throw-h, 140px) + 100px); }
+
+/* penanda mode easy (dev) — supaya demo tidak tak sengaja jalan di mode easy */
+.zt-modebadge { position: absolute; right: 12px; bottom: 12px; z-index: 24; pointer-events: none; font-family: var(--zt-font-title);
+  font-size: 11px; letter-spacing: .08em; color: var(--zt-white); background: var(--zt-danger); border: 2px solid var(--zt-ink);
+  border-radius: 6px; padding: 3px 8px 4px; box-shadow: 0 2px 0 var(--zt-ink); }
+.zt-root.is-touch .zt-modebadge { top: 70px; bottom: auto; right: 12px; }

@@ -1,6 +1,11 @@
 import { FOOD_TIERS, MUTATION_DATA, ZONES } from './gameData.js';
+import { D, MODE } from './difficulty.js';
 
-const SAVE_KEY = 'ZooToss_SaveData_v1';
+// Save terpisah per mode (difficulty.js). Save lama tanpa akhiran = progres mode easy.
+const SAVE_KEY = MODE === 'easy' ? 'ZooToss_SaveData_v1' : `ZooToss_SaveData_v1_${MODE}`;
+
+/** Harga makanan sesuai mode. */
+export const foodCost = (f) => Math.round(f.cost * D.foodCostMul);
 
 export class GameState {
   constructor() {
@@ -8,10 +13,10 @@ export class GameState {
     this.totalEarned = 0;
     this.power = 10;
     this.pullUpLevel = 1;
-    this.pullUpCost = 50;
+    this.pullUpCost = D.pullUpCostStart;
     
     this.maxBaseSlots = 4;
-    this.baseSlotCost = 200;
+    this.baseSlotCost = D.slotCostStart;
     
     this.selectedFoodIndex = 0;
     this.unlockedFoods = [0]; // Index of unlocked foods
@@ -25,17 +30,17 @@ export class GameState {
     this.isTraining = false;
     this.autoThrow = false;
     this.rebirthCount = 0;
-    this.rebirthCost = 50000;
+    this.rebirthCost = D.rebirthCostStart;
 
     // Web3 Inventory Items (Base Sepolia Testnet)
     this.legendaryBaits = 0; // Count of Legendary Guaranteed Baits available
     
     // Daily & Dynamic Quests System
     this.quests = [
-      { id: 'q_pullup', title: 'Hard Training', desc: 'Reach 50 Power with pull-ups', target: 50, current: 0, rewardCash: 500, completed: false, claimed: false },
-      { id: 'q_catches', title: 'Jungle Hunter', desc: 'Catch 5 animals', target: 5, current: 0, rewardCash: 1200, completed: false, claimed: false },
-      { id: 'q_distance', title: 'Rocket Throw', desc: 'Throw 2,000 m in one go', target: 2000, current: 0, rewardCash: 3500, completed: false, claimed: false },
-      { id: 'q_mutation', title: 'Golden Touch', desc: 'Catch 1 animal with a rare mutation', target: 1, current: 0, rewardCash: 8000, completed: false, claimed: false }
+      { id: 'q_pullup', title: 'Hard Training', desc: 'Reach 50 Power with pull-ups', target: 50, current: 0, rewardCash: Math.round(500 * D.questRewardMul), completed: false, claimed: false },
+      { id: 'q_catches', title: 'Jungle Hunter', desc: 'Catch 5 animals', target: 5, current: 0, rewardCash: Math.round(1200 * D.questRewardMul), completed: false, claimed: false },
+      { id: 'q_distance', title: 'Rocket Throw', desc: 'Throw 2,000 m in one go', target: 2000, current: 0, rewardCash: Math.round(3500 * D.questRewardMul), completed: false, claimed: false },
+      { id: 'q_mutation', title: 'Golden Touch', desc: 'Catch 1 animal with a rare mutation', target: 1, current: 0, rewardCash: Math.round(8000 * D.questRewardMul), completed: false, claimed: false }
     ];
 
     this.equippedPets = []; // UIDs of equipped companion pets (max 2)
@@ -51,10 +56,10 @@ export class GameState {
       const pet = this.inventory.find(p => p.uid === uid);
       if (pet) {
         const mutMul = MUTATION_DATA[pet.mutation]?.multiplier || 1.0;
-        bonus += (pet.baseCps * mutMul) * 0.0005; // active pet perk
+        bonus += (pet.baseCps * mutMul) * D.petBonusPerCps; // active pet perk
       }
     });
-    return bonus;
+    return Math.min(bonus, 1 + D.petBonusCap);
   }
 
   toggleEquipPet(uid) {
@@ -110,8 +115,18 @@ export class GameState {
     return 0;
   }
 
+  /** Penghasilan dasar satu hewan per detik (sebelum rebirth & bonus pet), sesuai mode. */
+  incomeOf(item) {
+    return Math.floor(item.baseCps * (MUTATION_DATA[item.mutation]?.multiplier || 1) * D.incomeMul);
+  }
+
+  /** Harga jual = penghasilan per detik x D.sellSeconds (minimal $10). */
+  sellPriceOf(item) {
+    return Math.max(10, Math.floor(item.baseCps * (MUTATION_DATA[item.mutation]?.multiplier || 1) * D.incomeMul * D.sellSeconds));
+  }
+
   getRebirthMultiplier() {
-    return 1 + (this.rebirthCount * 0.5); // +50% per rebirth
+    return 1 + (this.rebirthCount * D.rebirthBonus); // easy +50%, hard +25% per rebirth
   }
 
   canRebirth() {
@@ -121,12 +136,12 @@ export class GameState {
   doRebirth() {
     if (this.canRebirth()) {
       this.rebirthCount += 1;
-      this.rebirthCost = Math.floor(this.rebirthCost * 3.5);
+      this.rebirthCost = Math.floor(this.rebirthCost * D.rebirthCostGrowth);
       // Reset money & power, but keep bestiary, pets & get huge multiplier!
       this.money = 0;
       this.power = 10;
       this.pullUpLevel = 1;
-      this.pullUpCost = 50;
+      this.pullUpCost = D.pullUpCostStart;
       this.save();
       return true;
     }
@@ -136,7 +151,7 @@ export class GameState {
   getPullUpRate() {
     // Power gained per second when pull up training, scaled with Rebirth & Equipped Pet bonus
     const baseRate = Math.floor(1 + Math.pow(this.pullUpLevel, 1.4) * 2);
-    return Math.floor(baseRate * this.getRebirthMultiplier() * this.getEquippedBonusMultiplier());
+    return Math.max(1, Math.floor(baseRate * D.pullUpRateMul * this.getRebirthMultiplier() * this.getEquippedBonusMultiplier()));
   }
 
   getCurrentCps() {
@@ -144,7 +159,7 @@ export class GameState {
       const mutMul = MUTATION_DATA[item.mutation]?.multiplier || 1.0;
       return sum + Math.floor(item.baseCps * mutMul);
     }, 0);
-    return Math.floor(rawCps * this.getRebirthMultiplier() * this.getEquippedBonusMultiplier());
+    return Math.floor(rawCps * D.incomeMul * this.getRebirthMultiplier() * this.getEquippedBonusMultiplier());
   }
 
   buyFood(index) {
@@ -155,8 +170,8 @@ export class GameState {
       this.save();
       return true;
     }
-    if (this.money >= food.cost) {
-      this.money -= food.cost;
+    if (this.money >= foodCost(food)) {
+      this.money -= foodCost(food);
       this.unlockedFoods.push(index);
       this.selectedFoodIndex = index;
       this.save();
@@ -169,7 +184,7 @@ export class GameState {
     if (this.money >= this.pullUpCost) {
       this.money -= this.pullUpCost;
       this.pullUpLevel += 1;
-      this.pullUpCost = Math.floor(this.pullUpCost * 1.8);
+      this.pullUpCost = Math.floor(this.pullUpCost * D.pullUpCostGrowth);
       this.save();
       return true;
     }
@@ -180,7 +195,7 @@ export class GameState {
     if (this.money >= this.baseSlotCost) {
       this.money -= this.baseSlotCost;
       this.maxBaseSlots += 2;
-      this.baseSlotCost = Math.floor(this.baseSlotCost * 2.5);
+      this.baseSlotCost = Math.floor(this.baseSlotCost * D.slotCostGrowth);
       this.save();
       return true;
     }
@@ -190,9 +205,7 @@ export class GameState {
   sellAnimal(index) {
     if (index >= 0 && index < this.inventory.length) {
       const animal = this.inventory[index];
-      const mutMul = MUTATION_DATA[animal.mutation]?.multiplier || 1.0;
-      // Sell price based on baseCps * mutMul * 20 sec
-      const sellPrice = Math.max(10, Math.floor(animal.baseCps * mutMul * 25));
+      const sellPrice = this.sellPriceOf(animal);
       this.money += sellPrice;
       this.totalEarned += sellPrice;
       this.inventory.splice(index, 1);
@@ -207,8 +220,7 @@ export class GameState {
     const count = this.inventory.length;
     while (this.inventory.length > 0) {
       const item = this.inventory.pop();
-      const mutMul = MUTATION_DATA[item.mutation]?.multiplier || 1.0;
-      const price = Math.max(10, Math.floor(item.baseCps * mutMul * 25));
+      const price = this.sellPriceOf(item);
       totalSellPrice += price;
     }
     this.money += totalSellPrice;
@@ -249,7 +261,7 @@ export class GameState {
       return { placed: true };
     } else {
       // Auto-sell immediately if plot full!
-      const sellPrice = Math.max(10, Math.floor(animalData.baseCps * mutMul * 25));
+      const sellPrice = this.sellPriceOf(animalData);
       this.money += sellPrice;
       this.totalEarned += sellPrice;
       this.save();
@@ -296,9 +308,9 @@ export class GameState {
         this.totalEarned = d.totalEarned ?? 0;
         this.power = d.power ?? 10;
         this.pullUpLevel = d.pullUpLevel ?? 1;
-        this.pullUpCost = d.pullUpCost ?? 50;
+        this.pullUpCost = d.pullUpCost ?? D.pullUpCostStart;
         this.maxBaseSlots = d.maxBaseSlots ?? 4;
-        this.baseSlotCost = d.baseSlotCost ?? 200;
+        this.baseSlotCost = d.baseSlotCost ?? D.slotCostStart;
         this.selectedFoodIndex = d.selectedFoodIndex ?? 0;
         this.unlockedFoods = d.unlockedFoods ?? [0];
         this.inventory = d.inventory ?? [];
@@ -307,7 +319,7 @@ export class GameState {
         this.luckiestCatch = d.luckiestCatch ?? null;
         this.autoThrow = d.autoThrow ?? false;
         this.rebirthCount = d.rebirthCount ?? 0;
-        this.rebirthCost = d.rebirthCost ?? 50000;
+        this.rebirthCost = d.rebirthCost ?? D.rebirthCostStart;
         this.legendaryBaits = d.legendaryBaits ?? 0;
         // Progres quest dari save, teks (judul/deskripsi) tetap dari definisi terbaru
         if (d.quests) this.quests = this.quests.map(q => {

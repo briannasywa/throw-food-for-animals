@@ -2,7 +2,8 @@
 import './ui-kit.css';
 import './style.css';
 import confetti from 'canvas-confetti';
-import { GameState, formatNum } from './gameState.js';
+import { GameState, formatNum, foodCost } from './gameState.js';
+import { D, MODE } from './difficulty.js';
 import { FOOD_TIERS, ZONES, MUTATION_DATA } from './gameData.js';
 import { RobloxSeamlessWorld } from './robloxSeamlessWorld.js';
 import { sfx } from './audio.js';
@@ -18,8 +19,9 @@ const meters = (n) => `${Math.floor(n).toLocaleString('en-US')} m`;
 const zoneRange = (z) => `${z.minDist.toLocaleString('en-US')}–${z.maxDist.toLocaleString('en-US')} m`;
 const rarityTag = (r) => `<span class="zt-tag zt-tag--${r.toLowerCase()}">${r}</span>`;
 const mutTag = (m) => (m && m !== 'Normal' ? `<span class="zt-mut zt-mut--${m.toLowerCase()}">${m}</span>` : '');
-const sellPriceOf = (item) => Math.max(10, Math.floor(item.baseCps * (MUTATION_DATA[item.mutation]?.multiplier || 1) * 25));
-const incomeOf = (item) => Math.floor(item.baseCps * (MUTATION_DATA[item.mutation]?.multiplier || 1));
+// Harga jual & penghasilan per hewan sesuai mode (difficulty.js)
+const sellPriceOf = (item) => state.sellPriceOf(item);
+const incomeOf = (item) => state.incomeOf(item);
 const zoneOfDistance = (d) => { for (let i = ZONES.length - 1; i >= 0; i--) if (d >= ZONES[i].minDist) return ZONES[i]; return ZONES[0]; };
 const zoneOfAnimal = (id) => ZONES.find(z => z.animals.some(a => a.id === id));
 
@@ -225,7 +227,7 @@ app.innerHTML = `
     <div class="zt-row">
       <div class="zt-row__main">
         <div class="zt-title zt-row__title">Rebirth <span id="shop-rebirth-count" class="zt-muted">0x</span></div>
-        <div class="zt-row__desc">Reset cash and Power for a permanent +50% income &amp; Power boost</div>
+        <div class="zt-row__desc">Reset cash and Power for a permanent +${Math.round(D.rebirthBonus * 100)}% income &amp; Power boost</div>
       </div>
       <button id="btn-shop-rebirth" class="zt-btn zt-btn--accent">$50K</button>
     </div>
@@ -291,6 +293,7 @@ app.innerHTML = `
   </div>
 
   <div id="zt-notice" class="zt-panel zt-notice hidden"></div>
+  ${MODE === 'easy' ? `<div class="zt-modebadge" title="Easy mode (dev testing). Open with ?mode=hard for the demo.">EASY MODE · DEV</div>` : ''}
 </div>
 `;
 
@@ -319,7 +322,7 @@ if (import.meta.env.DEV) {
     const fps = Math.round(frames * 1000 / (now - last));
     frames = 0; last = now;
     const r = world.renderer.info.render;
-    box.textContent = `${fps} FPS · ${r.calls} calls · ${(r.triangles / 1000).toFixed(1)}k tris · far ${Math.round(world.camera.far)} · ${world.lighting.quality}${world.lighting.compact ? ' compact' : ''}`;
+    box.textContent = `${fps} FPS · ${r.calls} calls · ${(r.triangles / 1000).toFixed(1)}k tris · far ${Math.round(world.camera.far)} · ${world.lighting.quality}${world.lighting.compact ? ' compact' : ''} · mode ${MODE}`;
   }, 500);
   window.addEventListener('keydown', (e) => { if (e.code === 'Backquote') box.classList.toggle('hidden'); });
 }
@@ -374,7 +377,7 @@ const needle = document.querySelector('#meter-needle');
 
 function animateMeter() {
   if (!world.isThrowing) {
-    const spd = 0.52 + Math.abs(world.windSpeed * 0.02);
+    const spd = (0.52 + Math.abs(world.windSpeed * 0.02)) * D.meterSpeedMul;
     meterVal += meterDir * spd;
     if (meterVal >= 20) { meterVal = 20; meterDir = -1; }
     else if (meterVal <= 0) { meterVal = 0; meterDir = 1; }
@@ -482,14 +485,14 @@ function renderFoodBagModal() {
   });
   FOOD_TIERS.forEach((f, idx) => {
     const owned = state.unlockedFoods.includes(idx);
-    const canAfford = state.money >= f.cost;
+    const canAfford = state.money >= foodCost(f);
     html += row({
       color: f.color, active: cur === f,
       title: f.name,
       desc: `${f.desc} · Luck ×${f.luckBonus}`,
       btn: cur === f ? equippedBtn
         : owned ? `<button class="zt-btn zt-btn--good zt-btn--sm" data-food="${idx}">Equip</button>`
-        : `<button class="zt-btn zt-btn--sm ${canAfford ? 'zt-btn--primary' : 'zt-btn--plain is-short'}" data-food="${idx}">Buy $${formatNum(f.cost)}</button>`,
+        : `<button class="zt-btn zt-btn--sm ${canAfford ? 'zt-btn--primary' : 'zt-btn--plain is-short'}" data-food="${idx}">Buy $${formatNum(foodCost(f))}</button>`,
     });
   });
   list.innerHTML = html;
@@ -501,7 +504,7 @@ function renderFoodBagModal() {
       if (v === 'legend') { equipFood('web3_legendary'); return; }
       const idx = Number(v);
       if (state.unlockedFoods.includes(idx)) { equipFood(idx); return; }
-      if (state.money < FOOD_TIERS[idx].cost) { showNotice('NOT ENOUGH CASH!'); return; }
+      if (state.money < foodCost(FOOD_TIERS[idx])) { showNotice('NOT ENOUGH CASH!'); return; }
       state.buyFood(idx);   // beli -> langsung di-equip (perilaku lama dari gameState)
       sfx.playLevelUp();
       updateUI();
@@ -644,7 +647,8 @@ function triggerThrow() {
   hud.classList.remove('hidden');
 
   // Rumus jarak versi tim (main ba5b48a)
-  const baseDist = (state.power * 10) * (0.5 + (score / 20) * 1.5);
+  // Mode easy: 10 m per Power (angka asli), hard: 2 m per Power (difficulty.js)
+  const baseDist = (state.power * D.distPerPower) * (0.5 + (score / 20) * 1.5);
   const windEffect = 1 + (world.windSpeed * 0.03 * world.windDirection);
   const distance = Math.max(15, Math.floor(baseDist * windEffect));
   const targetZone = zoneOfDistance(distance);
@@ -1028,8 +1032,8 @@ function renderMobileMenu() {
   document.querySelector('#mmenu-zone-swatch').style.background = document.querySelector('#hud-zone-swatch').style.background;
   const mult = state.getRebirthMultiplier();
   document.querySelector('#mmenu-rb-count').textContent = `${state.rebirthCount}x`;
-  document.querySelector('#mmenu-rb-desc').textContent = `Income & Power ×${mult.toFixed(1)} · keeps animals, food & Index`;
-  document.querySelector('#mmenu-rb-next').textContent = `Next: ×${(mult + 0.5).toFixed(1)} for $${formatNum(state.rebirthCost)}`;
+  document.querySelector('#mmenu-rb-desc').textContent = `Income & Power ×${+mult.toFixed(2)} · keeps animals, food & Index`;
+  document.querySelector('#mmenu-rb-next').textContent = `Next: ×${+(mult + D.rebirthBonus).toFixed(2)} for $${formatNum(state.rebirthCost)}`;
   const rb = document.querySelector('#mmenu-rebirth');
   rb.classList.toggle('is-short', !state.canRebirth());
   document.querySelector('#mmenu-sound').textContent = `Sound: ${sfx.enabled ? 'On' : 'Off'}`;
@@ -1135,7 +1139,7 @@ document.querySelector('#btn-shop-rebirth').onclick = async () => {
   if (state.canRebirth()) {
     const ok = await confirmDialog({
       title: 'Rebirth?',
-      html: `You'll lose your cash and Power, but keep your animals, food and Index.<br><b>+50% income and Power forever.</b>`,
+      html: `You'll lose your cash and Power, but keep your animals, food and Index.<br><b>+${Math.round(D.rebirthBonus * 100)}% income and Power forever.</b>`,
       okLabel: 'Rebirth',
       okClass: 'zt-btn--accent',
     });
