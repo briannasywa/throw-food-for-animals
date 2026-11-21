@@ -1,6 +1,6 @@
 import { FOOD_TIERS, MUTATION_DATA, ZONES } from './gameData.js';
 
-const SAVE_KEY = 'ThrowFoodForAnimals_SaveData_v1';
+const SAVE_KEY = 'ZooToss_SaveData_v1';
 
 export class GameState {
   constructor() {

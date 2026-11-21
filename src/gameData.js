@@ -1,5 +1,4 @@
-// Official Color Palette & Biome Zones based on Roblox "Throw Food For Animals"
-// Sky color: #70c5ff (Vibrant Roblox Sky Blue)
+// Zoo Toss — biome zones & game data (angka game mengikuti prototype)
 
 export const SKY_COLOR = 0x70c5ff;
 

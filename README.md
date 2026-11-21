@@ -1,6 +1,6 @@
-# 🍖 Dokumen Progres Pengembangan Game: Throw Food For Animals
+# 🍖 Dokumen Progres Pengembangan Game: Zoo Toss
 
-Game ini dibuat menyerupai game Roblox populer **"Throw Food For Animals"** dengan arsitektur web modern (Vite, Three.js 3D Voxel Engine, TailwindCSS, Web Audio API).
+Game lempar makanan ke hewan dengan arsitektur web modern (Vite, Three.js 3D Voxel Engine, TailwindCSS, Web Audio API).
 
 ---
 
@@ -144,7 +144,7 @@ Pembaruan besar ini merombak simulator menjadi **Open World 3D nyata**:
 
 | Fitur | Status | Detail Implementasi |
 | :--- | :---: | :--- |
-| **Throw Food (Lempar Makanan)** | ✅ Selesai | Mekanik meteran presisi (skala 0–20). Klik tombol saat jarum di angka 20 untuk lemparan jarak terjauh. |
+| **Throw (Lempar Makanan)** | ✅ Selesai | Mekanik meteran presisi (skala 0–20). Klik tombol saat jarum di angka 20 untuk lemparan jarak terjauh. |
 | **AFK Pull-up Training** | ✅ Selesai | Menambah stat *Throw Power* secara otomatis tiap detik. Karakter beranimasi pull-up di tiang bar. |
 | **Simpan Hewan (Base Plot)** | ✅ Selesai | Hewan tertangkap ditempatkan di plot kandang dan menghasilkan *Cash Per Second* (CPS) pasif. |
 | **Jual Hewan ke Master NPC** | ✅ Selesai | Jual satuan atau jual semua hewan langsung ke Master Game NPC untuk mendapatkan koin instan. Auto-sell aktif jika kandang penuh. |
