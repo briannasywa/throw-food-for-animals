@@ -117,6 +117,18 @@ app.innerHTML = `
     </span>
   </button>
 
+  <!-- HP: joystick virtual (kiri bawah) -->
+  <div id="joystick" class="zt-joy hidden" aria-label="Move">
+    <div class="zt-joy__knob"></div>
+  </div>
+
+  <!-- HP: bar area (nama area, tombol aksi, Exit). Pemain terkunci di area sampai menekan Exit. -->
+  <div id="area-bar" class="zt-panel zt-areabar hidden">
+    <span id="area-title" class="zt-title zt-areabar__title">Throw Pad</span>
+    <div id="area-actions" class="zt-areabar__actions"></div>
+    <button id="area-exit" class="zt-btn zt-btn--danger zt-btn--sm">Exit</button>
+  </div>
+
   <!-- Mode sinematik: pita hitam atas-bawah (latihan pull-up & View Biome) -->
   <div id="cine" class="zt-cine hidden">
     <div class="zt-cine__bar zt-cine__bar--top">
@@ -257,6 +269,12 @@ app.innerHTML = `
 // Initialize Fullscreen 3D World
 const viewportContainer = document.querySelector('#full-map-viewport');
 const world = new RobloxSeamlessWorld(viewportContainer);
+// ---------- Mode HP (layar sentuh) ----------
+// Joystick untuk berjalan, geser layar untuk memutar kamera. Masuk area (pad lempar, pull-up, kandang, shop)
+// mengunci pemain di area itu sampai menekan Exit. Paksa di PC untuk tes: tambahkan ?mobile=1 di URL.
+const isTouchUI = matchMedia('(pointer: coarse)').matches || new URLSearchParams(location.search).has('mobile');
+if (isTouchUI) document.querySelector('.zt-root').classList.add('is-touch');
+
 // Hanya di dev server (npm run dev): akses dari console untuk cek visual, mis. __zt.world.avatar.position.z = 300
 if (import.meta.env.DEV) window.__zt = { world, state };
 
@@ -635,7 +653,97 @@ function togglePullUp() {
   if (state.isTraining) showCinematic('training');
   else hideCinematic();
   updateUI();
+  // HP: berhenti latihan = keluar dari area pull-up
+  if (!state.isTraining && activeArea === 'gym') exitArea();
 }
+
+// ---------- Area (HP) ----------
+let activeArea = null;
+const AREAS = {
+  throw: { title: 'Throw Pad' },
+  gym: { title: 'Pull-Up' },
+  plot: { title: 'My Pen', actions: [['Manage Pen', 'zt-btn--good', () => openModal('plot')]] },
+  shop: { title: 'Shop', actions: [['Open Shop', 'zt-btn--primary', () => openModal('shop')]] },
+};
+// Titik keluar: di luar jangkauan area supaya tidak langsung masuk lagi
+function areaExitPoint(id) {
+  const st = world.worldStations.find(s => s.id === id);
+  if (id === 'throw') return [0, 2, Math.PI];
+  if (id === 'plot') return [0, st.pos.z + st.radius + 1.5, 0];
+  return [st.pos.x, st.pos.z + st.radius + 1.5, 0];
+}
+
+function enterArea(id) {
+  activeArea = id;
+  const root = document.querySelector('.zt-root');
+  root.classList.add('is-in-area', `area-${id}`);
+  world.setAreaLock(true, world.areaShot(id));
+  resetJoystick();
+  if (id === 'throw') { world.cameraOrbit.yaw = 0; world.cameraOrbit.pitch = 0.5; }
+  if (id === 'gym') { if (!state.isTraining) togglePullUp(); return; } // pita sinematik punya tombol Stop sendiri
+
+  const a = AREAS[id];
+  document.querySelector('#area-title').textContent = a.title;
+  const box = document.querySelector('#area-actions');
+  box.innerHTML = '';
+  (a.actions || []).forEach(([label, cls, fn]) => {
+    const b = document.createElement('button');
+    b.className = `zt-btn zt-btn--sm ${cls}`;
+    b.textContent = label;
+    b.onclick = () => fn();
+    box.appendChild(b);
+  });
+  document.querySelector('#area-bar').classList.remove('hidden');
+  if (id === 'shop') openModal('shop');
+}
+
+function exitArea() {
+  const id = activeArea;
+  if (!id || world.isThrowing) return;
+  activeArea = null;
+  if (id === 'gym' && state.isTraining) togglePullUp();
+  MODALS.forEach(m => closeModal(m, true));
+  syncModalState();
+  const [x, z, rot] = areaExitPoint(id);
+  world.setAreaLock(false);
+  world.teleport(x, z, rot);
+  const root = document.querySelector('.zt-root');
+  root.classList.remove('is-in-area', `area-${id}`);
+  document.querySelector('#area-bar').classList.add('hidden');
+}
+document.querySelector('#area-exit').onclick = () => { sfx.playPop(); exitArea(); };
+
+// ---------- Joystick virtual ----------
+const joy = document.querySelector('#joystick');
+const knob = joy.querySelector('.zt-joy__knob');
+let joyId = null;
+const JOY_R = 44;
+function resetJoystick() {
+  joyId = null;
+  knob.style.transform = '';
+  joy.classList.remove('is-active');
+  world.setJoystick(0, 0);
+}
+function moveJoystick(e) {
+  const r = joy.getBoundingClientRect();
+  let dx = e.clientX - (r.left + r.width / 2);
+  let dy = e.clientY - (r.top + r.height / 2);
+  const len = Math.hypot(dx, dy);
+  if (len > JOY_R) { dx *= JOY_R / len; dy *= JOY_R / len; }
+  knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  world.setJoystick(dx / JOY_R, -dy / JOY_R);
+}
+joy.addEventListener('pointerdown', (e) => {
+  if (joyId !== null) return;
+  joyId = e.pointerId;
+  try { joy.setPointerCapture(e.pointerId); } catch { /* event sintetis / pointer sudah lepas */ }
+  joy.classList.add('is-active');
+  moveJoystick(e);
+});
+joy.addEventListener('pointermove', (e) => { if (e.pointerId === joyId) moveJoystick(e); });
+joy.addEventListener('pointerup', (e) => { if (e.pointerId === joyId) resetJoystick(); });
+joy.addEventListener('pointercancel', (e) => { if (e.pointerId === joyId) resetJoystick(); });
+if (isTouchUI) joy.classList.remove('hidden');
 
 // ---------- Mode sinematik ----------
 // 'training': kamera rendah berputar pelan di pull-up bar, HUD disembunyikan, info Power di pita bawah.
@@ -690,12 +798,12 @@ document.querySelector('#cine-exit').onclick = () => { sfx.playPop(); exitCinema
 // Selesai / Skip disimpan di localStorage, jadi hanya muncul sekali per perangkat.
 const onboarding = (() => {
   const KEY = 'zootoss-onboarded-v1';
-  const touch = matchMedia('(pointer: coarse)').matches;
+  const touch = isTouchUI;
   let done = false;
   try { done = localStorage.getItem(KEY) === '1'; } catch { /* storage diblokir: tampilkan saja */ }
   const STEPS = [
     { title: 'Welcome to Zoo Toss!', text: touch
-        ? 'Walk to the <b>pink Throw Pad</b> to start throwing food.'
+        ? 'Use the <b>joystick</b> to walk to the <b>pink Throw Pad</b>. Swipe the screen to look around.'
         : 'Walk to the <b>pink Throw Pad</b> with <b>WASD</b>. Drag the mouse to look around.' },
     { title: 'Time your throw', text: touch
         ? 'Tap <b>Throw</b> when the needle is in the <b>green</b>. Green = longest throw.'
@@ -752,6 +860,11 @@ setInterval(() => {
     document.querySelector("#hud-zone-name").textContent = `${z.name.toUpperCase()} · ${zoneRange(z)}`;
     document.querySelector('#hud-zone-gimmick').textContent = z.gimmick;
     document.querySelector('#hud-zone-swatch').style.background = hex(z.stripes[0]);
+  }
+
+  // HP: berdiri di area → otomatis masuk & terkunci di area itu
+  if (isTouchUI && !activeArea && !cineMode && !world.isThrowing && !anyModalOpen() && world.currentStation) {
+    enterArea(world.currentStation.id);
   }
 
   // Panel lempar hanya muncul saat berdiri di pad pink (dan selama lemparan berjalan)

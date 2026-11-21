@@ -27,6 +27,10 @@ export class RobloxSeamlessWorld {
     this.keys = { w: false, a: false, s: false, d: false, shift: false };
     this.inputBlocked = false;  // true saat modal terbuka
     this.cameraLocked = false;  // camera lock (Pointer Lock) — toggle dari main.js
+    this.joy = { x: 0, y: 0 };  // joystick virtual (HP): x kanan, y maju, panjang 0..1
+    this.areaLocked = false;    // HP: pemain terkunci di area (lempar/pull-up/kandang/shop) sampai menekan Exit
+    this.areaCam = null;        // HP: bidikan kamera khusus area { pos, look }
+    this.areaLook = new THREE.Vector3();
 
     // Camera orbit & zoom controls (Right mouse drag or Left mouse drag)
     this.cameraOrbit = {
@@ -179,6 +183,40 @@ export class RobloxSeamlessWorld {
     window.addEventListener('mouseup', () => {
       this.cameraOrbit.isDragging = false;
     });
+
+    // Layar sentuh: satu jari menggeser = putar kamera, dua jari mencubit = zoom
+    const touches = new Map();
+    let pinchDist = 0;
+    dom.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch') return;
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) {
+        const [a, b] = [...touches.values()];
+        pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+      }
+    });
+    dom.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'touch' || !touches.has(e.pointerId)) return;
+      const prev = touches.get(e.pointerId);
+      const cur = { x: e.clientX, y: e.clientY };
+      touches.set(e.pointerId, cur);
+      if (this.isThrowing || this.areaCam) return;
+      if (touches.size === 1) {
+        this.cameraOrbit.yaw += (cur.x - prev.x) * 0.01;
+        this.cameraOrbit.pitch = Math.max(0.15, Math.min(1.4, this.cameraOrbit.pitch + (cur.y - prev.y) * 0.008));
+      } else if (touches.size === 2) {
+        const [a, b] = [...touches.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinchDist) {
+          this.cameraOrbit.targetDistance = Math.max(12, Math.min(95, this.cameraOrbit.targetDistance - (d - pinchDist) * 0.15));
+        }
+        pinchDist = d;
+      }
+    });
+    const endTouch = (e) => { touches.delete(e.pointerId); if (touches.size < 2) pinchDist = 0; };
+    dom.addEventListener('pointerup', endTouch);
+    dom.addEventListener('pointercancel', endTouch);
+    dom.style.touchAction = 'none';
 
     dom.addEventListener('wheel', (e) => {
       e.preventDefault();
@@ -409,6 +447,53 @@ export class RobloxSeamlessWorld {
     window.addEventListener('blur', () => this.releaseKeys());
   }
 
+  /** Joystick virtual (HP): x = kanan, y = maju; panjang vektor 0..1 menentukan kecepatan. */
+  setJoystick(x, y) {
+    this.joy.x = x;
+    this.joy.y = y;
+  }
+
+  /** HP: kunci / lepas pemain di area. cam = { pos, look } untuk bidikan khusus, atau null = kamera orbit biasa. */
+  setAreaLock(locked, cam = null) {
+    this.areaLocked = locked;
+    this.areaCam = locked ? cam : null;
+    if (cam) this.areaLook.copy(cam.look);
+    this.joy.x = 0; this.joy.y = 0;
+    this.releaseKeys();
+  }
+
+  /** Pindahkan pemain (dipakai saat keluar area supaya tidak langsung masuk lagi). */
+  teleport(x, z, rotY = 0) {
+    this.avatar.position.set(x, 0, z);
+    this.avatar.rotation.y = rotY;
+    this.petCompanionsGroup.children.forEach((p) => p.position.set(x, 0, z));
+  }
+
+  /**
+   * Bidikan kamera untuk area kandang & toko (dipakai main.js saat masuk area di HP).
+   * Jarak dihitung dari FOV & rasio layar supaya seluruh bangunan muat, termasuk di layar potret.
+   */
+  areaShot(id) {
+    const fit = (look, width, depth, elevDeg, azDeg = 0) => {
+      const el = THREE.MathUtils.degToRad(elevDeg);
+      const vHalf = THREE.MathUtils.degToRad(this.camera.fov / 2);
+      const hHalf = Math.atan(Math.tan(vHalf) * this.camera.aspect);
+      const dist = Math.max((width / 2) / Math.tan(hHalf), (depth * Math.sin(el) / 2) / Math.tan(vHalf)) + depth * 0.3;
+      const az = THREE.MathUtils.degToRad(azDeg); // 0 = dari depan (+Z), negatif = dari kiri (−X, arah halaman)
+      const flat = dist * Math.cos(el);
+      return { pos: new THREE.Vector3(look.x + flat * Math.sin(az), look.y + dist * Math.sin(el), look.z + flat * Math.cos(az)), look };
+    };
+    if (id === 'plot') {
+      const st = this.worldStations.find(s => s.id === 'plot');
+      const d = (this.plotGroup.position.z - st.pos.z) * 2;
+      const w = this.penWidth || 28;
+      return fit(new THREE.Vector3(0, 0, st.pos.z), w + 4, d + 4, 58);
+    }
+    // Toko dibidik serong dari arah halaman (bukan dari +Z, di sana tertutup tebing pinggir lintasan)
+    if (id === 'shop') return fit(new THREE.Vector3(24, 4, -22), 16, 12, 38, -38);
+    return null;
+  }
+
   /** Onboarding: tampilkan / sembunyikan panah di atas pad lempar. */
   setPadMarker(visible) {
     if (this.padMarker) this.padMarker.visible = visible;
@@ -542,6 +627,7 @@ export class RobloxSeamlessWorld {
     const pen = buildPen(slots);
     this.penStatic = pen.group;
     this.penBounds = pen.bounds;
+    this.penWidth = pen.w;
     this.penShelter = pen.shelter;
     this.plotGroup.add(this.penStatic);
     // Titik & jangkauan prompt "MANAGE PEN" mengikuti ukuran kandang
@@ -683,7 +769,8 @@ export class RobloxSeamlessWorld {
     }
 
     // Stamina
-    const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d;
+    const joyLen = Math.hypot(this.joy.x, this.joy.y);
+    const isMoving = !this.areaLocked && (this.keys.w || this.keys.s || this.keys.a || this.keys.d || joyLen > 0.15);
     const isSprinting = this.keys.shift && isMoving && this.stamina > 5;
     if (isSprinting) this.stamina = Math.max(0, this.stamina - dt * 25);
     else this.stamina = Math.min(this.maxStamina, this.stamina + dt * 15);
@@ -697,6 +784,10 @@ export class RobloxSeamlessWorld {
     if (!this.isTraining && !this.isThrowing && !this.biomeView) {
       let inputX = (this.keys.d ? 1 : 0) - (this.keys.a ? 1 : 0);
       let inputZ = (this.keys.w ? 1 : 0) - (this.keys.s ? 1 : 0);
+      let analog = 1;
+      // Joystick HP: arah analog, dorong sedikit = jalan pelan, dorong penuh = kecepatan normal
+      if (!inputX && !inputZ && joyLen > 0.15) { inputX = this.joy.x; inputZ = this.joy.y; analog = Math.min(1, joyLen); }
+      if (this.areaLocked) { inputX = 0; inputZ = 0; }
       const cosYaw = Math.cos(this.cameraOrbit.yaw);
       const sinYaw = Math.sin(this.cameraOrbit.yaw);
       // Camera lock: karakter selalu menghadap arah kamera (A/D jadi langkah samping)
@@ -710,8 +801,8 @@ export class RobloxSeamlessWorld {
         const worldDx = -inputX * cosYaw - inputZ * sinYaw;
         const worldDz = -inputX * sinYaw + inputZ * cosYaw;
 
-        this.avatar.position.x += worldDx * speed * dt;
-        this.avatar.position.z += worldDz * speed * dt;
+        this.avatar.position.x += worldDx * speed * analog * dt;
+        this.avatar.position.z += worldDz * speed * analog * dt;
         if (!this.cameraLocked) this.avatar.rotation.y = Math.atan2(worldDx, worldDz);
 
         if (this.zookeeper) {
@@ -939,6 +1030,11 @@ export class RobloxSeamlessWorld {
       bv.focus.set(Math.sin(bv.t * 0.25 + 1) * 4, 3, z + 38);
       this.camera.lookAt(bv.focus);
       this.lighting?.update(bv.focus);
+    } else if (this.areaCam && !this.isTraining) {
+      // HP: bidikan tetap untuk area kandang / toko
+      this.camera.position.lerp(this.areaCam.pos, dt * 3);
+      this.areaLook.lerp(this.areaCam.look, dt * 3);
+      this.camera.lookAt(this.areaLook);
     } else if (this.isTraining) {
       // Sinematik latihan: kamera rendah berputar pelan di depan pemain, lalu mendekat
       const t = this.trainTime;
@@ -946,7 +1042,7 @@ export class RobloxSeamlessWorld {
       const r = 11 - Math.min(1, t / 6) * 2.5;        // perlahan mendekat (11 → 8.5)
       const ax = this.avatar.position.x, az = -22;
       const camPos = new THREE.Vector3(ax + Math.sin(ang) * r, 2.6 + Math.sin(t * 0.3) * 0.6, az + Math.cos(ang) * r);
-      this.camera.position.lerp(camPos, dt * 2.5);
+      this.camera.position.lerp(camPos, dt * (t < 1.5 ? 5 : 2.5)); // cepat turun di awal, lalu pelan
       this.camera.lookAt(ax, 3.2, az);
     } else {
       // FREELY ADJUSTABLE ORBIT & POV ZOOM CAMERA
