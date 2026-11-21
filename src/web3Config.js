@@ -1,5 +1,5 @@
 /**
- * Web3 Configuration for Base Sepolia Testnet
+ * Web3 Configuration for Base Sepolia Testnet (USDC Edition)
  * Chain ID: 84532 (0x14a34)
  */
 
@@ -18,15 +18,27 @@ export const BASE_SEPOLIA_CONFIG = {
   blockExplorerUrls: ['https://sepolia.basescan.org'],
 };
 
-// Default deployed contract or fallback address
-// Can be updated with your deployed contract address on Base Sepolia
-export const SHOP_CONTRACT_ADDRESS = '0xa87E23938fe797495B4Eb6475752e5055b871c56';
+// Official Circle USDC Contract on Base Sepolia
+export const USDC_CONTRACT_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
+// Deployed ZooTossShop Contract on Base Sepolia
+export const SHOP_CONTRACT_ADDRESS = '0x4F8bE5164d2Fe26a9Bf71d53f66D467d3e236F6D';
+
+// Standard ERC20 ABI (for USDC approval & balance)
+export const ERC20_ABI = [
+  "function balanceOf(address owner) external view returns (uint256)",
+  "function allowance(address owner, address spender) external view returns (uint256)",
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function decimals() external view returns (uint8)"
+];
+
+// ZooTossShop ABI
 export const SHOP_ABI = [
-  "function buyItem(uint256 itemId) external payable",
-  "function items(uint256) external view returns (string name, uint256 priceWei, uint256 quantity, bool active)",
+  "function buyItem(uint256 itemId) external",
+  "function items(uint256) external view returns (string name, uint256 priceUsdc, uint256 quantity, bool active)",
   "function getPlayerInventory(address player) external view returns (uint256 powerBuff, uint256 legendaryBaits)",
   "function playerPowerBuffs(address) external view returns (uint256)",
   "function playerLegendaryBaits(address) external view returns (uint256)",
-  "event ItemPurchased(address indexed buyer, uint256 indexed itemId, string itemName, uint256 amountPaid, uint256 timestamp)"
+  "function usdc() external view returns (address)",
+  "event ItemPurchased(address indexed buyer, uint256 indexed itemId, string itemName, uint256 usdcPaid, uint256 timestamp)"
 ];

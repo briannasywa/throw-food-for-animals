@@ -155,11 +155,11 @@ app.innerHTML = `
 
       <div class="mt-4 overflow-y-auto space-y-3.5 flex-1 pr-1">
         
-        <!-- WEB3 ON-CHAIN ITEMS SECTION (BASE SEPOLIA) -->
+        <!-- WEB3 ON-CHAIN ITEMS SECTION (BASE SEPOLIA - USDC) -->
         <div class="p-3 bg-[#FFF4DC] border-2 border-[#2F8CFF] rounded-xl flex flex-col gap-2.5 shadow-sm">
           <div class="flex justify-between items-center">
             <span class="font-display text-xs text-[#1A4F99] flex items-center gap-1.5">
-              <span>⚡</span> BASE SEPOLIA WEB3 SHOP
+              <span>💵</span> BASE SEPOLIA USDC SHOP
             </span>
             <span id="shop-wallet-status" class="text-[10px] font-ui text-[#1B2233]/70">Wallet: Not Connected</span>
           </div>
@@ -170,10 +170,10 @@ app.innerHTML = `
               <div class="font-display text-xs text-[#FF7A1A] flex items-center gap-1">
                 <span>💪</span> +100 POWER BOOST
               </div>
-              <div class="text-[11px] text-[#1B2233]/70 font-ui">Instant permanent +100 throwing power</div>
+              <div class="text-[11px] text-[#1B2233]/70 font-ui">Permanent +100 throwing power</div>
             </div>
             <button id="btn-buy-web3-power" class="zt-btn zt-btn--primary text-xs py-1.5 px-3">
-              0.0001 ETH
+              0.10 USDC
             </button>
           </div>
 
@@ -187,7 +187,7 @@ app.innerHTML = `
               <div class="text-[10px] font-display text-[#3CCB5A] mt-0.5" id="legendary-baits-owned">Owned: 0 bait</div>
             </div>
             <button id="btn-buy-web3-bait" class="zt-btn zt-btn--secondary text-xs py-1.5 px-3">
-              0.00025 ETH
+              0.50 USDC
             </button>
           </div>
         </div>
@@ -623,7 +623,9 @@ function updateWalletUI(acc) {
   if (acc) {
     const shortAcc = `${acc.slice(0, 6)}...${acc.slice(-4)}`;
     if (btn) btn.textContent = shortAcc;
-    if (shopStatus) shopStatus.textContent = `Wallet: ${shortAcc}`;
+    web3Manager.getUsdcBalance().then(bal => {
+      if (shopStatus) shopStatus.textContent = `${shortAcc} (${bal} USDC)`;
+    });
   } else {
     if (btn) btn.textContent = 'CONNECT WALLET';
     if (shopStatus) shopStatus.textContent = 'Wallet: Not Connected';
@@ -633,47 +635,47 @@ function updateWalletUI(acc) {
 window.addEventListener('web3:accountChanged', (e) => updateWalletUI(e.detail));
 window.addEventListener('web3:disconnected', () => updateWalletUI(null));
 
-// Web3 Shop Buy: +100 Power
+// Web3 Shop Buy: +100 Power (0.10 USDC)
 document.querySelector('#btn-buy-web3-power').onclick = async () => {
   const btn = document.querySelector('#btn-buy-web3-power');
   btn.disabled = true;
-  btn.textContent = 'WAITING TX...';
+  btn.textContent = 'PROCESSING...';
   try {
-    const res = await web3Manager.buyShopItem(1, '0.0001');
+    const res = await web3Manager.buyShopItem(1, '0.1');
     if (res && res.success) {
       sfx.playLevelUp();
       state.power += 100;
       state.save();
       updateUI();
-      alert(`🎉 Web3 Purchase Confirmed! +100 Power added! TX: ${res.txHash.slice(0, 10)}...`);
+      alert(`🎉 Pembelian Berhasil! +100 Power ditambahkan! TX: ${res.txHash.slice(0, 10)}...`);
     }
   } catch (err) {
-    alert("Transaction cancelled or failed: " + (err.message || err));
+    alert("Transaksi dibatalkan atau gagal: " + (err.message || err));
   } finally {
     btn.disabled = false;
-    btn.textContent = '0.0001 ETH';
+    btn.textContent = '0.10 USDC';
   }
 };
 
-// Web3 Shop Buy: 5x Legendary Bait
+// Web3 Shop Buy: 5x Legendary Bait (0.50 USDC)
 document.querySelector('#btn-buy-web3-bait').onclick = async () => {
   const btn = document.querySelector('#btn-buy-web3-bait');
   btn.disabled = true;
-  btn.textContent = 'WAITING TX...';
+  btn.textContent = 'PROCESSING...';
   try {
-    const res = await web3Manager.buyShopItem(2, '0.00025');
+    const res = await web3Manager.buyShopItem(2, '0.5');
     if (res && res.success) {
       sfx.playLevelUp();
       state.legendaryBaits = (state.legendaryBaits || 0) + 5;
       state.save();
       updateUI();
-      alert(`🎉 Web3 Purchase Confirmed! 5x Legendary Bait added! TX: ${res.txHash.slice(0, 10)}...`);
+      alert(`🎉 Pembelian Berhasil! 5x Legendary Bait ditambahkan! TX: ${res.txHash.slice(0, 10)}...`);
     }
   } catch (err) {
-    alert("Transaction cancelled or failed: " + (err.message || err));
+    alert("Transaksi dibatalkan atau gagal: " + (err.message || err));
   } finally {
     btn.disabled = false;
-    btn.textContent = '0.00025 ETH';
+    btn.textContent = '0.50 USDC';
   }
 };
 

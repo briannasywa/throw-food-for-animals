@@ -1,39 +1,34 @@
 import { ethers } from 'ethers';
-import { BASE_SEPOLIA_CHAIN_ID, BASE_SEPOLIA_CHAIN_ID_HEX, BASE_SEPOLIA_CONFIG, SHOP_CONTRACT_ADDRESS, SHOP_ABI } from './web3Config.js';
+import { 
+  BASE_SEPOLIA_CHAIN_ID_HEX, 
+  BASE_SEPOLIA_CONFIG, 
+  USDC_CONTRACT_ADDRESS, 
+  SHOP_CONTRACT_ADDRESS, 
+  ERC20_ABI, 
+  SHOP_ABI 
+} from './web3Config.js';
 
 class Web3Manager {
   constructor() {
     this.provider = null;
     this.signer = null;
-    this.contract = null;
+    this.shopContract = null;
+    this.usdcContract = null;
     this.account = null;
     this.isConnecting = false;
-    this.contractAddress = SHOP_CONTRACT_ADDRESS;
+    this.shopAddress = SHOP_CONTRACT_ADDRESS;
 
-    // Load persisted address if stored
-    const saved = localStorage.getItem('zootoss_contract_addr');
-    if (saved) this.contractAddress = saved;
+    const saved = localStorage.getItem('zootoss_shop_addr');
+    if (saved) this.shopAddress = saved;
   }
 
   isMetaMaskAvailable() {
     return typeof window !== 'undefined' && Boolean(window.ethereum);
   }
 
-  setContractAddress(addr) {
-    if (ethers.utils.isAddress(addr)) {
-      this.contractAddress = addr;
-      localStorage.setItem('zootoss_contract_addr', addr);
-      if (this.signer) {
-        this.contract = new ethers.Contract(this.contractAddress, SHOP_ABI, this.signer);
-      }
-      return true;
-    }
-    return false;
-  }
-
   async connectWallet() {
     if (!this.isMetaMaskAvailable()) {
-      alert("MetaMask / Web3 Wallet not detected! Please install MetaMask extension to purchase on-chain items.");
+      alert("MetaMask / Web3 Wallet tidak ditemukan! Silakan instal ekstensi MetaMask.");
       return null;
     }
 
@@ -41,28 +36,28 @@ class Web3Manager {
       this.isConnecting = true;
       this.provider = new ethers.providers.Web3Provider(window.ethereum, "any");
 
-      // Request account access
       const accounts = await this.provider.send("eth_requestAccounts", []);
       if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts found");
+        throw new Error("Akun tidak ditemukan");
       }
 
       this.account = accounts[0];
       this.signer = this.provider.getSigner();
 
-      // Check and switch network to Base Sepolia
+      // Pastikan di jaringan Base Sepolia
       await this.switchToBaseSepolia();
 
-      this.contract = new ethers.Contract(this.contractAddress, SHOP_ABI, this.signer);
+      this.shopContract = new ethers.Contract(this.shopAddress, SHOP_ABI, this.signer);
+      this.usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, this.signer);
 
-      // Listen to account changes
       window.ethereum.on('accountsChanged', (accs) => {
         if (accs.length === 0) {
           this.disconnect();
         } else {
           this.account = accs[0];
           this.signer = this.provider.getSigner();
-          this.contract = new ethers.Contract(this.contractAddress, SHOP_ABI, this.signer);
+          this.shopContract = new ethers.Contract(this.shopAddress, SHOP_ABI, this.signer);
+          this.usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, this.signer);
           window.dispatchEvent(new CustomEvent('web3:accountChanged', { detail: this.account }));
         }
       });
@@ -73,8 +68,8 @@ class Web3Manager {
 
       return this.account;
     } catch (err) {
-      console.error("Failed to connect wallet:", err);
-      alert("Failed to connect wallet: " + (err.message || err));
+      console.error("Gagal menghubungkan wallet:", err);
+      alert("Gagal menghubungkan wallet: " + (err.message || err));
       return null;
     } finally {
       this.isConnecting = false;
@@ -83,31 +78,40 @@ class Web3Manager {
 
   async switchToBaseSepolia() {
     if (!window.ethereum) return;
-
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: BASE_SEPOLIA_CHAIN_ID_HEX }],
       });
     } catch (switchError) {
-      // 4902 means the chain has not been added to MetaMask
       if (switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [BASE_SEPOLIA_CONFIG],
-          });
-        } catch (addError) {
-          console.error("Error adding Base Sepolia network:", addError);
-          throw addError;
-        }
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [BASE_SEPOLIA_CONFIG],
+        });
       } else {
         throw switchError;
       }
     }
   }
 
-  async buyShopItem(itemId, priceEthString) {
+  async getUsdcBalance() {
+    if (!this.usdcContract || !this.account) return '0.00';
+    try {
+      const bal = await this.usdcContract.balanceOf(this.account);
+      return ethers.utils.formatUnits(bal, 6);
+    } catch (e) {
+      console.warn("Gagal membaca balance USDC:", e);
+      return '0.00';
+    }
+  }
+
+  /**
+   * Pembelian item shop dengan token USDC
+   * @param {number} itemId 1 atau 2
+   * @param {string} usdcAmountStr e.g. "0.1" atau "0.5"
+   */
+  async buyShopItem(itemId, usdcAmountStr) {
     if (!this.account) {
       const connected = await this.connectWallet();
       if (!connected) return false;
@@ -115,20 +119,32 @@ class Web3Manager {
 
     try {
       await this.switchToBaseSepolia();
-      const priceWei = ethers.utils.parseEther(priceEthString);
+      const usdcUnits = ethers.utils.parseUnits(usdcAmountStr, 6);
 
-      // Execute on-chain transaction
-      const tx = await this.contract.buyItem(itemId, {
-        value: priceWei,
-        gasLimit: 120000
-      });
+      // 1. Cek saldo USDC
+      const balance = await this.usdcContract.balanceOf(this.account);
+      if (balance.lt(usdcUnits)) {
+        throw new Error(`Saldo USDC tidak mencukupi! Butuh ${usdcAmountStr} USDC (Base Sepolia).`);
+      }
 
-      console.log("Transaction submitted:", tx.hash);
+      // 2. Cek apakah butuh approve USDC
+      const currentAllowance = await this.usdcContract.allowance(this.account, this.shopAddress);
+      if (currentAllowance.lt(usdcUnits)) {
+        console.log("Meminta approve USDC...");
+        const approveTx = await this.usdcContract.approve(this.shopAddress, ethers.constants.MaxUint256);
+        await approveTx.wait();
+        console.log("Approve USDC berhasil!");
+      }
+
+      // 3. Panggil buyItem di contract shop
+      const tx = await this.shopContract.buyItem(itemId, { gasLimit: 150000 });
+      console.log("Transaksi submit:", tx.hash);
       const receipt = await tx.wait();
-      console.log("Transaction mined:", receipt);
+      console.log("Transaksi sukses:", receipt);
+
       return { success: true, txHash: tx.hash };
     } catch (err) {
-      console.error("On-chain purchase error:", err);
+      console.error("Gagal melakukan transaksi Web3 USDC:", err);
       throw err;
     }
   }
@@ -136,7 +152,8 @@ class Web3Manager {
   disconnect() {
     this.account = null;
     this.signer = null;
-    this.contract = null;
+    this.shopContract = null;
+    this.usdcContract = null;
     window.dispatchEvent(new CustomEvent('web3:disconnected'));
   }
 }
