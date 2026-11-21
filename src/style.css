@@ -239,10 +239,10 @@ body { font-family: var(--zt-font-ui, 'Fredoka', sans-serif); font-weight: 600; 
 .zt-root.is-touch .zt-menu { flex-direction: row; }
 .zt-root.is-touch .zt-zonechip, .zt-root.is-touch .zt-stat--rebirth { display: none !important; }
 .zt-root.is-touch .zt-stats { display: flex; width: calc(100vw - 24px - 112px); padding: 6px 4px 9px; }
-.zt-root.is-touch .zt-stat { flex: 1; min-width: 0; padding: 0 8px; border-right: 2px solid var(--zt-panel-d); }
+.zt-root.is-touch .zt-stat { flex: 1; min-width: 0; padding: 0 6px; border-right: 2px solid var(--zt-panel-d); }
 .zt-root.is-touch .zt-stat:nth-child(3) { border-right: 0; }
 .zt-root.is-touch .zt-stat__label { font-size: 10px; }
-.zt-root.is-touch .zt-stat__value { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zt-root.is-touch .zt-stat__value { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .zt-root.is-touch .zt-key--sm { display: none; }
 
 /* overlay menu dari atas */
@@ -283,3 +283,28 @@ body { font-family: var(--zt-font-ui, 'Fredoka', sans-serif); font-weight: 600; 
   font-size: 11px; letter-spacing: .08em; color: var(--zt-white); background: var(--zt-danger); border: 2px solid var(--zt-ink);
   border-radius: 6px; padding: 3px 8px 4px; box-shadow: 0 2px 0 var(--zt-ink); }
 .zt-root.is-touch .zt-modebadge { top: 70px; bottom: auto; right: 12px; }
+
+/* ---------- switcher difficulty ---------- */
+.zt-modebtn b { font-family: var(--zt-font-title); font-weight: 400; color: var(--zt-accent-d); margin-left: 4px; }
+.zt-mmenu__mode { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.zt-mmenu__mode-label { font-size: 16px; color: var(--zt-ink); }
+.zt-seg { display: inline-flex; border: 2px solid var(--zt-ink); border-radius: var(--zt-radius); overflow: hidden; box-shadow: 0 3px 0 var(--zt-ink); }
+.zt-seg__btn { font-family: var(--zt-font-title); font-size: 15px; padding: 8px 16px 10px; min-height: 44px; background: var(--zt-panel); color: #5E6B78; cursor: pointer; }
+.zt-seg__btn + .zt-seg__btn { border-left: 2px solid var(--zt-ink); }
+.zt-seg__btn.is-on { background: var(--zt-accent); color: var(--zt-white); text-shadow: 1px 1px 0 var(--zt-ink); }
+
+/* ---------- HP: semua elemen bawah menempel ke tepi bawah layar yang TERLIHAT ----------
+   100vh di HP ikut menghitung area di balik toolbar browser, sehingga tombol bawah tenggelam.
+   Root dibuat fixed ke viewport (100dvh), dan jarak bawah ditambah safe-area (garis home iPhone). */
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+.zt-root { position: fixed !important; inset: 0; width: auto !important; height: 100vh; height: 100dvh !important; }
+:root { --sab: env(safe-area-inset-bottom, 0px); }
+.zt-root.is-touch .zt-joy { bottom: calc(26px + var(--sab)); }
+.zt-root.is-touch .zt-areabar { bottom: calc(12px + var(--sab)); }
+.zt-root.is-touch.area-throw .zt-foodbag { bottom: calc(12px + var(--sab)); }
+.zt-root.is-touch.area-throw .zt-areabar { bottom: calc(12px + var(--sab)); }
+.zt-root.is-touch.area-throw .zt-throw { bottom: calc(88px + var(--sab)); }
+.zt-root.is-touch .zt-onboard { bottom: calc(170px + var(--sab)); }
+.zt-root.is-touch.area-throw .zt-onboard { bottom: calc(var(--zt-throw-h, 140px) + 100px + var(--sab)); }
+.zt-root.is-touch .zt-cine__bar--bottom { padding-bottom: calc(10px + var(--sab)); }
+.zt-root.is-touch .zt-mmenu__sheet { max-height: calc(100dvh - 16px); overflow-y: auto; }

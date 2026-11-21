@@ -77,6 +77,7 @@ app.innerHTML = `
 
   <!-- H4 menu (kanan atas) -->
   <div class="zt-menu absolute top-3 right-3 z-20 flex items-center gap-2">
+    <button id="btn-mode" class="zt-btn zt-btn--plain zt-btn--sm zt-modebtn" title="Difficulty">Mode: <b>${D.label}</b></button>
     <button id="btn-connect-wallet" class="zt-btn zt-btn--plain zt-btn--sm"><span id="wallet-btn-text">Connect Wallet</span></button>
     <button id="btn-open-quests" class="zt-btn zt-btn--primary">Quests${hk('Q')}</button>
     <button id="btn-open-index" class="zt-btn zt-btn--accent">Index${hk('I')}</button>
@@ -248,6 +249,13 @@ app.innerHTML = `
           <div id="mmenu-rb-next" class="zt-row__desc">Next: ×1.5 for $50K</div>
         </div>
         <button id="mmenu-rebirth" class="zt-btn zt-btn--accent zt-btn--sm">Rebirth</button>
+      </div>
+      <div class="zt-mmenu__mode">
+        <span class="zt-title zt-mmenu__mode-label">Difficulty</span>
+        <div class="zt-seg">
+          <button class="zt-seg__btn ${MODE === 'easy' ? 'is-on' : ''}" data-mode="easy">Easy</button>
+          <button class="zt-seg__btn ${MODE === 'hard' ? 'is-on' : ''}" data-mode="hard">Hard</button>
+        </div>
       </div>
       <div class="zt-mmenu__grid">
         <button class="zt-btn zt-btn--primary" data-mm="quests">Quests</button>
@@ -1024,6 +1032,25 @@ window.addEventListener('keydown', (e) => {
 document.querySelector('#btn-open-quests').onclick = () => { renderQuestsModal(); openModal('quests'); };
 document.querySelector('#btn-open-index').onclick = () => { indexHasNew = false; updateDots(); renderIndexModal(); openModal('index'); };
 document.querySelector('#btn-open-rank').onclick = () => { updateRankModal(); openModal('rank'); };
+
+// ---------- Ganti difficulty (Easy = testing dev, Hard = demo) ----------
+// Tiap mode punya save sendiri (gameState.js), jadi berpindah mode = muat ulang dengan save mode itu.
+async function switchMode(mode) {
+  if (mode === MODE) return;
+  const ok = await confirmDialog({
+    title: `Switch to ${mode === 'easy' ? 'Easy' : 'Hard'}?`,
+    html: `${mode === 'easy' ? 'Fast progress for <b>dev testing</b>.' : 'Slower, real pace for the <b>demo</b>.'}<br>
+      Each mode keeps its own save. The game will reload.`,
+    okLabel: 'Switch',
+    okClass: 'zt-btn--primary',
+  });
+  if (!ok) return;
+  const url = new URL(location.href);
+  url.searchParams.set('mode', mode);
+  location.href = url.toString();
+}
+document.querySelector('#btn-mode').onclick = () => { sfx.playPop(); switchMode(MODE === 'easy' ? 'hard' : 'easy'); };
+document.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => { sfx.playPop(); switchMode(b.dataset.mode); }; });
 
 // ---------- Menu HP ----------
 function renderMobileMenu() {
