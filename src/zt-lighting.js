@@ -65,7 +65,7 @@ export function setupLighting({ renderer, scene, preset = 'sunnyDay', quality = 
   renderer.toneMapping = THREE.NoToneMapping;        // warna tetap sama dengan palet
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.pixelRatio));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap; // three r18x: PCFSoftShadowMap sudah dihapus (otomatis jadi PCF), jadi langsung PCF
 
   const hemi = new THREE.HemisphereLight();
   const sun = new THREE.DirectionalLight();
