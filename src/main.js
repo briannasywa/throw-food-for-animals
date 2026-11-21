@@ -95,7 +95,7 @@ app.innerHTML = `
   </div>
 
   <!-- Panel lempar: meter + tombol Throw (Space) -->
-  <div id="throw-control-floating" class="zt-panel zt-throw absolute left-1/2 -translate-x-1/2 z-20">
+  <div id="throw-control-floating" class="zt-panel zt-throw absolute left-1/2 -translate-x-1/2 z-20 hidden">
     <div class="relative zt-throw__meter">
       <div id="meter-container" class="zt-meter">
         <div id="meter-needle" class="zt-meter__marker" style="left: 0%;"></div>
@@ -116,6 +116,17 @@ app.innerHTML = `
       </span>
     </span>
   </button>
+
+  <!-- Onboarding kunjungan pertama -->
+  <div id="onboarding" class="zt-panel zt-onboard hidden">
+    <div class="zt-onboard__steps" id="onboard-dots"></div>
+    <div id="onboard-title" class="zt-title zt-onboard__title">Welcome to Zoo Toss!</div>
+    <div id="onboard-text" class="zt-onboard__text"></div>
+    <div class="zt-onboard__actions">
+      <button id="onboard-skip" class="zt-btn zt-btn--plain zt-btn--sm">Skip</button>
+      <button id="onboard-next" class="zt-btn zt-btn--primary zt-btn--sm hidden">Got it</button>
+    </div>
+  </div>
 
   <!-- Camera lock: titik bidik di tengah + petunjuk -->
   <div id="camlock-crosshair" class="zt-crosshair hidden"></div>
@@ -234,6 +245,8 @@ app.innerHTML = `
 // Initialize Fullscreen 3D World
 const viewportContainer = document.querySelector('#full-map-viewport');
 const world = new RobloxSeamlessWorld(viewportContainer);
+// Hanya di dev server (npm run dev): akses dari console untuk cek visual, mis. __zt.world.avatar.position.z = 300
+if (import.meta.env.DEV) window.__zt = { world, state };
 
 // Prompt stasiun: seluruh panel bisa di-tap (di HP keycap disembunyikan)
 document.querySelector('#context-action-bar').onclick = () => {
@@ -275,7 +288,7 @@ let confirmResolve = null;
 // Prompt stasiun selalu di atas panel lempar (penting di HP, panel lempar ada di paling bawah)
 const throwPanel = document.querySelector('#throw-control-floating');
 new ResizeObserver(() => {
-  document.documentElement.style.setProperty('--zt-throw-h', `${throwPanel.offsetHeight}px`);
+  if (throwPanel.offsetHeight) document.documentElement.style.setProperty('--zt-throw-h', `${throwPanel.offsetHeight}px`);
 }).observe(throwPanel);
 
 // Meter Animation
@@ -529,6 +542,7 @@ const LEGENDARY_BAIT = {
 
 function triggerThrow() {
   if (world.isThrowing) return;
+  if (world.currentStation?.id !== 'throw') return; // hanya bisa melempar dari pad pink
 
   let food;
   if (state.selectedFoodIndex === 'web3_legendary') {
@@ -559,6 +573,7 @@ function triggerThrow() {
   document.querySelector('#camlock-crosshair').classList.add('hidden');
   document.querySelector('#camlock-hint').classList.add('hidden');
 
+  onboarding.onThrow();
   world.throwFood(distance, targetZone, food, (caughtAnimal, dist) => {
     hud.classList.add('hidden');
     syncCamLockUI();
@@ -578,6 +593,7 @@ function triggerThrow() {
     if (zoneFirstTime) showZoneBanner(zone);
     showCatchToast(caughtAnimal, { sellPrice: res.autoSold ? res.sellPrice : null, isNew });
     updateUI();
+    onboarding.onCatch(caughtAnimal);
   });
 }
 
@@ -587,6 +603,60 @@ function togglePullUp() {
   world.setTrainingMode(state.isTraining);
   updateUI();
 }
+
+// ---------- Onboarding (kunjungan pertama) ----------
+// 1 jalan ke pad pink → 2 hentikan jarum di hijau & lempar → 3 tunggu tangkapan → 4 penjelasan kandang & Food Bag.
+// Selesai / Skip disimpan di localStorage, jadi hanya muncul sekali per perangkat.
+const onboarding = (() => {
+  const KEY = 'zootoss-onboarded-v1';
+  const touch = matchMedia('(pointer: coarse)').matches;
+  let done = false;
+  try { done = localStorage.getItem(KEY) === '1'; } catch { /* storage diblokir: tampilkan saja */ }
+  const STEPS = [
+    { title: 'Welcome to Zoo Toss!', text: touch
+        ? 'Walk to the <b>pink Throw Pad</b> to start throwing food.'
+        : 'Walk to the <b>pink Throw Pad</b> with <b>WASD</b>. Drag the mouse to look around.' },
+    { title: 'Time your throw', text: touch
+        ? 'Tap <b>Throw</b> when the needle is in the <b>green</b>. Green = longest throw.'
+        : 'Press <b>Space</b> when the needle is in the <b>green</b>. Green = longest throw.' },
+    { title: 'Watch it fly!', text: 'The farther it lands, the wilder the zone and the rarer the animals.' },
+    { title: 'Nice catch!', text: 'Animals go to your <b>Pen</b> and earn cash every second. Better food in your <b>Food Bag</b> catches rarer animals.', next: true },
+  ];
+  let step = -1;
+  const el = document.querySelector('#onboarding');
+
+  function show(i) {
+    step = i;
+    const st = STEPS[i];
+    document.querySelector('#onboard-title').textContent = st.title;
+    document.querySelector('#onboard-text').innerHTML = st.text;
+    document.querySelector('#onboard-next').classList.toggle('hidden', !st.next);
+    document.querySelector('#onboard-skip').classList.toggle('hidden', !!st.next);
+    document.querySelector('#onboard-dots').innerHTML = STEPS.map((_, j) => `<i class="${j <= i ? 'is-on' : ''}"></i>`).join('');
+    el.classList.remove('hidden');
+    el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    world.setPadMarker(i === 0);
+  }
+  function finish() {
+    done = true;
+    try { localStorage.setItem(KEY, '1'); } catch { /* abaikan */ }
+    el.classList.add('hidden');
+    world.setPadMarker(false);
+  }
+  document.querySelector('#onboard-skip').onclick = () => { sfx.playPop(); finish(); };
+  document.querySelector('#onboard-next').onclick = () => { sfx.playPop(); finish(); };
+
+  if (!done) show(0);
+  return {
+    tick(onPad) {
+      if (done) return;
+      if (step === 0 && onPad) show(1);
+      else if (step === 1 && !onPad) show(0); // keluar dari pad sebelum melempar → kembali ke langkah 1
+    },
+    onThrow() { if (!done && step <= 1) show(2); },
+    onCatch() { if (!done && step === 2) show(3); },
+  };
+})();
 
 // Tick loop for distance, wind, zone info & stamina
 let staminaFullSince = 0;
@@ -602,6 +672,11 @@ setInterval(() => {
     document.querySelector('#hud-zone-gimmick').textContent = z.gimmick;
     document.querySelector('#hud-zone-swatch').style.background = hex(z.stripes[0]);
   }
+
+  // Panel lempar hanya muncul saat berdiri di pad pink (dan selama lemparan berjalan)
+  const onPad = world.currentStation?.id === 'throw' || world.isThrowing;
+  throwPanel.classList.toggle('hidden', !onPad);
+  onboarding.tick(onPad);
 
   // H5 stamina: tampil saat berkurang, hilang perlahan 2 dtk setelah penuh
   const st = document.querySelector('#hud-stamina');

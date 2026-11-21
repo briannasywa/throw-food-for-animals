@@ -84,10 +84,21 @@ body { font-family: var(--zt-font-ui, 'Fredoka', sans-serif); font-weight: 600; 
 #btn-toggle-camlock.is-on { --c: var(--zt-good); --cd: var(--zt-good-d); }
 .zt-crosshair { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; transform: translate(-50%, -50%); z-index: 15; pointer-events: none;
   background: var(--zt-white); border: 2px solid var(--zt-ink); border-radius: 50%; }
-.zt-camlock-hint { position: absolute; left: 50%; bottom: 196px; transform: translateX(-50%); z-index: 25; pointer-events: none; white-space: nowrap;
+.zt-camlock-hint { position: absolute; left: 50%; top: calc(50% + 22px); transform: translateX(-50%); z-index: 25; pointer-events: none; white-space: nowrap;
   font-size: 12px; color: var(--zt-white); background: rgba(27,34,51,.72); border-radius: 999px; padding: 4px 12px 5px; }
 .zt-camlock-hint b { font-family: var(--zt-font-title); font-weight: 400; color: #FFC21A; }
 @media (pointer: coarse) { .zt-hk, .zt-key--sm, #btn-toggle-camlock { display: none !important; } }
+
+/* ---------- onboarding ---------- */
+.zt-onboard { position: absolute; left: 50%; bottom: 210px; translate: -50% 0; z-index: 30; width: min(400px, 92vw);
+  padding: 10px 14px 14px; text-align: center; animation: zt-pop .2s ease-out; }
+.zt-onboard__steps { display: flex; justify-content: center; gap: 6px; margin-bottom: 4px; }
+.zt-onboard__steps i { width: 22px; height: 6px; border-radius: 3px; background: var(--zt-panel-d); border: 1.5px solid var(--zt-ink); }
+.zt-onboard__steps i.is-on { background: var(--zt-accent); }
+.zt-onboard__title { font-size: 20px; color: var(--zt-ink); }
+.zt-onboard__text { font-size: 14px; color: #3E4A57; margin: 2px 0 8px; }
+.zt-onboard__text b { color: var(--zt-accent-d); }
+.zt-onboard__actions { display: flex; justify-content: center; gap: 8px; }
 
 /* ---------- selama lemparan ---------- */
 .zt-flight { display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
@@ -160,6 +171,7 @@ body { font-family: var(--zt-font-ui, 'Fredoka', sans-serif); font-weight: 600; 
   .zt-foodbag__name { font-size: 15px; }
   .zt-foodbag__swatch { width: 26px; height: 26px; }
   #context-action-bar { bottom: calc(var(--zt-throw-h, 220px) + 26px); }
+  .zt-onboard { bottom: calc(var(--zt-throw-h, 90px) + 26px); }
   .zt-prompt { min-width: 0; width: 92vw; }
   .zt-flight { top: 34%; }
   .zt-catch { top: 24%; right: 8px; }

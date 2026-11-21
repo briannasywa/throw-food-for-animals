@@ -3,6 +3,7 @@ import { ZONES, MUTATION_DATA, SKY_COLOR } from './gameData.js';
 // Hewan & Zookeeper dari voxel art-direction (voxelAnimals.js). tickAnimal juga menganimasikan cincin mutasi.
 import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal } from './voxelAnimals.js';
 import { setupLighting, createBloom } from './zt-lighting.js';
+import { buildZoneCliffs } from './zoneCliffs.js';
 
 export class RobloxSeamlessWorld {
   constructor(container) {
@@ -160,7 +161,8 @@ export class RobloxSeamlessWorld {
         this.cameraOrbit.lastMouseY = e.clientY;
       }
 
-      this.cameraOrbit.yaw -= dx * 0.008;
+      // geser mouse ke kanan → pandangan berputar ke kanan (sebelumnya terbalik)
+      this.cameraOrbit.yaw += dx * 0.008;
       this.cameraOrbit.pitch = Math.max(0.15, Math.min(1.4, this.cameraOrbit.pitch + dy * 0.006));
     });
 
@@ -211,24 +213,12 @@ export class RobloxSeamlessWorld {
     const trackWidth = 24;
     const stripeWidth = 2.4;
 
-    const BIOME_PROPS = {
-      lobby: { rockColor: 0x94a3b8, plantColor: 0x22c55e, trunkColor: 0x8B5A2B },
-      farm: { rockColor: 0xbac5d1, plantColor: 0x84cc16, trunkColor: 0x78350f },
-      jungle: { rockColor: 0x475569, plantColor: 0x13703A, trunkColor: 0x78350f },
-      toxic: { rockColor: 0x5B4A6B, plantColor: 0x8CFF3A, trunkColor: 0x3A2F4F },
-      lava: { rockColor: 0x2A1D1D, plantColor: 0xFF5A1F, trunkColor: 0x1a0f0d },
-      glow_sea: { rockColor: 0x17305A, plantColor: 0x3FF0FF, trunkColor: 0x0284c7 },
-      christmas: { rockColor: 0xCFEFFF, plantColor: 0x1E8C4E, trunkColor: 0x8B5A2B },
-      frost: { rockColor: 0x7FD3FF, plantColor: 0xF2F7FF, trunkColor: 0x94a3b8 },
-      galaxy: { rockColor: 0x2A1B4F, plantColor: 0xFFF27A, trunkColor: 0xB57BFF }
-    };
 
     ZONES.forEach((zone, zIdx) => {
       const startZ = Math.max(0, zone.minDist / 12);
       const endZ = zone.maxDist / 12;
       const lengthZ = endZ - startZ;
       const centerZ = startZ + lengthZ / 2;
-      const props = BIOME_PROPS[zone.id] || BIOME_PROPS.lobby;
 
       // 1. Base Ground
       const groundMat = new THREE.MeshLambertMaterial({ color: zone.stripes[0] });
@@ -260,55 +250,8 @@ export class RobloxSeamlessWorld {
       curbR.position.x = trackWidth / 2 + 0.6;
       this.scene.add(curbL, curbR);
 
-      // 4. NATURAL VOXEL CLIFFS & HILLS
-      const cliffMat = new THREE.MeshLambertMaterial({ color: 0x9C8F84 });
-      const cliffDarkMat = new THREE.MeshLambertMaterial({ color: 0x7A6F66 });
-
-      const cliffSegments = Math.max(1, Math.floor(lengthZ / 24));
-      for (let c = 0; c < cliffSegments; c++) {
-        const segZ = startZ + c * 24 + 12;
-
-        const hillL1 = new THREE.Mesh(new THREE.BoxGeometry(22, 6, 24), cliffMat);
-        hillL1.position.set(-trackWidth / 2 - 13, 3, segZ);
-        hillL1.castShadow = true;
-        hillL1.receiveShadow = true;
-
-        const hillL2 = new THREE.Mesh(new THREE.BoxGeometry(18, 10, 20), cliffDarkMat);
-        hillL2.position.set(-trackWidth / 2 - 24, 8, segZ);
-        hillL2.castShadow = true;
-        hillL2.receiveShadow = true;
-
-        const hillR1 = new THREE.Mesh(new THREE.BoxGeometry(22, 6, 24), cliffMat);
-        hillR1.position.set(trackWidth / 2 + 13, 3, segZ);
-        hillR1.castShadow = true;
-        hillR1.receiveShadow = true;
-
-        const hillR2 = new THREE.Mesh(new THREE.BoxGeometry(18, 10, 20), cliffDarkMat);
-        hillR2.position.set(trackWidth / 2 + 24, 8, segZ);
-        hillR2.castShadow = true;
-        hillR2.receiveShadow = true;
-
-        this.scene.add(hillL1, hillL2, hillR1, hillR2);
-
-        // 5. THEMED ROCKS & NATURE
-        const rock1 = this.createVoxelBoulder(props.rockColor, 3.5);
-        rock1.position.set(-trackWidth / 2 - 4 - Math.sin(c) * 3, 1.5, segZ - 4);
-        const rock2 = this.createVoxelBoulder(props.rockColor, 2.5);
-        rock2.position.set(trackWidth / 2 + 4 + Math.cos(c) * 3, 1.2, segZ + 5);
-
-        const plant1 = this.createVoxelTree(props.trunkColor, props.plantColor);
-        plant1.position.set(-trackWidth / 2 - 8, 0, segZ + 6);
-        const plant2 = this.createVoxelTree(props.trunkColor, props.plantColor);
-        plant2.position.set(trackWidth / 2 + 8, 0, segZ - 6);
-
-        this.scene.add(rock1, rock2, plant1, plant2);
-      }
-
-      const guardian = buildVoxelAnimal(zone.animals[zone.animals.length - 1].id, 'Legendary');
-      guardian.scale.set(1.3, 1.3, 1.3);
-      guardian.position.set(trackWidth / 2 + 6, 2.5, startZ + 8);
-      this.scene.add(guardian);
-      (this.guardians ||= []).push(guardian.userData.animalInstance);
+      // 4. Tebing voxel bertingkat bertema zona (zoneCliffs.js). Patung hewan penjaga di tebing dihapus.
+      buildZoneCliffs(this.scene, zone, startZ, endZ);
     });
   }
 
@@ -367,6 +310,24 @@ export class RobloxSeamlessWorld {
     pad.position.set(0, 0.18, 10);
     pad.receiveShadow = true;
     this.scene.add(pad);
+
+    // Panah penunjuk di atas pad (dipakai onboarding); Pop Pink, memantul naik-turun
+    this.padMarker = new THREE.Group();
+    const markMat = new THREE.MeshLambertMaterial({ color: 0xFF3D7F, emissive: 0xFF3D7F, emissiveIntensity: 0.6 });
+    const outline = new THREE.MeshLambertMaterial({ color: 0x1B2233 });
+    [[2.4, 0], [1.6, -0.8], [0.8, -1.6]].forEach(([w, y]) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.8, w), markMat);
+      b.position.y = y;
+      this.padMarker.add(b);
+    });
+    const stem = new THREE.Mesh(new THREE.BoxGeometry(1, 2.4, 1), markMat);
+    stem.position.y = 1.6;
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), outline);
+    cap.position.y = 2.9;
+    this.padMarker.add(stem, cap);
+    this.padMarker.position.set(0, 7, 10);
+    this.padMarker.visible = false;
+    this.scene.add(this.padMarker);
 
     // 2. Training Grounds Stand (-24, 0, -22)
     this.gymGroup = new THREE.Group();
@@ -479,6 +440,11 @@ export class RobloxSeamlessWorld {
     });
     // Alt-Tab / klik di luar jendela: lepas semua tombol supaya karakter tidak jalan sendiri
     window.addEventListener('blur', () => this.releaseKeys());
+  }
+
+  /** Onboarding: tampilkan / sembunyikan panah di atas pad lempar. */
+  setPadMarker(visible) {
+    if (this.padMarker) this.padMarker.visible = visible;
   }
 
   releaseKeys() {
@@ -763,7 +729,6 @@ export class RobloxSeamlessWorld {
     }
 
     // Patung penjaga zona
-    (this.guardians || []).forEach((g, i) => animateAnimal(g, secTime + i * 0.7));
 
     // Plot Animals Animation
     if (this.plotAnimals.children.length > 0) {
@@ -929,15 +894,25 @@ export class RobloxSeamlessWorld {
       this.camera.lookAt(this.avatar.position.x, this.avatar.position.y + 2.5, this.avatar.position.z);
     }
 
+    if (this.padMarker?.visible) {
+      this.padMarker.position.y = 7 + Math.abs(Math.sin(secTime * 3)) * 1.5;
+      this.padMarker.rotation.y = secTime * 1.5;
+    }
+
     this.detectProximityStation();
   }
 
   detectProximityStation() {
     let closest = null;
     let minDist = Infinity;
+    const ap = this.avatar.position;
     for (const st of this.worldStations) {
-      const d = this.avatar.position.distanceTo(st.pos);
-      if (d < st.radius && d < minDist) {
+      const d = ap.distanceTo(st.pos);
+      // Pad lempar: hanya di atas area pink (12 × 8), bukan lingkaran di sekitarnya
+      const inside = st.id === 'throw'
+        ? Math.abs(ap.x - st.pos.x) <= 6.3 && Math.abs(ap.z - st.pos.z) <= 4.3
+        : d < st.radius;
+      if (inside && d < minDist) {
         minDist = d;
         closest = st;
       }
@@ -949,7 +924,8 @@ export class RobloxSeamlessWorld {
     const promptDesc = document.querySelector('#context-desc');
 
     if (promptModal && promptKey && promptAction && promptDesc) {
-      if (closest && !this.isThrowing) {
+      // Pad lempar tidak butuh prompt: panel lempar (meter + Throw) sendiri yang muncul di sana
+      if (closest && closest.id !== 'throw' && !this.isThrowing) {
         promptModal.classList.remove('hidden');
         promptKey.textContent = closest.actionKey;
         promptAction.textContent = closest.actionLabel;
