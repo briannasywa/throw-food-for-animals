@@ -520,7 +520,7 @@
           154
         ]
       },
-      "animalPack": "Pastel Farm"
+      "animalTheme": "Farm Pastel"
     },
     "Jungle": {
       "ground1": {
@@ -555,7 +555,7 @@
           61
         ]
       },
-      "animalPack": "Sunset Jungle"
+      "animalTheme": "Jungle Sunset"
     },
     "Toxic": {
       "ground1": {
@@ -590,7 +590,7 @@
           107
         ]
       },
-      "animalPack": "Toxic Halloween"
+      "animalTheme": "Spooky Slime"
     },
     "Lava": {
       "ground1": {
@@ -625,7 +625,7 @@
           58
         ]
       },
-      "animalPack": "Lava Dino"
+      "animalTheme": "Magma"
     },
     "GlowSea": {
       "ground1": {
@@ -660,7 +660,7 @@
           210
         ]
       },
-      "animalPack": "Glow Sea"
+      "animalTheme": "Neon Reef"
     },
     "Christmas": {
       "ground1": {
@@ -689,7 +689,7 @@
           78
         ]
       },
-      "animalPack": "Peppermint Christmas",
+      "animalTheme": "Cookie & Peppermint",
       "candy": {
         "hex": "#E8384F",
         "rgb": [
@@ -733,7 +733,7 @@
           255
         ]
       },
-      "animalPack": "Frost Dragon"
+      "animalTheme": "Aurora"
     },
     "Galaxy": {
       "ground1": {
@@ -768,7 +768,7 @@
           255
         ]
       },
-      "animalPack": "Galaxy Mythical"
+      "animalTheme": "Starlight"
     },
     "Shared": {
       "cliff": {

@@ -16,6 +16,10 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.4.1 — 2026-11-24
+### Changed
+- Abyss Serpent now sways its long neck and swishes its tail as it swims.
+
 ## 0.4.0 — 2026-11-24
 ### Added
 - Changelog menu: see what changed in every update. A dot marks updates you have not seen yet.

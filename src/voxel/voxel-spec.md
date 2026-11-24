@@ -46,12 +46,14 @@ Satu file zona berisi daftar hewan:
 | `id` | Sama dengan `id` hewan di data zona prototype |
 | `name` | Nama tampilan |
 | `rarity` | Common / Rare / Epic / Legendary / Mythic |
+| `set` | (opsional) Gelombang rilis: `v1` (default kalau kosong), `v2`, `v3`. Lihat `animal-roadmap.md`. Preview menampilkan tiap set sebagai baris sendiri |
 | `frame` | Kerangka dasar (lihat Bagian 4). Hanya sebagai label, tidak dibaca builder |
 | `colors` | Nama warna → hex. Semua warna diambil dari palet (Bagian 3) |
 | `glow` | (opsional) Nama warna → kekuatan glow 0–1, misalnya `{ "glow": 1 }`. Balok dengan warna itu ikut menyala (emissive) memakai warnanya sendiri. Tidak menambah draw call, karena dibawa sebagai atribut vertex di material bersama |
 | `parts` | Bagian tubuh. **Satu part = satu mesh = satu draw call.** Bagian yang tidak bergerak digabung ke `body` |
 | `pivot` | Titik putar part `[x, y, z]`, misalnya pangkal kaki atau pangkal sayap |
-| `anim` | Gerakan part: `legFL`, `legFR`, `legBL`, `legBR` (kaki depan/belakang kiri/kanan), `legL`, `legR` (dua kaki), `armL`, `armR` (lengan kerangka `upright`, berayun berlawanan dengan kaki; diam saat tidak berjalan), `squish` (kerangka `blob`: badan memipih dan memanjang seperti jeli, pivot di tanah), `tentacleA`, `tentacleB` (dua kelompok tentakel yang bergoyang berlawanan), `finL`, `finR` (sirip lebar seperti pari, kepakan pelan), `wingL`, `wingR`, `tail`, `head`, atau `null` |
+| `anim` | Gerakan part: `legFL`, `legFR`, `legBL`, `legBR` (kaki depan/belakang kiri/kanan), `legL`, `legR` (dua kaki), `armL`, `armR` (lengan kerangka `upright`, berayun berlawanan dengan kaki; diam saat tidak berjalan), `squish` (kerangka `blob`: badan memipih dan memanjang seperti jeli, pivot di tanah), `tentacleA`, `tentacleB` (dua kelompok tentakel yang bergoyang berlawanan), `finL`, `finR` (sirip lebar seperti pari, kepakan pelan), `wave0`, `wave1`, `wave2` (gerak renang kiri-kanan bertahap dari kepala ke ujung ekor), `swayA`, `swayB`, `swayC` (leher tegak meliuk ke samping), `jaw` (rahang bawah membuka-menutup, pivot di engsel), `puff` (badan menggembung, pivot di tengah badan), `wingL`, `wingR`, `tail`, `head`, atau `null` |
+| `parent` | (opsional) Nama part induk. Part ini ikut bergerak bersama induknya (berantai), cocok untuk ruas ekor atau leher. `pivot` dan `boxes` tetap ditulis dalam koordinat hewan |
 | `boxes` | Daftar balok `[x, y, z, lebar, tinggi, panjang, warna]`. `x, y, z` = titik tengah balok dalam koordinat hewan, bukan relatif ke pivot |
 
 **Koordinat:** satuan = 1 voxel. Sumbu Y ke atas, tanah di `y = 0`, hewan menghadap **+Z**, dan sumbu X ke kanan-kiri (simetris di `x = 0`). Ukuran hewan di game diatur engineer lewat satu angka skala, misalnya 1 voxel = 0,25 meter.
@@ -67,7 +69,7 @@ Satu file zona berisi daftar hewan:
    - Farm: pastel (krem, lavender, pink, kuning mentega). **Hindari hijau**, karena tanah Farm hijau pastel.
    - Lobby: "Cozy Pets", warna bulu peliharaan asli (putih krem, karamel, jahe, emas) + aksen merah. **Hindari hijau**, karena tanah Lobby hijau cerah.
    - Jungle: "Sunset", kuning, oranye, coral, magenta. **Hindari hijau**, karena tanah Jungle hijau tua.
-   - Toxic: "Toxic Halloween", hijau limau neon, oranye labu, krem perban. **Hindari ungu gelap**, karena tanah Toxic ungu gelap.
+   - Toxic: "Spooky Slime", hijau limau neon, oranye labu, krem perban. **Hindari ungu gelap**, karena tanah Toxic ungu gelap.
    - Lava: "Magma", oranye api, kuning bara, merah lava, krem tanduk. **Hindari cokelat tua**, karena tanah Lava cokelat kemerahan gelap. Aksesori boleh biru muda sebagai kontras.
    - Glow Sea: "Neon Reef", badan terang (pink coral, aqua pucat, putih mutiara) dengan bagian glow cyan `#3FF0FF` dan pink `#FF5FD2`. **Hindari biru navy**, karena tanah Glow Sea biru laut gelap.
    - Christmas: "Cookie & Peppermint", cokelat jahe, karamel, hijau mint, pink permen, biru es lavender. Tanah Christmas sekarang **krem salju hangat** (`#F2E6D8`/`#E3D2C0`, revisi 9 Nov 2026), jadi hindari krem/putih polos sebagai warna badan utama; merah dan putih boleh untuk detail.

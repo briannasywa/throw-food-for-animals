@@ -55,7 +55,7 @@ function buildGeometries(spec) {
     const geometry = mergeGeometries(geos, false);
     geos.forEach((g) => g.dispose());
     geometry.computeBoundingSphere();
-    return { name: part.name, geometry, pivot, anim: part.anim || null };
+    return { name: part.name, geometry, pivot, anim: part.anim || null, parent: part.parent || null };
   });
   geometryCache.set(spec.id, parts);
   return parts;
@@ -76,9 +76,19 @@ export function buildAnimal(spec, { material = sharedMaterial, castShadow = true
     mesh.castShadow = castShadow;
     mesh.receiveShadow = true;
     mesh.userData.anim = p.anim;
+    mesh.userData.pivot = p.pivot;
+    mesh.userData.parent = p.parent;
     rig.add(mesh);
     parts[p.name] = mesh;
     triangles += (p.geometry.index ? p.geometry.index.count : p.geometry.attributes.position.count) / 3;
+  }
+  // part berantai (field `parent`): ikut bergerak bersama part induknya, misalnya ruas ekor atau leher
+  for (const mesh of Object.values(parts)) {
+    const parent = parts[mesh.userData.parent];
+    if (!parent) continue;
+    const a = mesh.userData.pivot, b = parent.userData.pivot;
+    parent.add(mesh);
+    mesh.position.set(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
   }
   group.userData.spec = spec;
   return { group, rig, parts, stats: { triangles, drawCalls: Object.keys(parts).length } };
@@ -95,14 +105,26 @@ const ANIM = {
   // lengan (kerangka upright): berayun berlawanan dengan kaki di sisi yang sama
   armL: (m, t) => { m.rotation.x = -Math.sin(t * 8) * 0.5; },
   armR: (m, t) => { m.rotation.x = Math.sin(t * 8) * 0.5; },
-  // badan jeli (kerangka blob): memipih-memanjang, pivot part harus di tanah
   // tentakel dua kelompok (A/B) bergoyang berlawanan
   tentacleA: (m, t) => { m.rotation.x = Math.sin(t * 5) * 0.18; m.rotation.z = Math.cos(t * 5) * 0.12; },
   tentacleB: (m, t) => { m.rotation.x = -Math.sin(t * 5) * 0.18; m.rotation.z = -Math.cos(t * 5) * 0.12; },
   // sirip lebar (pari): kepakan pelan naik-turun
   finL: (m, t) => { m.rotation.z = Math.sin(t * 3) * 0.35; },
   finR: (m, t) => { m.rotation.z = -Math.sin(t * 3) * 0.35; },
+  // badan jeli (kerangka blob): memipih-memanjang, pivot part harus di tanah
   squish: (m, t) => { const s = Math.sin(t * 5) * 0.07; m.scale.set(1 - s * 0.5, 1 + s, 1 - s * 0.5); },
+  // ikan & ular laut: wave0..2 = renang kiri-kanan (yaw) bertahap dari kepala ke ujung ekor,
+  // swayA..C = leher tegak meliuk ke samping. Pakai bersama `parent` supaya ruasnya menyambung.
+  wave0: (m, t) => { m.rotation.y = Math.sin(t * 4) * 0.08; },
+  wave1: (m, t) => { m.rotation.y = Math.sin(t * 4 - 0.9) * 0.22; },
+  wave2: (m, t) => { m.rotation.y = Math.sin(t * 4 - 1.8) * 0.3; },
+  swayA: (m, t) => { m.rotation.z = Math.sin(t * 2.5) * 0.06; },
+  swayB: (m, t) => { m.rotation.z = Math.sin(t * 2.5 - 0.9) * 0.1; },
+  swayC: (m, t) => { m.rotation.z = Math.sin(t * 2.5 - 1.8) * 0.12; },
+  // rahang bawah membuka-menutup (pivot di engsel belakang rahang)
+  jaw: (m, t) => { m.rotation.x = (Math.sin(t * 3) * 0.5 + 0.5) * 0.3; },
+  // badan menggembung pelan (ikan buntal), pivot di tengah badan
+  puff: (m, t) => { m.scale.setScalar(1 + (Math.sin(t * 2.5) * 0.5 + 0.5) * 0.08); },
   wingL: (m, t) => { m.rotation.z = -Math.abs(Math.sin(t * 9)) * 0.6; },
   wingR: (m, t) => { m.rotation.z = Math.abs(Math.sin(t * 9)) * 0.6; },
   tail: (m, t) => { m.rotation.y = Math.sin(t * 7) * 0.45; },
