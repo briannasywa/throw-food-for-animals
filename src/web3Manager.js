@@ -32,15 +32,53 @@ class Web3Manager {
     return typeof window !== 'undefined' && Boolean(window.ethereum);
   }
 
+  isMobileDevice() {
+    if (typeof navigator === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
+  /**
+   * Buka URL dApp langsung di dalam in-app browser MetaMask Mobile
+   */
+  openMetaMaskDeepLink() {
+    // 1. Coba native Android Intent ke aplikasi MetaMask langsung
+    const rawUrl = window.location.href;
+    const cleanUrl = rawUrl.replace(/^https?:\/\//, '');
+
+    // Coba buka aplikasi MetaMask terlebih dahulu jika di Android
+    if (/Android/i.test(navigator.userAgent)) {
+      // Skema intent atau dApp URL langsung
+      window.location.href = `dapp://${cleanUrl}`;
+      // Fallback intent
+      setTimeout(() => {
+        window.location.href = `https://metamask.app.link/dapp/${cleanUrl}`;
+      }, 500);
+    } else {
+      window.location.href = `https://metamask.app.link/dapp/${cleanUrl}`;
+    }
+  }
+
   async connectWallet() {
+    // Jika di perangkat mobile dan window.ethereum tidak ada (misal buka di Chrome Android standar)
     if (!this.isMetaMaskAvailable()) {
+      if (this.isMobileDevice()) {
+        // Tampilkan modal dialog panduan khusus mobile dengan tombol Copy Link & Buka App
+        window.dispatchEvent(new CustomEvent('web3:showMobileModal', { detail: { url: window.location.href } }));
+        return null;
+      }
+
       alert("MetaMask / Web3 Wallet tidak ditemukan! Silakan instal ekstensi MetaMask.");
       return null;
     }
 
     try {
       this.isConnecting = true;
-      this.provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+      // Gunakan provider dari window.ethereum (bisa MetaMask in-app browser atau extension)
+      const ethereum = window.ethereum.providers 
+        ? (window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum)
+        : window.ethereum;
+
+      this.provider = new ethers.providers.Web3Provider(ethereum, "any");
 
       const accounts = await this.provider.send("eth_requestAccounts", []);
       if (!accounts || accounts.length === 0) {
@@ -50,32 +88,43 @@ class Web3Manager {
       this.account = accounts[0];
       this.signer = this.provider.getSigner();
 
-      // Pastikan di jaringan Base Sepolia
-      await this.switchToBaseSepolia();
+      // Coba beralih ke jaringan Base Sepolia secara halus (tidak crash bila mobile wallet menolak switch otomatis)
+      try {
+        await this.switchToBaseSepolia();
+      } catch (switchErr) {
+        console.warn("Beralih network di mobile wallet dilewati/ditolak:", switchErr);
+      }
 
       this.shopContract = new ethers.Contract(this.shopAddress, SHOP_ABI, this.signer);
       this.usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, this.signer);
 
-      window.ethereum.on('accountsChanged', (accs) => {
-        if (accs.length === 0) {
-          this.disconnect();
-        } else {
-          this.account = accs[0];
-          this.signer = this.provider.getSigner();
-          this.shopContract = new ethers.Contract(this.shopAddress, SHOP_ABI, this.signer);
-          this.usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, this.signer);
-          window.dispatchEvent(new CustomEvent('web3:accountChanged', { detail: this.account }));
-        }
-      });
+      if (ethereum.on) {
+        ethereum.on('accountsChanged', (accs) => {
+          if (!accs || accs.length === 0) {
+            this.disconnect();
+          } else {
+            this.account = accs[0];
+            this.signer = this.provider.getSigner();
+            this.shopContract = new ethers.Contract(this.shopAddress, SHOP_ABI, this.signer);
+            this.usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, ERC20_ABI, this.signer);
+            window.dispatchEvent(new CustomEvent('web3:accountChanged', { detail: this.account }));
+          }
+        });
 
-      window.ethereum.on('chainChanged', () => {
-        window.location.reload();
-      });
+        ethereum.on('chainChanged', () => {
+          window.location.reload();
+        });
+      }
 
       return this.account;
     } catch (err) {
       console.error("Gagal menghubungkan wallet:", err);
-      alert("Gagal menghubungkan wallet: " + (err.message || err));
+      // Di Android user cancel tidak perlu alert kasar
+      if (err.code === 4001 || (err.message && err.message.includes('User rejected'))) {
+        alert("Koneksi dibatalkan oleh pengguna.");
+      } else {
+        alert("Gagal menghubungkan wallet: " + (err.message || err));
+      }
       return null;
     } finally {
       this.isConnecting = false;

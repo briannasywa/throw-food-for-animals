@@ -20,6 +20,10 @@ Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the
 ### Added
 - Changelog menu: see what changed in every update. A dot marks updates you have not seen yet.
 - Hard mode: each zone has its own food. Rare and better animals only bite on that zone's food (Carrot in Lobby, Apple in Farm … Galaxy food in Galaxy).
+- Mystery Egg in the shop: a spin that unlocks a rare animal from the farthest zone you have reached.
+- Magic Food: charges that give your next throws 3.5× Luck.
+- Shop: buy Power with cash, or trade some Power for instant cash.
+- Phones: help for connecting MetaMask on mobile.
 ### Changed
 - Hard mode is much slower: reaching Galaxy now takes about 2–3 hours. Animal income grows 4× per zone instead of about 30×, pull-ups are slower, and zone food prices follow each zone's income.
 - Farm and Jungle animals now use the zone name, for example Farm Chick and Jungle Monkey.

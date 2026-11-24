@@ -206,6 +206,59 @@ app.innerHTML = `
         <button id="btn-buy-web3-bait" class="zt-btn zt-btn--accent">0.50 USDC</button>
       </div>
     </div>
+
+    <!-- 1. TELUR AJAIB (GACHA CS2 HEWAN PALING LANGKA SESUAI BIOME TERJAUH) -->
+    <div class="zt-row" style="background:#FFF0D6; border-color:#FFC21A;">
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title flex items-center gap-2">
+          <span>🥚 Telur Ajaib (Mystery Egg)</span>
+          <span class="zt-tag zt-tag--legendary">CS2 Gacha</span>
+        </div>
+        <div class="zt-row__desc">Gacha hewan terlangka dari <b>biome terjauhmu</b>: <b id="shop-egg-farthest-zone">LOBBY</b>!</div>
+      </div>
+      <button id="btn-shop-open-egg" class="zt-btn zt-btn--accent">$250</button>
+    </div>
+
+    <!-- 2. MAKANAN AJAIB (LUCK BOOST MULTIPLIER UNTUK BIOME) -->
+    <div class="zt-row">
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title flex items-center gap-2">
+          <span>✨ Makanan Ajaib</span>
+          <span id="shop-magic-food-owned" class="zt-muted">(Buff: 0 throw)</span>
+        </div>
+        <div class="zt-row__desc">Naikkan 3.5× max luck hewan langka &amp; mutasi di biome saat lempar</div>
+        <div class="flex gap-2 mt-2">
+          <button id="btn-buy-magic-1" class="zt-btn zt-btn--sm zt-btn--good">1 Pcs ($100)</button>
+          <button id="btn-buy-magic-5" class="zt-btn zt-btn--sm zt-btn--good">5 Pcs ($450)</button>
+          <button id="btn-buy-magic-10" class="zt-btn zt-btn--sm zt-btn--good">10 Pcs ($850)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. LEVEL POWER (% DARI POWER SAAT INI) -->
+    <div class="zt-row">
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title">⚡ Boost Level Power (%)</div>
+        <div class="zt-row__desc">Tambah kekuatan instan berskala % dari Power sekarang</div>
+        <div class="flex gap-2 mt-2">
+          <button id="btn-buy-power-pct5" class="zt-btn zt-btn--sm zt-btn--primary">+5% Power</button>
+          <button id="btn-buy-power-pct10" class="zt-btn zt-btn--sm zt-btn--primary">+10% Power</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. UANG (% CASH DARI POWER ATAU REBIRTH) -->
+    <div class="zt-row">
+      <div class="zt-row__main">
+        <div class="zt-title zt-row__title">💰 Instant Cash (% Conversion)</div>
+        <div class="zt-row__desc">Tukar 5% atau 10% Power saat ini untuk suntikan uang tunai instan</div>
+        <div class="flex gap-2 mt-2">
+          <button id="btn-buy-cash-pct5" class="zt-btn zt-btn--sm zt-btn--accent">Tukar 5% Power</button>
+          <button id="btn-buy-cash-pct10" class="zt-btn zt-btn--sm zt-btn--accent">Tukar 10% Power</button>
+        </div>
+      </div>
+    </div>
+
     <div class="zt-row">
       <div class="zt-row__main">
         <div class="zt-title zt-row__title">Upgrade Pull-Up <span id="shop-pullup-lv" class="zt-muted">Lv.1</span></div>
@@ -302,6 +355,65 @@ app.innerHTML = `
       <div class="zt-confirm__actions">
         <button id="confirm-cancel" class="zt-btn zt-btn--plain">Cancel</button>
         <button id="confirm-ok" class="zt-btn zt-btn--danger">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CS2 Style Gacha Egg Overlay -->
+  <div id="gacha-overlay" class="zt-gacha-overlay hidden">
+    <div class="zt-gacha-box">
+      <div class="zt-modal__head zt-title zt-outline">🥚 TELUR AJAIB UNBOXING</div>
+      <div class="text-center mt-2">
+        <div id="gacha-biome-title" class="zt-title" style="color:#FFD54A; font-size:18px">FAR BIOME: LOBBY</div>
+        <div class="text-xs text-slate-300">Memutar hewan-hewan eksotis dari batas terjauh lemparanmu!</div>
+      </div>
+
+      <!-- Roulette Track -->
+      <div class="zt-gacha-roulette-container">
+        <div class="zt-gacha-indicator"></div>
+        <div id="gacha-track" class="zt-gacha-track"></div>
+      </div>
+
+      <!-- Result Banner -->
+      <div id="gacha-result" class="text-center hidden mb-2">
+        <div class="zt-title" style="color:#38BDF8; font-size:22px" id="gacha-result-name">UNLOCKED!</div>
+        <div class="text-sm text-slate-200" id="gacha-result-desc">Rare animal unlocked for your pen!</div>
+      </div>
+
+      <div class="flex gap-3">
+        <button id="btn-gacha-spin" class="zt-btn zt-btn--accent">SPIN AGAIN</button>
+        <button id="btn-gacha-close" class="zt-btn zt-btn--plain">COLLECT &amp; CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile MetaMask Guidance Modal -->
+  <div id="modal-metamask-mobile" class="zt-modal-shade hidden" style="z-index:75">
+    <div class="zt-panel zt-modal" style="width:min(480px, 94vw); text-align:center;">
+      <div class="zt-modal__head zt-title zt-outline">🦊 KONEKSI METAMASK HP</div>
+      <button id="btn-close-mobile-mm" class="zt-btn zt-btn--danger zt-btn--icon zt-modal__close">✕</button>
+      <div class="zt-modal__body mt-4 flex flex-col gap-3 text-left">
+        <div class="p-3 bg-amber-100/90 border-2 border-amber-400 rounded-lg text-xs leading-relaxed text-slate-800">
+          <b>Penting untuk Browser Android (Chrome / Samsung):</b><br>
+          Browser HP biasa tidak mengizinkan ekstensi wallet. Gunakan <b>Browser bawaan di dalam aplikasi MetaMask</b>.
+        </div>
+
+        <div class="text-sm text-slate-800 font-semibold">Langkah Mudah:</div>
+        <ol class="list-decimal list-inside text-xs text-slate-700 flex flex-col gap-2 pl-1">
+          <li>Salin alamat game di bawah ini.</li>
+          <li>Buka aplikasi <b>MetaMask</b> di HP Anda.</li>
+          <li>Pilih menu <b>Browser</b> (ikon bola dunia 🌐 di bawah).</li>
+          <li>Tempelkan (Paste) alamat lalu buka.</li>
+        </ol>
+
+        <div class="flex items-center gap-2 p-2 bg-slate-100 border-2 border-slate-300 rounded-lg">
+          <input id="mobile-mm-url" type="text" readonly class="text-xs text-slate-700 font-mono w-full bg-transparent outline-none select-all" value="">
+          <button id="btn-copy-mm-url" class="zt-btn zt-btn--sm zt-btn--primary flex-none">Copy URL</button>
+        </div>
+
+        <div class="flex gap-2 mt-2">
+          <button id="btn-launch-mm-app" class="zt-btn zt-btn--accent w-full">Buka Aplikasi MetaMask</button>
+        </div>
       </div>
     </div>
   </div>
@@ -464,6 +576,31 @@ function updateUI() {
   document.querySelector('#btn-shop-rebirth').textContent = `$${formatNum(state.rebirthCost)}`;
 
   document.querySelector('#legendary-baits-owned').textContent = `(own ${state.legendaryBaits || 0})`;
+
+  // Update item shop baru
+  const farZone = state.getFarthestZone();
+  const eggCost = Math.max(250, Math.round(500 * (state.maxReachedZoneIndex + 1) * D.foodCostMul));
+  const eggZoneEl = document.querySelector('#shop-egg-farthest-zone');
+  if (eggZoneEl) eggZoneEl.textContent = `${farZone.name.toUpperCase()} (${zoneRange(farZone)})`;
+  const eggBtn = document.querySelector('#btn-shop-open-egg');
+  if (eggBtn) eggBtn.textContent = `$${formatNum(eggCost)}`;
+
+  const magicOwnedEl = document.querySelector('#shop-magic-food-owned');
+  if (magicOwnedEl) magicOwnedEl.textContent = `(Buff: ${state.magicFoodBuff || 0} throw)`;
+
+  const pCost5 = Math.max(50, Math.round(Math.max(5, Math.round(state.power * 0.05)) * 12 * Math.sqrt(state.power / 10)));
+  const pCost10 = Math.max(90, Math.round(Math.max(10, Math.round(state.power * 0.10)) * 12 * Math.sqrt(state.power / 10)));
+  const pBtn5 = document.querySelector('#btn-buy-power-pct5');
+  if (pBtn5) pBtn5.textContent = `+5% Power ($${formatNum(pCost5)})`;
+  const pBtn10 = document.querySelector('#btn-buy-power-pct10');
+  if (pBtn10) pBtn10.textContent = `+10% Power ($${formatNum(pCost10)})`;
+
+  const cash5Gain = Math.max(100, Math.round(Math.max(5, Math.round(state.power * 0.05)) * 35 * state.getRebirthMultiplier()));
+  const cash10Gain = Math.max(200, Math.round(Math.max(10, Math.round(state.power * 0.10)) * 35 * state.getRebirthMultiplier()));
+  const cashBtn5 = document.querySelector('#btn-buy-cash-pct5');
+  if (cashBtn5) cashBtn5.textContent = `5% Power (+$${formatNum(cash5Gain)})`;
+  const cashBtn10 = document.querySelector('#btn-buy-cash-pct10');
+  if (cashBtn10) cashBtn10.textContent = `10% Power (+$${formatNum(cash10Gain)})`;
 
   document.querySelector('#plot-capacity-text').textContent =
     `${state.inventory.length} / ${state.maxBaseSlots} SLOTS · ${state.equippedPets.length} / 2 PETS EQUIPPED`;
@@ -705,8 +842,16 @@ function triggerThrow() {
   document.querySelector('#camlock-crosshair').classList.add('hidden');
   document.querySelector('#camlock-hint').classList.add('hidden');
 
+  let throwFoodItem = { ...food };
+  if (state.magicFoodBuff > 0) {
+    throwFoodItem.magicFoodMultiplier = 3.5; // Menaikkan maks luck hewan langka di biome tujuan
+    state.magicFoodBuff -= 1;
+    state.save();
+    showNotice(`MAGIC FOOD APPLIED! 3.5X LUCK (Remains: ${state.magicFoodBuff})`);
+  }
+
   onboarding.onThrow();
-  world.throwFood(distance, targetZone, food, (caughtAnimal, dist) => {
+  world.throwFood(distance, targetZone, throwFoodItem, (caughtAnimal, dist) => {
     hud.classList.add('hidden');
     syncCamLockUI();
     sfx.playCatch(caughtAnimal.rarity, caughtAnimal.mutation);
@@ -723,6 +868,7 @@ function triggerThrow() {
     const res = state.addAnimal(caughtAnimal);
     if (isNew) indexHasNew = true;
     if (zoneFirstTime) showZoneBanner(zone);
+    state.updateMaxDistance(dist);
     showCatchToast(caughtAnimal, { sellPrice: res.autoSold ? res.sellPrice : null, isNew });
     updateUI();
     onboarding.onCatch(caughtAnimal);
@@ -1136,7 +1282,6 @@ document.querySelector('#btn-food-bag').onclick = () => openModal('food');
 // Web3 (Base Sepolia testnet, USDC) — logika dari tim (web3Manager.js), tampilan versi art direction
 document.querySelector('#btn-connect-wallet').onclick = async () => {
   sfx.playPop();
-  if (!web3Manager.isMetaMaskAvailable()) { showNotice('NO WALLET FOUND · INSTALL METAMASK'); return; }
   const acc = await web3Manager.connectWallet();
   if (acc) updateWalletUI(acc);
 };
@@ -1156,6 +1301,38 @@ function updateWalletUI(acc) {
 }
 window.addEventListener('web3:accountChanged', (e) => updateWalletUI(e.detail));
 window.addEventListener('web3:disconnected', () => updateWalletUI(null));
+
+// Mobile MetaMask Guidance Handlers
+window.addEventListener('web3:showMobileModal', (e) => {
+  const url = e.detail?.url || window.location.href;
+  const modalEl = document.querySelector('#modal-metamask-mobile');
+  const inputEl = document.querySelector('#mobile-mm-url');
+  if (inputEl) inputEl.value = url;
+  if (modalEl) modalEl.classList.remove('hidden');
+  syncModalState();
+});
+
+document.querySelector('#btn-close-mobile-mm').onclick = () => {
+  document.querySelector('#modal-metamask-mobile').classList.add('hidden');
+  syncModalState();
+};
+
+document.querySelector('#btn-copy-mm-url').onclick = () => {
+  const inputEl = document.querySelector('#mobile-mm-url');
+  if (inputEl) {
+    inputEl.select();
+    navigator.clipboard?.writeText(inputEl.value);
+    showNotice('URL COPIED! PASTE IN METAMASK BROWSER');
+    document.querySelector('#btn-copy-mm-url').textContent = 'Copied!';
+    setTimeout(() => {
+      document.querySelector('#btn-copy-mm-url').textContent = 'Copy URL';
+    }, 2000);
+  }
+};
+
+document.querySelector('#btn-launch-mm-app').onclick = () => {
+  web3Manager.openMetaMaskDeepLink();
+};
 
 async function buyWeb3Item(btnSel, itemId, price, label, onSuccess) {
   const btn = document.querySelector(btnSel);
@@ -1182,6 +1359,198 @@ document.querySelector('#btn-buy-web3-power').onclick = () =>
   buyWeb3Item('#btn-buy-web3-power', 1, '0.1', '0.10 USDC', () => { state.power += 100; });
 document.querySelector('#btn-buy-web3-bait').onclick = () =>
   buyWeb3Item('#btn-buy-web3-bait', 2, '0.5', '0.50 USDC', () => { state.legendaryBaits = (state.legendaryBaits || 0) + 5; });
+
+// 1. TELUR AJAIB (GACHA CS2 EGG ROULETTE)
+let isGachaSpinning = false;
+let currentGachaOutcome = null;
+
+function setupGachaRoulette(targetZone) {
+  const track = document.querySelector('#gacha-track');
+  track.innerHTML = '';
+  track.style.transition = 'none';
+  track.style.transform = 'translateX(0px)';
+  document.querySelector('#gacha-result').classList.add('hidden');
+  document.querySelector('#btn-gacha-spin').classList.add('hidden');
+  document.querySelector('#btn-gacha-close').classList.remove('hidden');
+
+  // Ambil hewan-hewan dari targetZone (atau gabungan zone hingga biome terjauh)
+  const availableAnimals = targetZone.animals;
+  const pool = [];
+
+  // CS2 style ribbon: buat ~60-70 kartu items berurutan
+  // Index 50 adalah target item pemenang
+  const winnerIndex = 48;
+  // Peluang pemenang: telur ajaib menargetkan hewan paling langka (rarity tertinggi di zone)
+  const sortedByRarity = [...availableAnimals].sort((a, b) => {
+    return RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity);
+  });
+  // 65% kemungkinan dapat Epic / Legendary / Mythic dari biome tersebut
+  let winningAnimal = sortedByRarity[0];
+  const roll = Math.random();
+  if (roll < 0.60) {
+    winningAnimal = sortedByRarity[0]; // Tier paling atas (Mythic/Legendary/Epic)
+  } else if (roll < 0.90 && sortedByRarity.length > 1) {
+    winningAnimal = sortedByRarity[1];
+  } else {
+    winningAnimal = availableAnimals[Math.floor(Math.random() * availableAnimals.length)];
+  }
+
+  // Mutasi acak untuk pemenang
+  const mutRoll = Math.random() * 100;
+  let winMutation = 'Normal';
+  if (mutRoll < 2.0) winMutation = 'Rainbow';
+  else if (mutRoll < 8.0) winMutation = 'Emerald';
+  else if (mutRoll < 22.0) winMutation = 'Diamond';
+  else if (mutRoll < 50.0) winMutation = 'Gold';
+
+  currentGachaOutcome = {
+    ...winningAnimal,
+    mutation: winMutation,
+    zoneName: targetZone.name
+  };
+
+  for (let i = 0; i < 60; i++) {
+    const itemData = (i === winnerIndex)
+      ? currentGachaOutcome
+      : availableAnimals[Math.floor(Math.random() * availableAnimals.length)];
+
+    const card = document.createElement('div');
+    card.className = `zt-gacha-item zt-gacha-rarity--${itemData.rarity}`;
+    card.id = `gacha-item-${i}`;
+    card.innerHTML = `
+      <img src="${getAnimalThumb(itemData.id, itemData.color)}" class="zt-gacha-item__thumb" alt="${itemData.name}">
+      <div class="zt-gacha-item__name">${itemData.name}</div>
+      ${itemData.mutation && itemData.mutation !== 'Normal' ? `<span class="zt-mut" style="font-size:9px; padding:0 4px">${itemData.mutation}</span>` : `<span class="zt-tag" style="font-size:9px; padding:0 4px">${itemData.rarity}</span>`}
+      <div class="zt-gacha-item__bar"></div>
+    `;
+    track.appendChild(card);
+  }
+
+  return { winnerIndex, outcome: currentGachaOutcome };
+}
+
+function spinCS2Egg() {
+  if (isGachaSpinning) return;
+  const farZone = state.getFarthestZone();
+  const eggCost = Math.max(250, Math.round(500 * (state.maxReachedZoneIndex + 1) * D.foodCostMul));
+
+  if (state.money < eggCost) {
+    showNotice(`NOT ENOUGH CASH FOR EGG ($${formatNum(eggCost)})`);
+    return;
+  }
+  state.money -= eggCost;
+  state.save();
+  updateUI();
+
+  // Buka CS2 Overlay
+  closeModal('shop');
+  const overlay = document.querySelector('#gacha-overlay');
+  overlay.classList.remove('hidden');
+  document.querySelector('#gacha-biome-title').textContent = `BIOME: ${farZone.name.toUpperCase()} · ${zoneRange(farZone)}`;
+
+  const { winnerIndex, outcome } = setupGachaRoulette(farZone);
+  isGachaSpinning = true;
+  sfx.playPop();
+
+  // CS2 Deceleration Spin
+  // Card width 124px + 12px gap = 136px per item
+  const itemWidth = 136;
+  const containerWidth = document.querySelector('.zt-gacha-roulette-container').offsetWidth || 600;
+  // Center needle di 50% lebar kontainer
+  const centerOffset = containerWidth / 2 - 62;
+  // Jitter sedikit di dalam kartu agar terasa fisik CS2 asli
+  const jitter = Math.floor(Math.random() * 40 - 20);
+  const targetX = -(winnerIndex * itemWidth - centerOffset + jitter);
+
+  const track = document.querySelector('#gacha-track');
+  // 5 detik spin dengan cubic bezier CS:GO / CS2 case unboxing
+  setTimeout(() => {
+    track.style.transition = 'transform 4.8s cubic-bezier(0.12, 0.8, 0.2, 1)';
+    track.style.transform = `translateX(${targetX}px)`;
+  }, 50);
+
+  // Sound ticking effects saat roulette berputar
+  let ticks = 0;
+  const tickInterval = setInterval(() => {
+    ticks++;
+    if (ticks % 3 === 0) sfx.playPop();
+    if (ticks > 24) clearInterval(tickInterval);
+  }, 180);
+
+  setTimeout(() => {
+    isGachaSpinning = false;
+    clearInterval(tickInterval);
+    sfx.playCatch(outcome.rarity, outcome.mutation);
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+
+    const winCard = document.querySelector(`#gacha-item-${winnerIndex}`);
+    if (winCard) winCard.classList.add('is-selected');
+
+    const resultBox = document.querySelector('#gacha-result');
+    resultBox.classList.remove('hidden');
+    document.querySelector('#gacha-result-name').textContent = `🎉 UNLOCKED: ${outcome.name} [${outcome.rarity}${outcome.mutation !== 'Normal' ? ' · ' + outcome.mutation : ''}]`;
+    document.querySelector('#gacha-result-desc').textContent = `From ${outcome.zoneName}! Adds +$${formatNum(state.incomeOf(outcome))}/s to your pen!`;
+
+    // Berikan reward ke inventory
+    const res = state.addAnimal(outcome);
+    updateUI();
+    showNotice(`UNBOXED ${outcome.name.toUpperCase()}!`);
+
+    document.querySelector('#btn-gacha-spin').classList.remove('hidden');
+  }, 5000);
+}
+
+document.querySelector('#btn-shop-open-egg').onclick = () => spinCS2Egg();
+document.querySelector('#btn-gacha-spin').onclick = () => spinCS2Egg();
+document.querySelector('#btn-gacha-close').onclick = () => {
+  if (isGachaSpinning) return;
+  document.querySelector('#gacha-overlay').classList.add('hidden');
+  syncModalState();
+};
+
+// 2. MAKANAN AJAIB (1, 5, 10 PCS)
+function buyMagicFood(qty, cost) {
+  if (state.money >= cost) {
+    state.money -= cost;
+    state.addMagicFood(qty);
+    sfx.playLevelUp();
+    showNotice(`BOUGHT ${qty}X MAGIC FOOD! (+3.5X BIOME LUCK)`);
+    updateUI();
+  } else {
+    showNotice(`NOT ENOUGH CASH! NEED $${formatNum(cost)}`);
+  }
+}
+document.querySelector('#btn-buy-magic-1').onclick = () => buyMagicFood(1, 100);
+document.querySelector('#btn-buy-magic-5').onclick = () => buyMagicFood(5, 450);
+document.querySelector('#btn-buy-magic-10').onclick = () => buyMagicFood(10, 850);
+
+// 3. LEVEL POWER (% DARI POWER SAAT INI)
+function buyPowerPercent(pct) {
+  const res = state.buyPowerPercent(pct);
+  if (res.success) {
+    sfx.playLevelUp();
+    showNotice(`POWER BOOSTED +${formatNum(res.gained)} (+${pct}%)!`);
+    updateUI();
+  } else {
+    showNotice(`NEED $${formatNum(res.cost)} CASH!`);
+  }
+}
+document.querySelector('#btn-buy-power-pct5').onclick = () => buyPowerPercent(5);
+document.querySelector('#btn-buy-power-pct10').onclick = () => buyPowerPercent(10);
+
+// 4. INSTANT CASH (% CONVERSION DARI POWER)
+function buyCashWithPower(pct) {
+  const res = state.buyCashWithPowerPercent(pct);
+  if (res.success) {
+    sfx.playCoins();
+    showNotice(`CONVERTED ${pct}% POWER TO +$${formatNum(res.cashGain)} CASH!`);
+    updateUI();
+  } else {
+    showNotice(res.reason || 'POWER TOO LOW!');
+  }
+}
+document.querySelector('#btn-buy-cash-pct5').onclick = () => buyCashWithPower(5);
+document.querySelector('#btn-buy-cash-pct10').onclick = () => buyCashWithPower(10);
 
 // Shop actions
 document.querySelector('#btn-shop-sell-all').onclick = async () => {

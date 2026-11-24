@@ -587,7 +587,9 @@ export class RobloxSeamlessWorld {
     const zoneFood = zoneFoodOf(zone);
     const usingZoneFood = !!food && food.id === zoneFood.id;
     const zoneFoodMiss = D.zoneFood && !usingZoneFood;
-    const luck = D.zoneFood ? (usingZoneFood ? (D.zoneFoodLuck ?? food.luckBonus) : 1) : (food ? food.luckBonus : 1.0);
+    let luck = D.zoneFood ? (usingZoneFood ? (D.zoneFoodLuck ?? food.luckBonus) : 1) : (food ? food.luckBonus : 1.0);
+    // Buff Magic Food (fitur web3) tetap melipatgandakan Luck di kedua mode
+    if (food && food.magicFoodMultiplier) luck *= food.magicFoodMultiplier;
     const baseRarity = animals[0].rarity; // rarity terendah di zona (Galaxy tidak punya Common → Rare)
     const weights = animals.map(a => {
       if (a.rarity === baseRarity) return a.weight;
