@@ -108,10 +108,40 @@ export class GameState {
    * Beli boost Power dengan Cash (berdasarkan persentase power saat ini, contoh 5% atau 10%)
    * @param {number} percent 5 untuk 5%, 10 untuk 10%
    */
-  buyPowerPercent(percent = 5) {
+  /** Harga & hasil "Boost Power %" (mode hard dikali D.powerBuyCostMul). */
+  powerBuyQuote(percent = 5) {
     const gained = Math.max(5, Math.round(this.power * (percent / 100)));
     // Harga berskala seimbang dengan level & power saat ini
-    const cost = Math.max(50, Math.round(gained * 12 * Math.sqrt(this.power / 10)));
+    const cost = Math.round(Math.max(50, Math.round(gained * 12 * Math.sqrt(this.power / 10))) * D.powerBuyCostMul);
+    return { gained, cost };
+  }
+
+  /** Cash dari "Instant Cash" (mode hard dikali D.powerSellCashMul, supaya tidak bisa beli-jual Power untuk untung). */
+  cashFromPowerQuote(percent = 10) {
+    const powerSpent = Math.max(5, Math.round(this.power * (percent / 100)));
+    const cashGain = Math.round(Math.max(100, Math.round(powerSpent * 35 * this.getRebirthMultiplier())) * D.powerSellCashMul);
+    return { powerSpent, cashGain };
+  }
+
+  /** Harga Mystery Egg: mode hard = penghasilan hewan teratas zona terjauh × D.eggCostSeconds. */
+  eggCost() {
+    if (D.eggCostSeconds) {
+      const z = this.getFarthestZone();
+      return Math.max(250, Math.round(z.animals[z.animals.length - 1].baseCps * D.incomeMul * D.eggCostSeconds));
+    }
+    return Math.max(250, Math.round(500 * (this.maxReachedZoneIndex + 1) * D.foodCostMul));
+  }
+
+  /** Harga Magic Food: 1 / 5 / 10 buah = 1 / 4.5 / 8.5 × harga satuan. */
+  magicFoodCost(qty) {
+    const unit = D.magicFoodSeconds
+      ? Math.max(100, Math.round(this.getFarthestZone().animals[0].baseCps * D.incomeMul * D.magicFoodSeconds))
+      : 100;
+    return Math.round(unit * ({ 1: 1, 5: 4.5, 10: 8.5 }[qty] ?? qty));
+  }
+
+  buyPowerPercent(percent = 5) {
+    const { gained, cost } = this.powerBuyQuote(percent);
     if (this.money >= cost) {
       this.money -= cost;
       this.power += gained;
@@ -127,9 +157,8 @@ export class GameState {
    * @param {number} percent 5 untuk 5%, 10 untuk 10%
    */
   buyCashWithPowerPercent(percent = 10) {
-    const powerSpent = Math.max(5, Math.round(this.power * (percent / 100)));
+    const { powerSpent, cashGain } = this.cashFromPowerQuote(percent);
     if (this.power > powerSpent + 5) { // menjaga minimal power
-      const cashGain = Math.max(100, Math.round(powerSpent * 35 * this.getRebirthMultiplier()));
       this.power -= powerSpent;
       this.money += cashGain;
       this.totalEarned += cashGain;

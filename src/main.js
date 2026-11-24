@@ -579,7 +579,7 @@ function updateUI() {
 
   // Update item shop baru
   const farZone = state.getFarthestZone();
-  const eggCost = Math.max(250, Math.round(500 * (state.maxReachedZoneIndex + 1) * D.foodCostMul));
+  const eggCost = state.eggCost();
   const eggZoneEl = document.querySelector('#shop-egg-farthest-zone');
   if (eggZoneEl) eggZoneEl.textContent = `${farZone.name.toUpperCase()} (${zoneRange(farZone)})`;
   const eggBtn = document.querySelector('#btn-shop-open-egg');
@@ -588,15 +588,16 @@ function updateUI() {
   const magicOwnedEl = document.querySelector('#shop-magic-food-owned');
   if (magicOwnedEl) magicOwnedEl.textContent = `(Buff: ${state.magicFoodBuff || 0} throw)`;
 
-  const pCost5 = Math.max(50, Math.round(Math.max(5, Math.round(state.power * 0.05)) * 12 * Math.sqrt(state.power / 10)));
-  const pCost10 = Math.max(90, Math.round(Math.max(10, Math.round(state.power * 0.10)) * 12 * Math.sqrt(state.power / 10)));
+  const pCost5 = state.powerBuyQuote(5).cost;
+  const pCost10 = state.powerBuyQuote(10).cost;
+  [1, 5, 10].forEach(q => { const b = document.querySelector(`#btn-buy-magic-${q}`); if (b) b.textContent = `${q} Pcs ($${formatNum(state.magicFoodCost(q))})`; });
   const pBtn5 = document.querySelector('#btn-buy-power-pct5');
   if (pBtn5) pBtn5.textContent = `+5% Power ($${formatNum(pCost5)})`;
   const pBtn10 = document.querySelector('#btn-buy-power-pct10');
   if (pBtn10) pBtn10.textContent = `+10% Power ($${formatNum(pCost10)})`;
 
-  const cash5Gain = Math.max(100, Math.round(Math.max(5, Math.round(state.power * 0.05)) * 35 * state.getRebirthMultiplier()));
-  const cash10Gain = Math.max(200, Math.round(Math.max(10, Math.round(state.power * 0.10)) * 35 * state.getRebirthMultiplier()));
+  const cash5Gain = state.cashFromPowerQuote(5).cashGain;
+  const cash10Gain = state.cashFromPowerQuote(10).cashGain;
   const cashBtn5 = document.querySelector('#btn-buy-cash-pct5');
   if (cashBtn5) cashBtn5.textContent = `5% Power (+$${formatNum(cash5Gain)})`;
   const cashBtn10 = document.querySelector('#btn-buy-cash-pct10');
@@ -1432,7 +1433,7 @@ function setupGachaRoulette(targetZone) {
 function spinCS2Egg() {
   if (isGachaSpinning) return;
   const farZone = state.getFarthestZone();
-  const eggCost = Math.max(250, Math.round(500 * (state.maxReachedZoneIndex + 1) * D.foodCostMul));
+  const eggCost = state.eggCost();
 
   if (state.money < eggCost) {
     showNotice(`NOT ENOUGH CASH FOR EGG ($${formatNum(eggCost)})`);
@@ -1520,9 +1521,10 @@ function buyMagicFood(qty, cost) {
     showNotice(`NOT ENOUGH CASH! NEED $${formatNum(cost)}`);
   }
 }
-document.querySelector('#btn-buy-magic-1').onclick = () => buyMagicFood(1, 100);
-document.querySelector('#btn-buy-magic-5').onclick = () => buyMagicFood(5, 450);
-document.querySelector('#btn-buy-magic-10').onclick = () => buyMagicFood(10, 850);
+// Harga ikut mode (gameState.magicFoodCost): easy $100/buah, hard mengikuti penghasilan zona terjauh
+document.querySelector('#btn-buy-magic-1').onclick = () => buyMagicFood(1, state.magicFoodCost(1));
+document.querySelector('#btn-buy-magic-5').onclick = () => buyMagicFood(5, state.magicFoodCost(5));
+document.querySelector('#btn-buy-magic-10').onclick = () => buyMagicFood(10, state.magicFoodCost(10));
 
 // 3. LEVEL POWER (% DARI POWER SAAT INI)
 function buyPowerPercent(pct) {

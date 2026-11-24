@@ -16,6 +16,12 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.4.2 — 2026-11-24
+### Changed
+- Hard mode: Mystery Egg, Magic Food and Boost Power now cost more as you reach farther zones, so Hard still takes about 2–3 hours to reach Galaxy.
+### Fixed
+- Hard mode: buying Power and trading it back for cash no longer makes free money.
+
 ## 0.4.1 — 2026-11-24
 ### Changed
 - Abyss Serpent now sways its long neck and swishes its tail as it swims.

@@ -37,6 +37,10 @@ All numbers that drive progress (Power, zones, money). The **Easy** column is th
 | `petBonusCap` | Maximum total pet bonus | none | **+50%** |
 | `zoneIncomeGrowth` | Animal income growth per zone | off (~30× per zone) | **4× per zone** |
 | `foodCostSeconds` | Zone food price = that zone's lowest animal $/s (after `incomeMul`) × seconds | off | **1,000 s** |
+| `powerBuyCostMul` | Boost Power % price × | 1 | **500** |
+| `powerSellCashMul` | Instant Cash (Power → cash) × | 1 | **0.2** (no buy-low/sell-high loop) |
+| `eggCostSeconds` | Mystery Egg = farthest zone's top animal $/s (after `incomeMul`) × seconds | off ($500 × zone × `foodCostMul`) | **3,000 s** |
+| `magicFoodSeconds` | Magic Food, per piece = farthest zone's lowest animal $/s × seconds | off ($100) | **60 s** |
 | `zoneFood` | Rare and above need **that zone's food** | off | **on** |
 | `zoneFoodLuck` | Luck when the zone's food is used | food's own Luck | **×3** (fixed) |
 | `rarityWeightMul` | Base catch weight × per rarity (Rare / Epic / Legendary·Mythic) | 1 / 1 / 1 | **0.5 / 0.3 / 0.15** |
@@ -113,6 +117,7 @@ Pull-up Power per second by level (before rebirth and pet bonus):
 | Easy | GOOD | about 4 minutes |
 | Hard | GOOD | **2.2–2.7 hours** |
 | Hard | mostly MAX | **1.7–2.0 hours** |
+| Hard + buying Power and Eggs whenever affordable | GOOD | **2.1–2.3 hours** (with the old team prices: about 40 minutes) |
 
 Hard milestones (GOOD, typical run): Farm 5 min, Jungle 15 min, Toxic 26 min, Lava 37 min, Glow Sea 1 h, Christmas 1.5 h, Frost 2 h, Galaxy 2.5 h. A less efficient player will take longer. Simulation script assumptions are rough; this has not been playtested yet.
 
