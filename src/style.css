@@ -308,3 +308,20 @@ html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 .zt-root.is-touch.area-throw .zt-onboard { bottom: calc(var(--zt-throw-h, 140px) + 100px + var(--sab)); }
 .zt-root.is-touch .zt-cine__bar--bottom { padding-bottom: calc(10px + var(--sab)); }
 .zt-root.is-touch .zt-mmenu__sheet { max-height: calc(100dvh - 16px); overflow-y: auto; }
+
+/* ---------- Changelog ---------- */
+.zt-clog { display: flex; flex-direction: column; gap: 10px; }
+.zt-clog__entry { display: block; padding: 12px 14px; }
+.zt-clog__entry.is-latest { border-color: var(--zt-accent); }
+.zt-clog__head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.zt-clog__ver { font-size: 18px; color: var(--zt-ink); }
+.zt-clog__date { margin-left: auto; font-size: 12px; color: #5E6B78; }
+.zt-clog__new { font-family: var(--zt-font-title); font-size: 11px; letter-spacing: .06em; color: var(--zt-white); background: var(--zt-accent);
+  border: 2px solid var(--zt-ink); border-radius: 6px; padding: 1px 6px 2px; }
+.zt-clog__sec { font-family: var(--zt-font-title); font-size: 13px; margin: 8px 0 2px; color: var(--zt-ink); }
+.zt-clog__sec--added { color: var(--zt-good-d); }
+.zt-clog__sec--fixed { color: var(--zt-accent-d); }
+.zt-clog__sec--removed { color: var(--zt-danger); }
+.zt-clog__list { margin: 0; padding-left: 18px; list-style: disc; font-size: 13px; line-height: 1.45; color: #3A4652; }
+.zt-clog__list li + li { margin-top: 3px; }
+.zt-clog__list code { font-size: 12px; background: rgba(0,0,0,.06); border-radius: 4px; padding: 0 4px; }

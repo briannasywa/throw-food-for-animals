@@ -1,12 +1,13 @@
 {
   "name": "web-game",
-  "version": "0.0.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:changelog": "node scripts/check-changelog.mjs"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.5",

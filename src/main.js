@@ -9,6 +9,7 @@ import { RobloxSeamlessWorld } from './robloxSeamlessWorld.js';
 import { sfx } from './audio.js';
 import { getAnimalThumb } from './animalThumbs.js';
 import { web3Manager } from './web3Manager.js';
+import { CHANGELOG, LATEST_VERSION } from './changelog.js';
 
 const state = new GameState();
 
@@ -82,6 +83,7 @@ app.innerHTML = `
     <button id="btn-open-quests" class="zt-btn zt-btn--primary">Quests${hk('Q')}</button>
     <button id="btn-open-index" class="zt-btn zt-btn--accent">Index${hk('I')}</button>
     <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank${hk('R')}</button>
+    <button id="btn-open-changelog" class="zt-btn zt-btn--plain" title="What's new (C)">Changelog${hk('C')}</button>
     <button id="btn-toggle-camlock" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Camera lock" title="Camera lock (L)">${CAMLOCK_ICON}${hk('L')}</button>
     <button id="btn-mobile-menu" class="zt-btn zt-btn--plain zt-menu__burger" aria-label="Menu">${BURGER_ICON}<span>Menu</span></button>
     <button id="btn-toggle-sound" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Sound" title="Sound (M)"><span id="sound-icon">${SPEAKER_ON}</span>${hk('M')}</button>
@@ -262,6 +264,7 @@ app.innerHTML = `
         <button class="zt-btn zt-btn--accent" data-mm="index">Index</button>
         <button class="zt-btn zt-btn--good" data-mm="rank">Rank</button>
         <button class="zt-btn zt-btn--plain" data-mm="sound" id="mmenu-sound">Sound: On</button>
+        <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="changelog">Changelog</button>
         <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="wallet" id="mmenu-wallet">Connect Wallet</button>
       </div>
     </div>
@@ -274,6 +277,9 @@ app.innerHTML = `
     `<div id="plot-capacity-text" class="zt-modal__sub">0 / 4 SLOTS</div>`)}
 
   ${modal('quests', 'Quests', `<div id="quests-list" class="flex flex-col gap-2.5"></div>`)}
+
+  ${modal('changelog', 'Changelog', `<div id="changelog-list" class="zt-clog"></div>`,
+    `<div class="zt-modal__sub">Version ${LATEST_VERSION}</div>`)}
 
   ${modal('index', 'Index', `
     <div id="index-tabs" class="zt-tabs"></div>
@@ -408,7 +414,35 @@ let indexHasNew = false;
 function updateDots() {
   document.querySelector('#btn-open-quests').classList.toggle('zt-dot', state.quests.some(q => q.completed && !q.claimed));
   document.querySelector('#btn-open-index').classList.toggle('zt-dot', indexHasNew);
-  document.querySelector('#btn-mobile-menu').classList.toggle('zt-dot', indexHasNew || state.quests.some(q => q.completed && !q.claimed));
+  document.querySelector('#btn-open-changelog').classList.toggle('zt-dot', changelogUnseen());
+  document.querySelector('#btn-mobile-menu').classList.toggle('zt-dot', indexHasNew || changelogUnseen() || state.quests.some(q => q.completed && !q.claimed));
+}
+
+// ---------- Changelog (isi dari CHANGELOG.md, wajib diisi tiap update yang di-merge) ----------
+// kunci localStorage: 'zootoss-changelog-seen' (ditulis literal karena updateDots bisa dipanggil sebelum baris ini jalan)
+function changelogUnseen() {
+  try { return localStorage.getItem('zootoss-changelog-seen') !== LATEST_VERSION; } catch { return false; }
+}
+const escHtml = (t) => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// Markdown kecil di dalam kalimat: **tebal** dan `kode`
+const inlineMd = (t) => escHtml(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`(.+?)`/g, '<code>$1</code>');
+function renderChangelogModal() {
+  let seen = null;
+  try { seen = localStorage.getItem('zootoss-changelog-seen'); } catch { /* storage diblokir */ }
+  const seenIdx = CHANGELOG.findIndex(e => e.version === seen);
+  document.querySelector('#changelog-list').innerHTML = CHANGELOG.map((e, i) => `
+    <section class="zt-row zt-clog__entry ${i === 0 ? 'is-latest' : ''}">
+      <div class="zt-clog__head">
+        <span class="zt-title zt-clog__ver">v${e.version}</span>
+        ${(seenIdx === -1 ? i === 0 : i < seenIdx) ? '<span class="zt-clog__new">NEW</span>' : ''}
+        <span class="zt-clog__date">${e.date}</span>
+      </div>
+      ${e.sections.map(s => `
+        <div class="zt-clog__sec zt-clog__sec--${s.name.toLowerCase()}">${escHtml(s.name)}</div>
+        <ul class="zt-clog__list">${s.items.map(it => `<li>${inlineMd(it)}</li>`).join('')}</ul>`).join('')}
+    </section>`).join('');
+  try { localStorage.setItem('zootoss-changelog-seen', LATEST_VERSION); } catch { /* storage diblokir */ }
+  updateDots();
 }
 
 // Update UI
@@ -943,7 +977,7 @@ document.querySelector('#btn-throw').onclick = () => triggerThrow();
 state.autoThrow = false;
 
 // Modal helpers — hanya satu panel terbuka; tutup dengan X, klik latar, atau Esc
-const MODALS = ['shop', 'plot', 'quests', 'index', 'rank', 'food', 'menu'];
+const MODALS = ['shop', 'plot', 'quests', 'index', 'rank', 'food', 'menu', 'changelog'];
 const anyModalOpen = () => MODALS.some(id => !document.querySelector(`#modal-${id}`).classList.contains('hidden'))
   || !document.querySelector('#modal-confirm').classList.contains('hidden');
 
@@ -1011,6 +1045,7 @@ const MENU_KEYS = {
   KeyQ: () => toggleModal('quests', renderQuestsModal),
   KeyI: () => toggleModal('index', () => { indexHasNew = false; updateDots(); renderIndexModal(); }),
   KeyR: () => toggleModal('rank', updateRankModal),
+  KeyC: () => toggleModal('changelog', renderChangelogModal),
   KeyM: () => toggleSound(),
   KeyL: () => { sfx.playPop(); setCamLock(!camLock); },
 };
@@ -1042,6 +1077,7 @@ window.addEventListener('keydown', (e) => {
 document.querySelector('#btn-open-quests').onclick = () => { renderQuestsModal(); openModal('quests'); };
 document.querySelector('#btn-open-index').onclick = () => { indexHasNew = false; updateDots(); renderIndexModal(); openModal('index'); };
 document.querySelector('#btn-open-rank').onclick = () => { updateRankModal(); openModal('rank'); };
+document.querySelector('#btn-open-changelog').onclick = () => { renderChangelogModal(); openModal('changelog'); };
 
 // ---------- Ganti difficulty (Easy = testing dev, Hard = demo) ----------
 // Tiap mode punya save sendiri (gameState.js), jadi berpindah mode = muat ulang dengan save mode itu.
@@ -1075,6 +1111,7 @@ function renderMobileMenu() {
   rb.classList.toggle('is-short', !state.canRebirth());
   document.querySelector('#mmenu-sound').textContent = `Sound: ${sfx.enabled ? 'On' : 'Off'}`;
   document.querySelector('#mmenu-wallet').textContent = document.querySelector('#wallet-btn-text').textContent;
+  document.querySelector('[data-mm="changelog"]').classList.toggle('zt-dot', changelogUnseen());
   document.querySelectorAll('[data-mm="quests"], [data-mm="index"]').forEach(b =>
     b.classList.toggle('zt-dot', document.querySelector(`#btn-open-${b.dataset.mm}`).classList.contains('zt-dot')));
 }

@@ -27,6 +27,8 @@ npx serve -s dist -p 3000
 
 ---
 
+> **Changelog resmi ada di [CHANGELOG.md](CHANGELOG.md)** dan wajib diisi tiap update yang di-merge ke `main` (lihat [CONTRIBUTING.md](CONTRIBUTING.md)). Catatan di bawah adalah arsip lama.
+
 ## 📋 Catatan Progres Lengkap (Changelog & Features)
 
 ---

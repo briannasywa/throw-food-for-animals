@@ -1,0 +1,26 @@
+name: Changelog
+
+# Every update merged into main must add a CHANGELOG.md entry (CONTRIBUTING.md).
+# Make this check "required" in GitHub → Settings → Branches → main so a PR cannot merge without it.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check CHANGELOG.md (pull request)
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-changelog.mjs --base origin/${{ github.base_ref }}
+      - name: Check CHANGELOG.md (push to main)
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: node scripts/check-changelog.mjs --base ${{ github.event.before }}
