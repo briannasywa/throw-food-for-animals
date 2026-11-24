@@ -5,7 +5,12 @@ import { D, MODE } from './difficulty.js';
 const SAVE_KEY = MODE === 'easy' ? 'ZooToss_SaveData_v1' : `ZooToss_SaveData_v1_${MODE}`;
 
 /** Harga makanan sesuai mode. */
-export const foodCost = (f) => Math.round(f.cost * D.foodCostMul);
+// Mode hard (D.foodCostSeconds): harga = penghasilan hewan terendah zona itu x detik ini, supaya harga ikut penghasilan yang dipadatkan.
+export const foodCost = (f) => {
+  const i = FOOD_TIERS.indexOf(f);
+  if (D.foodCostSeconds && i > 0 && ZONES[i]) return Math.round(ZONES[i].animals[0].baseCps * D.incomeMul * D.foodCostSeconds);
+  return Math.round(f.cost * D.foodCostMul);
+};
 
 export class GameState {
   constructor() {
@@ -315,10 +320,11 @@ export class GameState {
         this.unlockedFoods = d.unlockedFoods ?? [0];
         this.inventory = d.inventory ?? [];
         // Nama tampilan selalu ikut gameData (id tetap), supaya save lama ikut nama baru (mis. "Pastel Chick" → "Farm Chick").
-        const nameById = {};
-        ZONES.forEach(z => z.animals.forEach(a => { nameById[a.id] = a.name; }));
-        this.inventory.forEach(it => { if (nameById[it.id]) it.name = nameById[it.id]; });
-        if (d.luckiestCatch && nameById[d.luckiestCatch.id]) d.luckiestCatch.name = nameById[d.luckiestCatch.id];
+        // baseCps juga ikut gameData, karena mode hard memadatkan penghasilan per zona.
+        const byId = {};
+        ZONES.forEach(z => z.animals.forEach(a => { byId[a.id] = a; }));
+        this.inventory.forEach(it => { const a = byId[it.id]; if (a) { it.name = a.name; it.baseCps = a.baseCps; } });
+        if (d.luckiestCatch && byId[d.luckiestCatch.id]) d.luckiestCatch.name = byId[d.luckiestCatch.id].name;
         this.indexProgress = d.indexProgress ?? {};
         this.totalCatches = d.totalCatches ?? 0;
         this.luckiestCatch = d.luckiestCatch ?? null;

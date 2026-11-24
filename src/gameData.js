@@ -1,4 +1,5 @@
 // Zoo Toss — biome zones & game data (angka game mengikuti prototype)
+import { D } from './difficulty.js';
 
 export const SKY_COLOR = 0x7ccbff; // palette.json -> core.background
 
@@ -152,6 +153,19 @@ export const ZONES = [
     ]
   }
 ];
+
+// Mode hard (difficulty.js → zoneIncomeGrowth): penghasilan hewan per zona dipadatkan.
+// Angka asli naik ~30× per zona sehingga uang selalu jauh melampaui harga upgrade.
+// Di sini hewan terendah zona ke-i dibuat = 3 × growth^i $/s; perbandingan antar rarity dalam zona tetap sama.
+if (D.zoneIncomeGrowth) {
+  const g = D.zoneIncomeGrowth;
+  const base0 = ZONES[0].animals[0].baseCps;
+  ZONES.forEach((z, i) => {
+    if (i === 0) return;
+    const k = (base0 * Math.pow(g, i)) / z.animals[0].baseCps;
+    z.animals.forEach(a => { a.baseCps = Math.max(1, Math.round(a.baseCps * k)); });
+  });
+}
 
 export const FOOD_TIERS = [
   { id: 'carrot', name: 'Carrot', iconText: 'CARROT', color: '#7AD15A', cost: 0, luckBonus: 1.0, desc: 'Basic bait for Lobby animals.' },

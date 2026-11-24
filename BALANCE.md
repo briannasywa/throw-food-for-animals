@@ -21,12 +21,12 @@ All numbers that drive progress (Power, zones, money). The **Easy** column is th
 |---|---|---|---|
 | `distPerPower` | Throw distance (m) per 1 Power | 10 | **1.5** |
 | `meterSpeedMul` | Meter needle speed | 1× | 1× |
-| `pullUpRateMul` | Power per second from pull-ups | 1× | **0.25×** |
+| `pullUpRateMul` | Power per second from pull-ups | 1× | **0.08×** |
 | `pullUpCostStart` | First pull-up upgrade price | $50 | **$250** |
-| `pullUpCostGrowth` | Next upgrade price × | 1.8 | **2.2** |
+| `pullUpCostGrowth` | Next upgrade price × | 1.8 | **3.0** |
 | `incomeMul` | $/s from animals in the pen | 1× | **0.2×** |
 | `sellSeconds` | Sell price = $/s × seconds | 25 | **6** |
-| `foodCostMul` | Food price | 1× | **8×** |
+| `foodCostMul` | Food price × (used when `foodCostSeconds` is off) | 1× | 8× (unused) |
 | `slotCostStart` | First Expand Pen (+2 slots) | $200 | **$2,000** |
 | `slotCostGrowth` | Next Expand Pen × | 2.5 | **3.5** |
 | `rebirthCostStart` | First Rebirth | $50K | **$3M** |
@@ -35,10 +35,14 @@ All numbers that drive progress (Power, zones, money). The **Easy** column is th
 | `questRewardMul` | Quest cash rewards | 1× | **0.2×** |
 | `petBonusPerCps` | Equipped pet bonus per $1/s of that pet's income | 0.05% | **0.005%** |
 | `petBonusCap` | Maximum total pet bonus | none | **+50%** |
+| `zoneIncomeGrowth` | Animal income growth per zone | off (~30× per zone) | **4× per zone** |
+| `foodCostSeconds` | Zone food price = that zone's lowest animal $/s (after `incomeMul`) × seconds | off | **1,000 s** |
 | `zoneFood` | Rare and above need **that zone's food** | off | **on** |
 | `zoneFoodLuck` | Luck when the zone's food is used | food's own Luck | **×3** (fixed) |
 | `rarityWeightMul` | Base catch weight × per rarity (Rare / Epic / Legendary·Mythic) | 1 / 1 / 1 | **0.5 / 0.3 / 0.15** |
 | `luckExp` | Weight × Luck^exp per rarity (Rare / Epic / Legendary·Mythic) | 0 / 0.5 / 1 | **0.5 / 1 / 1.5** |
+
+**Why Hard compresses income:** the original animal income jumps about 30× per zone while the Power needed only grows about 1.6× per zone. Every new zone paid for many pull-up upgrades at once, so multipliers alone could not slow the game (Hard reached Galaxy in about 30 minutes in simulation). Hard now sets each zone's lowest animal to `3 × 4^zone` $/s; the ratio between rarities inside a zone is unchanged. Food prices follow the same scale.
 
 The pet bonus had no cap. Equipping a Jungle elephant (18,000 $/s) gave about +900% to income **and** pull-up Power, which is why progress jumped. Hard caps it at +50%.
 
@@ -100,45 +104,49 @@ Pull-up Power per second by level (before rebirth and pet bonus):
 | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |---|---|---|---|---|---|---|---|---|
 | Easy | 3 | 6 | 10 | 14 | 20 | 25 | 31 | 37 |
-| Hard | 1 | 1 | 2 | 3 | 5 | 6 | 7 | 9 |
+| Hard | 1 | 1 | 1 | 1 | 1 | 2 | 2 | 2 |
 
-**Rough pace with no pets and no rebirth:**
-- **Easy:** Farm in seconds, Jungle in about 20 s of pull-ups, Toxic in under a minute.
-- **Hard:** Farm in about 2–3 minutes, Jungle in roughly 10 minutes (after a few pull-up upgrades), Lava well past 30 minutes. Rare+ animals also need each zone's food, which costs 8×.
+**Time to reach Galaxy (simulation, 7 runs):** the player trains about 40 s, throws 3 times, repeats, and buys upgrades, zone food and pen space as soon as they can afford them.
 
-These are estimates that have not been playtested yet.
+| Mode | Timing | Galaxy reached |
+|---|---|---|
+| Easy | GOOD | about 4 minutes |
+| Hard | GOOD | **2.2–2.7 hours** |
+| Hard | mostly MAX | **1.7–2.0 hours** |
+
+Hard milestones (GOOD, typical run): Farm 5 min, Jungle 15 min, Toxic 26 min, Lava 37 min, Glow Sea 1 h, Christmas 1.5 h, Frost 2 h, Galaxy 2.5 h. A less efficient player will take longer. Simulation script assumptions are rough; this has not been playtested yet.
 
 ## 4. Values that stay the same in both modes
 
 ### Zones (`gameData.js`)
 
-| Zone | Distance | Animals: base $/s (Common → Legendary/Mythic) |
-|---|---|---|
-| Lobby | 0–300 m | 3 · 6 · 15 · 35 |
-| Farm | 301–1,000 | 50 · 120 · 260 · 800 |
-| Jungle | 1,001–2,500 | 1.2K · 2.8K · 6.5K · 18K |
-| Toxic | 2,501–5,000 | 35K · 80K · 200K · 600K |
-| Lava | 5,001–9,000 | 1.2M · 3M · 8M · 25M |
-| Glow Sea | 9,001–15,000 | 45M · 120M · 300M · 900M |
-| Christmas | 15,001–23,000 | 1.5B · 4B · 10B · 30B |
-| Frost | 23,001–34,000 | 50B · 140B · 400B · 1.2T |
-| Galaxy | 34,001–60,000 | 5T · 15T · 50T · 200T (Mythic) |
+| Zone | Distance | Easy: base $/s (Common → Legendary/Mythic) | Hard: base $/s (`zoneIncomeGrowth` 4) |
+|---|---|---|---|
+| Lobby | 0–300 m | 3 · 6 · 15 · 35 | 3 · 6 · 15 · 35 |
+| Farm | 301–1,000 | 50 · 120 · 260 · 800 | 12 · 29 · 62 · 192 |
+| Jungle | 1,001–2,500 | 1.2K · 2.8K · 6.5K · 18K | 48 · 112 · 260 · 720 |
+| Toxic | 2,501–5,000 | 35K · 80K · 200K · 600K | 192 · 439 · 1.1K · 3.3K |
+| Lava | 5,001–9,000 | 1.2M · 3M · 8M · 25M | 768 · 1.9K · 5.1K · 16K |
+| Glow Sea | 9,001–15,000 | 45M · 120M · 300M · 900M | 3.1K · 8.2K · 20K · 61K |
+| Christmas | 15,001–23,000 | 1.5B · 4B · 10B · 30B | 12K · 33K · 82K · 246K |
+| Frost | 23,001–34,000 | 50B · 140B · 400B · 1.2T | 49K · 138K · 393K · 1.2M |
+| Galaxy | 34,001–60,000 | 5T · 15T · 50T · 200T (Mythic) | 197K · 590K · 2M · 7.9M (Mythic) |
 
 Catch weights: 45/30/18/7 in most zones (Lobby 50/35/12/3, Galaxy 40/35/18/7).
 
-### Food (base price × `foodCostMul`)
+### Food (Easy: base price; Hard: zone income × `foodCostSeconds`)
 
 | Food | Base price | Hard price | Luck (Easy) |
 |---|---|---|---|
 | Carrot | $0 | $0 | ×1 |
-| Apple | $100 | $800 | ×1.5 |
-| Meat | $800 | $6.4K | ×2.2 |
-| Burger | $5K | $40K | ×3.5 |
-| Lava Roll | $50K | $400K | ×5.5 |
-| Pearl | $500K | $4M | ×9 |
-| Candy | $5M | $40M | ×14 |
-| Ice Gem | $50M | $400M | ×22 |
-| Galaxy | $500M | $4B | ×35 |
+| Apple | $100 | $2.4K | ×1.5 |
+| Meat | $800 | $9.6K | ×2.2 |
+| Burger | $5K | $38K | ×3.5 |
+| Lava Roll | $50K | $154K | ×5.5 |
+| Pearl | $500K | $614K | ×9 |
+| Candy | $5M | $2.5M | ×14 |
+| Ice Gem | $50M | $9.8M | ×22 |
+| Galaxy | $500M | $39M | ×35 |
 
 ### Mutations
 

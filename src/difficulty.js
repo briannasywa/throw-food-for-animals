@@ -26,6 +26,8 @@ export const PRESETS = {
     questRewardMul: 1,
     petBonusPerCps: 0.0005,    // bonus pet yang di-equip: +0.05% per 1 $/s penghasilan pet
     petBonusCap: Infinity,     // batas bonus pet total (1 = maksimal +100%)
+    zoneIncomeGrowth: null,    // null = penghasilan hewan asli (naik ~30× per zona); angka = naik × angka ini per zona
+    foodCostSeconds: null,     // null = harga makanan asli × foodCostMul; angka = penghasilan hewan terendah zona × detik ini
     // --- peluang tangkap (robloxSeamlessWorld.js → determineCatch) ---
     zoneFood: false,           // true = Rare ke atas HANYA bisa didapat dengan makanan khusus zona itu
     zoneFoodLuck: null,        // null = pakai Luck asli makanan; angka = Luck tetap saat makanan zona dipakai
@@ -36,9 +38,9 @@ export const PRESETS = {
     label: 'Hard',
     distPerPower: 1.5,
     meterSpeedMul: 1,
-    pullUpRateMul: 0.25,
+    pullUpRateMul: 0.08,
     pullUpCostStart: 250,
-    pullUpCostGrowth: 2.2,
+    pullUpCostGrowth: 3.0,
     incomeMul: 0.2,
     sellSeconds: 6,
     foodCostMul: 8,
@@ -50,6 +52,8 @@ export const PRESETS = {
     questRewardMul: 0.2,
     petBonusPerCps: 0.00005,
     petBonusCap: 0.5,
+    zoneIncomeGrowth: 4,
+    foodCostSeconds: 1000,
     zoneFood: true,
     zoneFoodLuck: 3,
     rarityWeightMul: { Rare: 0.5, Epic: 0.3, Legendary: 0.15, Mythic: 0.15 },
