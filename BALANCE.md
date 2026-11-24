@@ -19,24 +19,50 @@ All numbers that drive progress (Power, zones, money). The **Easy** column is th
 
 | Attribute | Used for | Easy | Hard |
 |---|---|---|---|
-| `distPerPower` | Throw distance (m) per 1 Power | 10 | **2** |
-| `meterSpeedMul` | Meter needle speed | 1× | **1.25×** (harder to hit green) |
-| `pullUpRateMul` | Power per second from pull-ups | 1× | **0.35×** |
-| `pullUpCostStart` | First pull-up upgrade price | $50 | **$150** |
-| `pullUpCostGrowth` | Next upgrade price × | 1.8 | **2.0** |
-| `incomeMul` | $/s from animals in the pen | 1× | **0.3×** |
-| `sellSeconds` | Sell price = $/s × seconds | 25 | **10** |
-| `foodCostMul` | Food price | 1× | **5×** |
-| `slotCostStart` | First Expand Pen (+2 slots) | $200 | **$1,000** |
-| `slotCostGrowth` | Next Expand Pen × | 2.5 | **3** |
-| `rebirthCostStart` | First Rebirth | $50K | **$1M** |
-| `rebirthCostGrowth` | Next Rebirth × | 3.5 | **5** |
-| `rebirthBonus` | Income & Power bonus per rebirth | +50% | **+25%** |
-| `questRewardMul` | Quest cash rewards | 1× | **0.3×** |
-| `petBonusPerCps` | Equipped pet bonus per $1/s of that pet's income | 0.05% | **0.01%** |
-| `petBonusCap` | Maximum total pet bonus | none | **+100%** |
+| `distPerPower` | Throw distance (m) per 1 Power | 10 | **1.5** |
+| `meterSpeedMul` | Meter needle speed | 1× | **1.4×** (harder to hit green) |
+| `pullUpRateMul` | Power per second from pull-ups | 1× | **0.25×** |
+| `pullUpCostStart` | First pull-up upgrade price | $50 | **$250** |
+| `pullUpCostGrowth` | Next upgrade price × | 1.8 | **2.2** |
+| `incomeMul` | $/s from animals in the pen | 1× | **0.2×** |
+| `sellSeconds` | Sell price = $/s × seconds | 25 | **6** |
+| `foodCostMul` | Food price | 1× | **8×** |
+| `slotCostStart` | First Expand Pen (+2 slots) | $200 | **$2,000** |
+| `slotCostGrowth` | Next Expand Pen × | 2.5 | **3.5** |
+| `rebirthCostStart` | First Rebirth | $50K | **$3M** |
+| `rebirthCostGrowth` | Next Rebirth × | 3.5 | **6** |
+| `rebirthBonus` | Income & Power bonus per rebirth | +50% | **+20%** |
+| `questRewardMul` | Quest cash rewards | 1× | **0.2×** |
+| `petBonusPerCps` | Equipped pet bonus per $1/s of that pet's income | 0.05% | **0.005%** |
+| `petBonusCap` | Maximum total pet bonus | none | **+50%** |
+| `zoneFood` | Rare and above need **that zone's food** | off | **on** |
+| `zoneFoodLuck` | Luck when the zone's food is used | food's own Luck | **×3** (fixed) |
+| `rarityWeightMul` | Base catch weight × per rarity (Rare / Epic / Legendary·Mythic) | 1 / 1 / 1 | **0.5 / 0.3 / 0.15** |
+| `luckExp` | Weight × Luck^exp per rarity (Rare / Epic / Legendary·Mythic) | 0 / 0.5 / 1 | **0.5 / 1 / 1.5** |
 
-The pet bonus had no cap. Equipping a Jungle elephant (18,000 $/s) gave about +900% to income **and** pull-up Power, which is why progress jumped. Hard caps it at +100%.
+The pet bonus had no cap. Equipping a Jungle elephant (18,000 $/s) gave about +900% to income **and** pull-up Power, which is why progress jumped. Hard caps it at +50%.
+
+### Zone food (Hard only)
+
+Each zone has one food, in the same order as the zones:
+
+| Zone | Lobby | Farm | Jungle | Toxic | Lava | Glow Sea | Christmas | Frost | Galaxy |
+|---|---|---|---|---|---|---|---|---|---|
+| Food | Carrot | Apple | Meat | Burger | Lava Roll | Pearl | Candy | Ice Gem | Galaxy |
+
+- With the zone's food: Rare and above can drop, with Luck ×3 and the exponents above.
+- With any other food (even a more expensive one): only the zone's lowest animal (Common; Rare in Galaxy, which has no Common). The catch card then says which food to use.
+- Legendary Bait (USDC) still guarantees the top animal anywhere.
+
+Catch odds in Hard with the zone's food (20,000 simulated throws):
+
+| Zone | Common | Rare | Epic | Legendary / Mythic |
+|---|---|---|---|---|
+| Farm, Jungle, … (45/30/18/7) | 49% | 28% | 17% | 6% |
+| Galaxy (Rare 40 / Epic 35 / Legendary 18 / Mythic 7) | — | 44% | 34% | 16% / 6% |
+| Lobby (Carrot) | 86% | 11% | 3% | — |
+
+In Easy the old rule stays: any food works everywhere, and a more expensive food means more Luck.
 
 ## 2. Formulas (the same in both modes)
 
@@ -48,7 +74,7 @@ The pet bonus had no cap. Equipping a Jungle elephant (18,000 $/s) gave about +9
 | Pull-up | `floor(1 + level^1.4 × 2) × pullUpRateMul × rebirth × pet`, minimum 1/s | `gameState.js` |
 | Income/s | `Σ floor(baseCps × mutation) × incomeMul × rebirth × pet` | `gameState.js` |
 | Rebirth bonus | `1 + rebirths × rebirthBonus` | `gameState.js` |
-| Catch odds | Animal weight; Legendary/Mythic weight × food Luck, Epic × √Luck | `robloxSeamlessWorld.js` → `determineCatch` |
+| Catch odds | Weight × `rarityWeightMul` × Luck^`luckExp`; Hard: Rare+ only with the zone's food | `robloxSeamlessWorld.js` → `determineCatch` |
 | Mutation | Normal 85%, Gold 10%, Diamond 3.5%, Emerald 1.2%, Rainbow 0.3% | `determineCatch` |
 | Legendary Bait (USDC) | Guaranteed top animal in the zone; mutations: Rainbow 2%, Emerald 6%, Diamond 12%, Gold 25% | `determineCatch` |
 | Starting values | Power 10, 4 pen slots, 2 pets max, Carrot | `gameState.js` |
@@ -60,25 +86,25 @@ Distance = Power × `distPerPower` × timing (GOOD ≈ ×1.4, MAX = ×2.0), with
 
 | Zone (start) | Easy · GOOD | Easy · MAX | Hard · GOOD | Hard · MAX |
 |---|---|---|---|---|
-| Farm (301 m) | 22 | 16 | 108 | 76 |
-| Jungle (1,001 m) | 72 | 51 | 358 | 251 |
-| Toxic (2,501 m) | 179 | 126 | 894 | 626 |
-| Lava (5,001 m) | 358 | 251 | 1,787 | 1,251 |
-| Glow Sea (9,001 m) | 643 | 451 | 3,215 | 2,251 |
-| Christmas (15,001 m) | 1,072 | 751 | 5,358 | 3,751 |
-| Frost (23,001 m) | 1,643 | 1,151 | 8,215 | 5,751 |
-| Galaxy (34,001 m) | 2,429 | 1,701 | 12,144 | 8,501 |
+| Farm (301 m) | 22 | 16 | 144 | 101 |
+| Jungle (1,001 m) | 72 | 51 | 477 | 334 |
+| Toxic (2,501 m) | 179 | 126 | 1,191 | 834 |
+| Lava (5,001 m) | 358 | 251 | 2,382 | 1,667 |
+| Glow Sea (9,001 m) | 643 | 451 | 4,287 | 3,001 |
+| Christmas (15,001 m) | 1,072 | 751 | 7,144 | 5,001 |
+| Frost (23,001 m) | 1,643 | 1,151 | 10,953 | 7,667 |
+| Galaxy (34,001 m) | 2,429 | 1,701 | 16,191 | 11,334 |
 
 Pull-up Power per second by level (before rebirth and pet bonus):
 
 | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |---|---|---|---|---|---|---|---|---|
 | Easy | 3 | 6 | 10 | 14 | 20 | 25 | 31 | 37 |
-| Hard | 1 | 2 | 3 | 4 | 7 | 8 | 10 | 12 |
+| Hard | 1 | 1 | 2 | 3 | 5 | 6 | 7 | 9 |
 
 **Rough pace with no pets and no rebirth:**
 - **Easy:** Farm in seconds, Jungle in about 20 s of pull-ups, Toxic in under a minute.
-- **Hard:** Farm in about 1.5 minutes, Jungle in about 5 minutes (after upgrading pull-ups to level 3), Lava in about 20 minutes.
+- **Hard:** Farm in about 2–3 minutes, Jungle in roughly 10 minutes (after a few pull-up upgrades), Lava well past 30 minutes. Rare+ animals also need each zone's food, which costs 8×.
 
 These are estimates that have not been playtested yet.
 
@@ -102,17 +128,17 @@ Catch weights: 45/30/18/7 in most zones (Lobby 50/35/12/3, Galaxy 40/35/18/7).
 
 ### Food (base price × `foodCostMul`)
 
-| Food | Base price | Hard price | Luck |
+| Food | Base price | Hard price | Luck (Easy) |
 |---|---|---|---|
 | Carrot | $0 | $0 | ×1 |
-| Apple | $100 | $500 | ×1.5 |
-| Meat | $800 | $4K | ×2.2 |
-| Burger | $5K | $25K | ×3.5 |
-| Lava Roll | $50K | $250K | ×5.5 |
-| Pearl | $500K | $2.5M | ×9 |
-| Candy | $5M | $25M | ×14 |
-| Ice Gem | $50M | $250M | ×22 |
-| Galaxy | $500M | $2.5B | ×35 |
+| Apple | $100 | $800 | ×1.5 |
+| Meat | $800 | $6.4K | ×2.2 |
+| Burger | $5K | $40K | ×3.5 |
+| Lava Roll | $50K | $400K | ×5.5 |
+| Pearl | $500K | $4M | ×9 |
+| Candy | $5M | $40M | ×14 |
+| Ice Gem | $50M | $400M | ×22 |
+| Galaxy | $500M | $4B | ×35 |
 
 ### Mutations
 
@@ -128,10 +154,10 @@ Catch weights: 45/30/18/7 in most zones (Lobby 50/35/12/3, Galaxy 40/35/18/7).
 
 | Quest | Target | Easy | Hard |
 |---|---|---|---|
-| Hard Training | +50 Power from pull-ups | $500 | $150 |
-| Jungle Hunter | 5 catches | $1,200 | $360 |
-| Rocket Throw | One throw ≥ 2,000 m | $3,500 | $1,050 |
-| Golden Touch | 1 mutated catch | $8,000 | $2,400 |
+| Hard Training | +50 Power from pull-ups | $500 | $100 |
+| Jungle Hunter | 5 catches | $1,200 | $240 |
+| Rocket Throw | One throw ≥ 2,000 m | $3,500 | $700 |
+| Golden Touch | 1 mutated catch | $8,000 | $1,600 |
 
 ### Notes for next tuning
 

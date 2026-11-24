@@ -165,6 +165,11 @@ export const FOOD_TIERS = [
   { id: 'star_cake', name: 'Galaxy', iconText: 'GALAXY', color: '#B57BFF', cost: 500000000, luckBonus: 35.0, desc: 'Mythic bait for Galaxy.' }
 ];
 
+/** Makanan khusus zona: urutan FOOD_TIERS = urutan ZONES (Carrot = Lobby, Apple = Farm, …, Galaxy = Galaxy). */
+export const zoneFoodOf = (zone) => FOOD_TIERS[Math.max(0, ZONES.findIndex(z => z.id === zone.id))] || FOOD_TIERS[0];
+/** Zona tempat sebuah makanan menjadi makanan khusus. */
+export const foodZoneOf = (food) => ZONES[FOOD_TIERS.indexOf(food)] || null;
+
 export const MUTATION_DATA = {
   // warna dari palette.json -> mutation (Rainbow = gradasi di UI, warna ini hanya cadangan)
   Normal: { name: 'Normal', multiplier: 1.0, color: '#B8C2CC', chance: 85 },

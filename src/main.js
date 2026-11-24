@@ -4,7 +4,7 @@ import './style.css';
 import confetti from 'canvas-confetti';
 import { GameState, formatNum, foodCost } from './gameState.js';
 import { D, MODE } from './difficulty.js';
-import { FOOD_TIERS, ZONES, MUTATION_DATA } from './gameData.js';
+import { FOOD_TIERS, ZONES, MUTATION_DATA, foodZoneOf } from './gameData.js';
 import { RobloxSeamlessWorld } from './robloxSeamlessWorld.js';
 import { sfx } from './audio.js';
 import { getAnimalThumb } from './animalThumbs.js';
@@ -268,7 +268,7 @@ app.innerHTML = `
   </div>
 
   ${modal('food', 'Food Bag', `<div id="food-bag-list" class="flex flex-col gap-2.5"></div>`,
-    `<div class="zt-modal__sub">Better food = luckier catches</div>`)}
+    `<div class="zt-modal__sub">${D.zoneFood ? 'Rare catches need the food of that zone' : 'Better food = luckier catches'}</div>`)}
 
   ${modal('plot', 'My Pen', `<div id="plot-animals-list" class="zt-grid"></div>`,
     `<div id="plot-capacity-text" class="zt-modal__sub">0 / 4 SLOTS</div>`)}
@@ -456,9 +456,16 @@ function renderFoodBag() {
   const leg = f === LEGENDARY_BAIT;
   document.querySelector('#foodbag-swatch').style.background = f.color;
   document.querySelector('#foodbag-name').textContent = leg ? `Legendary ×${state.legendaryBaits}` : f.name;
-  document.querySelector('#foodbag-sub').textContent = leg ? 'Guaranteed Legendary' : `Luck ×${f.luckBonus}`;
+  document.querySelector('#foodbag-sub').textContent = leg ? 'Guaranteed Legendary' : foodLuckLabel(f);
   document.querySelector('#btn-food-bag').classList.toggle('is-legend', leg);
   if (!document.querySelector('#modal-food').classList.contains('hidden')) renderFoodBagModal();
+}
+
+// Teks Luck makanan. Mode hard: makanan hanya membuka Rare+ di zonanya sendiri (difficulty.js → zoneFood).
+function foodLuckLabel(f) {
+  if (!D.zoneFood) return `Luck ×${f.luckBonus}`;
+  const z = foodZoneOf(f);
+  return z ? `Rare catches in ${z.name}` : `Luck ×${f.luckBonus}`;
 }
 
 function equipFood(idx) {
@@ -497,7 +504,7 @@ function renderFoodBagModal() {
     html += row({
       color: f.color, active: cur === f,
       title: f.name,
-      desc: `${f.desc} · Luck ×${f.luckBonus}`,
+      desc: D.zoneFood ? `${f.desc} · <b>Needed for rare catches in ${foodZoneOf(f)?.name}</b>` : `${f.desc} · Luck ×${f.luckBonus}`,
       btn: cur === f ? equippedBtn
         : owned ? `<button class="zt-btn zt-btn--good zt-btn--sm" data-food="${idx}">Equip</button>`
         : `<button class="zt-btn zt-btn--sm ${canAfford ? 'zt-btn--primary' : 'zt-btn--plain is-short'}" data-food="${idx}">Buy $${formatNum(foodCost(f))}</button>`,
@@ -585,7 +592,8 @@ function showCatchToast(animal, { sellPrice = null, isNew = false } = {}) {
   document.querySelector('#catch-img').src = getAnimalThumb(animal.id);
   document.querySelector('#catch-name').textContent = animal.name;
   document.querySelector('#catch-tags').innerHTML = rarityTag(animal.rarity) + mutTag(animal.mutation);
-  document.querySelector('#catch-sub').textContent = `+$${formatNum(incomeOf(animal))}/s`;
+  document.querySelector('#catch-sub').textContent = `+$${formatNum(incomeOf(animal))}/s`
+    + (animal.zoneFoodMiss ? ` · Use ${animal.zoneFoodName} for rarer catches here` : '');
   document.querySelector('#catch-new').classList.toggle('hidden', !isNew);
   const sold = document.querySelector('#catch-sold');
   sold.classList.toggle('hidden', !sellPrice);
@@ -850,7 +858,9 @@ const onboarding = (() => {
         ? 'Tap <b>Throw</b> when the needle is in the <b>green</b>. Green = longest throw.'
         : 'Press <b>Space</b> when the needle is in the <b>green</b>. Green = longest throw.' },
     { title: 'Watch it fly!', text: 'The farther it lands, the wilder the zone and the rarer the animals.' },
-    { title: 'Nice catch!', text: 'Animals go to your <b>Pen</b> and earn cash every second. Better food in your <b>Food Bag</b> catches rarer animals.', next: true },
+    { title: 'Nice catch!', text: 'Animals go to your <b>Pen</b> and earn cash every second. ' + (D.zoneFood
+      ? 'Rare animals only bite on <b>their zone\'s food</b>: pick it in your <b>Food Bag</b>.'
+      : 'Better food in your <b>Food Bag</b> catches rarer animals.'), next: true },
   ];
   let step = -1;
   const el = document.querySelector('#onboarding');

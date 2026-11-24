@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { ZONES, MUTATION_DATA, SKY_COLOR } from './gameData.js';
+import { ZONES, MUTATION_DATA, SKY_COLOR, zoneFoodOf } from './gameData.js';
+import { D } from './difficulty.js';
 // Hewan & Zookeeper dari voxel art-direction (voxelAnimals.js). tickAnimal juga menganimasikan cincin mutasi.
 import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal } from './voxelAnimals.js';
 import { setupLighting, createBloom } from './zt-lighting.js';
@@ -581,12 +582,17 @@ export class RobloxSeamlessWorld {
       };
     }
 
-    const luck = (food ? food.luckBonus : 1.0);
+    // Bobot = bobot dasar × pengali rarity × Luck^pangkat (difficulty.js).
+    // Mode hard: Rare ke atas hanya mungkin dengan makanan khusus zona; makanan lain = hewan rarity terendah saja.
+    const zoneFood = zoneFoodOf(zone);
+    const usingZoneFood = !!food && food.id === zoneFood.id;
+    const zoneFoodMiss = D.zoneFood && !usingZoneFood;
+    const luck = D.zoneFood ? (usingZoneFood ? (D.zoneFoodLuck ?? food.luckBonus) : 1) : (food ? food.luckBonus : 1.0);
+    const baseRarity = animals[0].rarity; // rarity terendah di zona (Galaxy tidak punya Common → Rare)
     const weights = animals.map(a => {
-      let w = a.weight;
-      if (a.rarity === 'Legendary' || a.rarity === 'Mythic') w *= luck;
-      if (a.rarity === 'Epic') w *= Math.sqrt(luck);
-      return w;
+      if (a.rarity === baseRarity) return a.weight;
+      if (zoneFoodMiss) return 0;
+      return a.weight * (D.rarityWeightMul[a.rarity] ?? 1) * Math.pow(luck, D.luckExp[a.rarity] ?? 0);
     });
 
     const totalWeight = weights.reduce((acc, v) => acc + v, 0);
@@ -615,7 +621,9 @@ export class RobloxSeamlessWorld {
       baseCps: chosen.baseCps,
       color: chosen.color,
       zoneName: zone.name,
-      mutation
+      mutation,
+      zoneFoodMiss: zoneFoodMiss && chosen.rarity === animals[0].rarity,
+      zoneFoodName: zoneFood.name,
     };
   }
 
