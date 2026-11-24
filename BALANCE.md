@@ -137,7 +137,9 @@ Hard milestones (GOOD, typical run): Farm 5 min, Jungle 15 min, Toxic 26 min, La
 | Frost | 23,001–34,000 | 50B · 140B · 400B · 1.2T | 49K · 138K · 393K · 1.2M |
 | Galaxy | 34,001–60,000 | 5T · 15T · 50T · 200T (Mythic) | 197K · 590K · 2M · 7.9M (Mythic) |
 
-Catch weights: 45/30/18/7 in most zones (Lobby 50/35/12/3, Galaxy 40/35/18/7).
+Catch weights per rarity: 45/30/18/7 in most zones (Lobby 50/35/12/3, Galaxy 40/35/18/7).
+
+**v2 animals (0.5.0):** Farm to Galaxy now have 8 animals, two per rarity. Each rarity's weight is split 55% (v1 animal) / 45% (v2 animal), so the odds per rarity did not change. A v2 animal earns 1.25× the v1 animal of the same rarity (Hard compression applies on top). The table above lists the v1 animals; v2 incomes are in `src/gameData.js` (`set: 'v2'`). Simulated Hard time to Galaxy stays about 2.1–2.3 hours.
 
 ### Food (Easy: base price; Hard: zone income × `foodCostSeconds`)
 

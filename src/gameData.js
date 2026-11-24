@@ -30,10 +30,15 @@ export const ZONES = [
     gimmick: 'Hay Fever: a gentle breeze carries hay. Stamina regen +20%.',
     windMultiplier: 0.5,
     animals: [
-      { id: 'pastel_chick', name: 'Farm Chick', rarity: 'Common', baseCps: 50, weight: 45, color: 0xffffff },
-      { id: 'pastel_sheep', name: 'Farm Sheep', rarity: 'Rare', baseCps: 120, weight: 30, color: 0xf472b6 },
-      { id: 'pastel_donkey', name: 'Farm Donkey', rarity: 'Epic', baseCps: 260, weight: 18, color: 0xf1f5f9 },
-      { id: 'giant_pastel_pig', name: 'Giant Farm Pig', rarity: 'Legendary', baseCps: 800, weight: 7, color: 0x181425 }
+      // v1 & v2 berpasangan per rarity: bobot rarity dibagi 55/45, hewan v2 = penghasilan v1 x1.25
+      { id: 'pastel_chick', name: 'Farm Chick', rarity: 'Common', baseCps: 50, weight: 25, color: 0xffffff },
+      { id: 'farm_goat', name: 'Farm Goat', rarity: 'Common', baseCps: 62, weight: 20, color: 0xffe9b8, set: 'v2' },
+      { id: 'pastel_sheep', name: 'Farm Sheep', rarity: 'Rare', baseCps: 120, weight: 16, color: 0xf472b6 },
+      { id: 'farm_duck', name: 'Farm Duck', rarity: 'Rare', baseCps: 150, weight: 14, color: 0xffd6e5, set: 'v2' },
+      { id: 'pastel_donkey', name: 'Farm Donkey', rarity: 'Epic', baseCps: 260, weight: 10, color: 0xf1f5f9 },
+      { id: 'farm_llama', name: 'Farm Llama', rarity: 'Epic', baseCps: 325, weight: 8, color: 0xffd3b0, set: 'v2' },
+      { id: 'giant_pastel_pig', name: 'Giant Farm Pig', rarity: 'Legendary', baseCps: 800, weight: 4, color: 0x181425 },
+      { id: 'giant_farm_turkey', name: 'Giant Farm Turkey', rarity: 'Legendary', baseCps: 1000, weight: 3, color: 0xffe6b0, set: 'v2' }
     ]
   },
   {
@@ -46,10 +51,15 @@ export const ZONES = [
     gimmick: 'Tropical Rainstorm: rain makes food glide farther.',
     windMultiplier: 0.8,
     animals: [
-      { id: 'sunset_monkey', name: 'Jungle Monkey', rarity: 'Common', baseCps: 1200, weight: 45, color: 0x78350f },
-      { id: 'sunset_parrot', name: 'Jungle Parrot', rarity: 'Rare', baseCps: 2800, weight: 30, color: 0xef4444 },
-      { id: 'sunset_croc', name: 'Jungle Croc', rarity: 'Epic', baseCps: 6500, weight: 18, color: 0x22c55e },
-      { id: 'giant_sunset_elephant', name: 'Giant Jungle Elephant', rarity: 'Legendary', baseCps: 18000, weight: 7, color: 0x334155 }
+      // v1 & v2 berpasangan per rarity: bobot rarity dibagi 55/45, hewan v2 = penghasilan v1 x1.25
+      { id: 'sunset_monkey', name: 'Jungle Monkey', rarity: 'Common', baseCps: 1200, weight: 25, color: 0x78350f },
+      { id: 'jungle_flamingo', name: 'Jungle Flamingo', rarity: 'Common', baseCps: 1500, weight: 20, color: 0xff7fb8, set: 'v2' },
+      { id: 'sunset_parrot', name: 'Jungle Parrot', rarity: 'Rare', baseCps: 2800, weight: 16, color: 0xef4444 },
+      { id: 'jungle_zebra', name: 'Jungle Zebra', rarity: 'Rare', baseCps: 3500, weight: 14, color: 0xffd23f, set: 'v2' },
+      { id: 'sunset_croc', name: 'Jungle Croc', rarity: 'Epic', baseCps: 6500, weight: 10, color: 0x22c55e },
+      { id: 'jungle_tiger', name: 'Jungle Tiger', rarity: 'Epic', baseCps: 8125, weight: 8, color: 0xffa94d, set: 'v2' },
+      { id: 'giant_sunset_elephant', name: 'Giant Jungle Elephant', rarity: 'Legendary', baseCps: 18000, weight: 4, color: 0x334155 },
+      { id: 'giant_jungle_buffalo', name: 'Giant Jungle Buffalo', rarity: 'Legendary', baseCps: 22500, weight: 3, color: 0xa8508f, set: 'v2' }
     ]
   },
   {
@@ -63,10 +73,15 @@ export const ZONES = [
     gimmick: 'Radioactive: mutation chance up to 3×!',
     windMultiplier: 1.0,
     animals: [
-      { id: 'toxic_bunny', name: 'Toxic Bunny', rarity: 'Common', baseCps: 35000, weight: 45, color: 0x6366f1 },
-      { id: 'slime_frog', name: 'Slime Frog', rarity: 'Rare', baseCps: 80000, weight: 30, color: 0x22c55e },
-      { id: 'mummy_cat', name: 'Mummy Cat', rarity: 'Epic', baseCps: 200000, weight: 18, color: 0x818cf8 },
-      { id: 'giant_bat_bear', name: 'Giant Bat Bear', rarity: 'Legendary', baseCps: 600000, weight: 7, color: 0xa855f7 }
+      // v1 & v2 berpasangan per rarity: bobot rarity dibagi 55/45, hewan v2 = penghasilan v1 x1.25
+      { id: 'toxic_bunny', name: 'Toxic Bunny', rarity: 'Common', baseCps: 35000, weight: 25, color: 0x6366f1 },
+      { id: 'ghost_owl', name: 'Ghost Owl', rarity: 'Common', baseCps: 43750, weight: 20, color: 0xe8ffe0, set: 'v2' },
+      { id: 'slime_frog', name: 'Slime Frog', rarity: 'Rare', baseCps: 80000, weight: 16, color: 0x22c55e },
+      { id: 'sludge_worm', name: 'Sludge Worm', rarity: 'Rare', baseCps: 100000, weight: 14, color: 0xff9a3d, set: 'v2' },
+      { id: 'mummy_cat', name: 'Mummy Cat', rarity: 'Epic', baseCps: 200000, weight: 10, color: 0x818cf8 },
+      { id: 'cyclops_imp', name: 'Cyclops Imp', rarity: 'Epic', baseCps: 250000, weight: 8, color: 0xff6b5a, set: 'v2' },
+      { id: 'giant_bat_bear', name: 'Giant Bat Bear', rarity: 'Legendary', baseCps: 600000, weight: 4, color: 0xa855f7 },
+      { id: 'giant_cauldron_witch', name: 'Giant Cauldron Witch', rarity: 'Legendary', baseCps: 750000, weight: 3, color: 0xe0864a, set: 'v2' }
     ]
   },
   {
@@ -80,10 +95,15 @@ export const ZONES = [
     gimmick: 'Heatwave: rising magma heat lifts food higher.',
     windMultiplier: 1.2,
     animals: [
-      { id: 'lava_raptor', name: 'Lava Raptor', rarity: 'Common', baseCps: 1200000, weight: 45, color: 0xea580c },
-      { id: 'magma_ankylo', name: 'Magma Ankylo', rarity: 'Rare', baseCps: 3000000, weight: 30, color: 0xd97706 },
-      { id: 'lava_trike', name: 'Lava Trike', rarity: 'Epic', baseCps: 8000000, weight: 18, color: 0x991b1b },
-      { id: 'volcano_brachio', name: 'Volcano Brachio', rarity: 'Legendary', baseCps: 25000000, weight: 7, color: 0x7c2d12 }
+      // v1 & v2 berpasangan per rarity: bobot rarity dibagi 55/45, hewan v2 = penghasilan v1 x1.25
+      { id: 'lava_raptor', name: 'Lava Raptor', rarity: 'Common', baseCps: 1200000, weight: 25, color: 0xea580c },
+      { id: 'cinder_boar', name: 'Cinder Boar', rarity: 'Common', baseCps: 1500000, weight: 20, color: 0xe8603a, set: 'v2' },
+      { id: 'magma_ankylo', name: 'Magma Ankylo', rarity: 'Rare', baseCps: 3000000, weight: 16, color: 0xd97706 },
+      { id: 'hellhound_pup', name: 'Hellhound Pup', rarity: 'Rare', baseCps: 3750000, weight: 14, color: 0xe8452e, set: 'v2' },
+      { id: 'lava_trike', name: 'Lava Trike', rarity: 'Epic', baseCps: 8000000, weight: 10, color: 0x991b1b },
+      { id: 'lava_stego', name: 'Lava Stego', rarity: 'Epic', baseCps: 10000000, weight: 8, color: 0xff7a45, set: 'v2' },
+      { id: 'volcano_brachio', name: 'Volcano Brachio', rarity: 'Legendary', baseCps: 25000000, weight: 4, color: 0x7c2d12 },
+      { id: 'giant_obsidian_ape', name: 'Giant Obsidian Ape', rarity: 'Legendary', baseCps: 31250000, weight: 3, color: 0x6b6fa8, set: 'v2' }
     ]
   },
   {
@@ -97,10 +117,15 @@ export const ZONES = [
     gimmick: 'Abyssal Pressure: strong gusts, the throw meter moves faster!',
     windMultiplier: 1.5,
     animals: [
-      { id: 'glow_squid', name: 'Glow Squid', rarity: 'Common', baseCps: 45000000, weight: 45, color: 0x0284c7 },
-      { id: 'glow_hermit_crab', name: 'Glow Hermit Crab', rarity: 'Rare', baseCps: 120000000, weight: 30, color: 0x06b6d4 },
-      { id: 'glow_manta', name: 'Glow Manta', rarity: 'Epic', baseCps: 300000000, weight: 18, color: 0x38bdf8 },
-      { id: 'abyss_serpent', name: 'Abyss Serpent', rarity: 'Legendary', baseCps: 900000000, weight: 7, color: 0x0ea5e9 }
+      // v1 & v2 berpasangan per rarity: bobot rarity dibagi 55/45, hewan v2 = penghasilan v1 x1.25
+      { id: 'glow_squid', name: 'Glow Squid', rarity: 'Common', baseCps: 45000000, weight: 25, color: 0x0284c7 },
+      { id: 'glow_jelly', name: 'Glow Jelly', rarity: 'Common', baseCps: 56250000, weight: 20, color: 0xffb8e8, set: 'v2' },
+      { id: 'glow_hermit_crab', name: 'Glow Hermit Crab', rarity: 'Rare', baseCps: 120000000, weight: 16, color: 0x06b6d4 },
+      { id: 'glow_pufferfish', name: 'Glow Pufferfish', rarity: 'Rare', baseCps: 150000000, weight: 14, color: 0xa8f0ff, set: 'v2' },
+      { id: 'glow_manta', name: 'Glow Manta', rarity: 'Epic', baseCps: 300000000, weight: 10, color: 0x38bdf8 },
+      { id: 'glow_shark', name: 'Glow Shark', rarity: 'Epic', baseCps: 375000000, weight: 8, color: 0xe6f0ff, set: 'v2' },
+      { id: 'abyss_serpent', name: 'Abyss Serpent', rarity: 'Legendary', baseCps: 900000000, weight: 4, color: 0x0ea5e9 },
+      { id: 'giant_glow_anglerfish', name: 'Giant Glow Anglerfish', rarity: 'Legendary', baseCps: 1125000000, weight: 3, color: 0xff8fb8, set: 'v2' }
     ]
   },
   {
@@ -113,10 +138,15 @@ export const ZONES = [
     gimmick: 'Holiday Blessing: animals sell for +50% at the booth.',
     windMultiplier: 0.9,
     animals: [
-      { id: 'gingerbread_kitty', name: 'Gingerbread Kitty', rarity: 'Common', baseCps: 1500000000, weight: 45, color: 0xb45309 },
-      { id: 'candy_reindeer', name: 'Candy Reindeer', rarity: 'Rare', baseCps: 4000000000, weight: 30, color: 0xd97706 },
-      { id: 'peppermint_dragon', name: 'Peppermint Dragon', rarity: 'Epic', baseCps: 10000000000, weight: 18, color: 0xbe123c },
-      { id: 'giant_yeti', name: 'Giant Yeti', rarity: 'Legendary', baseCps: 30000000000, weight: 7, color: 0xffffff }
+      // v1 & v2 berpasangan per rarity: bobot rarity dibagi 55/45, hewan v2 = penghasilan v1 x1.25
+      { id: 'gingerbread_kitty', name: 'Gingerbread Kitty', rarity: 'Common', baseCps: 1500000000, weight: 25, color: 0xb45309 },
+      { id: 'elf_penguin', name: 'Elf Penguin', rarity: 'Common', baseCps: 1875000000, weight: 20, color: 0x2fa866, set: 'v2' },
+      { id: 'candy_reindeer', name: 'Candy Reindeer', rarity: 'Rare', baseCps: 4000000000, weight: 16, color: 0xd97706 },
+      { id: 'ribbon_fox', name: 'Ribbon Fox', rarity: 'Rare', baseCps: 5000000000, weight: 14, color: 0xe89a50, set: 'v2' },
+      { id: 'peppermint_dragon', name: 'Peppermint Dragon', rarity: 'Epic', baseCps: 10000000000, weight: 10, color: 0xbe123c },
+      { id: 'candy_hamster', name: 'Candy Hamster', rarity: 'Epic', baseCps: 12500000000, weight: 8, color: 0xc9b8ff, set: 'v2' },
+      { id: 'giant_yeti', name: 'Giant Yeti', rarity: 'Legendary', baseCps: 30000000000, weight: 4, color: 0xffffff },
+      { id: 'giant_gingerbread_bear', name: 'Giant Gingerbread Bear', rarity: 'Legendary', baseCps: 37500000000, weight: 3, color: 0xb8692e, set: 'v2' }
     ]
   },
   {
@@ -129,10 +159,15 @@ export const ZONES = [
     gimmick: 'Blizzard: stamina drains 2× faster.',
     windMultiplier: 1.8,
     animals: [
-      { id: 'frost_whelp', name: 'Frost Whelp', rarity: 'Common', baseCps: 50000000000, weight: 45, color: 0x7dd3fc },
-      { id: 'frost_wolf', name: 'Frost Wolf', rarity: 'Rare', baseCps: 140000000000, weight: 30, color: 0xe0f2fe },
-      { id: 'ice_mammoth', name: 'Ice Mammoth', rarity: 'Epic', baseCps: 400000000000, weight: 18, color: 0x38bdf8 },
-      { id: 'frost_wyrm', name: 'Frost Wyrm', rarity: 'Legendary', baseCps: 1200000000000, weight: 7, color: 0x0284c7 }
+      // v1 & v2 berpasangan per rarity: bobot rarity dibagi 55/45, hewan v2 = penghasilan v1 x1.25
+      { id: 'frost_whelp', name: 'Frost Whelp', rarity: 'Common', baseCps: 50000000000, weight: 25, color: 0x7dd3fc },
+      { id: 'snow_owl', name: 'Snow Owl', rarity: 'Common', baseCps: 62500000000, weight: 20, color: 0x8c7cf0, set: 'v2' },
+      { id: 'frost_wolf', name: 'Frost Wolf', rarity: 'Rare', baseCps: 140000000000, weight: 16, color: 0xe0f2fe },
+      { id: 'walrus', name: 'Walrus', rarity: 'Rare', baseCps: 175000000000, weight: 14, color: 0xd9577f, set: 'v2' },
+      { id: 'ice_mammoth', name: 'Ice Mammoth', rarity: 'Epic', baseCps: 400000000000, weight: 10, color: 0x38bdf8 },
+      { id: 'crystal_drake', name: 'Crystal Drake', rarity: 'Epic', baseCps: 500000000000, weight: 8, color: 0x6f73e0, set: 'v2' },
+      { id: 'frost_wyrm', name: 'Frost Wyrm', rarity: 'Legendary', baseCps: 1200000000000, weight: 4, color: 0x0284c7 },
+      { id: 'giant_blizzard_hydra', name: 'Giant Blizzard Hydra', rarity: 'Legendary', baseCps: 1500000000000, weight: 3, color: 0x2bb5a8, set: 'v2' }
     ]
   },
   {
@@ -146,10 +181,15 @@ export const ZONES = [
     gimmick: 'Zero Gravity: throws fly with no friction!',
     windMultiplier: 2.2,
     animals: [
-      { id: 'nebula_cat', name: 'Nebula Cat', rarity: 'Rare', baseCps: 5000000000000, weight: 40, color: 0xa855f7 },
-      { id: 'astral_whale', name: 'Astral Whale', rarity: 'Epic', baseCps: 15000000000000, weight: 35, color: 0x38bdf8 },
-      { id: 'star_phoenix', name: 'Star Phoenix', rarity: 'Legendary', baseCps: 50000000000000, weight: 18, color: 0xf59e0b },
-      { id: 'cosmic_dragon', name: 'Cosmic Dragon', rarity: 'Mythic', baseCps: 200000000000000, weight: 7, color: 0xf43f5e }
+      // v1 & v2 berpasangan per rarity: bobot rarity dibagi 55/45, hewan v2 = penghasilan v1 x1.25
+      { id: 'nebula_cat', name: 'Nebula Cat', rarity: 'Rare', baseCps: 5000000000000, weight: 22, color: 0xa855f7 },
+      { id: 'space_axolotl', name: 'Space Axolotl', rarity: 'Rare', baseCps: 6250000000000, weight: 18, color: 0xffa8d8, set: 'v2' },
+      { id: 'astral_whale', name: 'Astral Whale', rarity: 'Epic', baseCps: 15000000000000, weight: 19, color: 0x38bdf8 },
+      { id: 'robo_alien', name: 'Robo Alien', rarity: 'Epic', baseCps: 18750000000000, weight: 16, color: 0xc8d0ff, set: 'v2' },
+      { id: 'star_phoenix', name: 'Star Phoenix', rarity: 'Legendary', baseCps: 50000000000000, weight: 10, color: 0xf59e0b },
+      { id: 'star_unicorn', name: 'Star Unicorn', rarity: 'Legendary', baseCps: 62500000000000, weight: 8, color: 0xf0e8ff, set: 'v2' },
+      { id: 'cosmic_dragon', name: 'Cosmic Dragon', rarity: 'Mythic', baseCps: 200000000000000, weight: 4, color: 0xf43f5e },
+      { id: 'giant_moon_griffin', name: 'Giant Moon Griffin', rarity: 'Mythic', baseCps: 250000000000000, weight: 3, color: 0xb8c4ff, set: 'v2' }
     ]
   }
 ];

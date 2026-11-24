@@ -564,7 +564,9 @@ export class RobloxSeamlessWorld {
 
     // Web3 Perk: Legendary Bait guarantees Legendary (or Mythic in Galaxy zone)
     if (food && food.isLegendaryBait) {
-      const topAnimal = animals.find(a => a.rarity === 'Legendary' || a.rarity === 'Mythic') || animals[animals.length - 1];
+      // acak di antara hewan rarity teratas zona (sejak v2 ada 2 per rarity)
+      const tops = animals.filter(a => a.rarity === animals[animals.length - 1].rarity);
+      const topAnimal = tops[Math.floor(Math.random() * tops.length)];
       const mutRoll = Math.random() * 100;
       let mutation = 'Normal';
       if (mutRoll < 2.0) mutation = 'Rainbow';

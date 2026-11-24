@@ -16,6 +16,13 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.5.0 — 2026-11-24
+### Added
+- 32 new animals to catch, 4 in every zone from Farm to Galaxy, for example Farm Goat, Jungle Zebra, Ghost Owl, Glow Shark, Walrus and Giant Moon Griffin. Zones now have 8 animals, two per rarity.
+### Changed
+- Index now counts 68 animals.
+- Legendary Bait and the Mystery Egg can give either animal of the top rarity in a zone.
+
 ## 0.4.3 — 2026-11-24
 ### Added
 - Animal roadmap for the next updates (v2, v3 and v4 ideas per zone) in `docs/animal-roadmap.md`.

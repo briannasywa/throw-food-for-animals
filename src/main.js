@@ -337,7 +337,7 @@ app.innerHTML = `
   ${modal('index', 'Index', `
     <div id="index-tabs" class="zt-tabs"></div>
     <div id="index-list" class="flex flex-col gap-3"></div>
-  `, `<div id="index-total" class="zt-modal__sub">0 / 36</div>`)}
+  `, `<div id="index-total" class="zt-modal__sub">0 / ${ZONES.reduce((s, z) => s + z.animals.length, 0)}</div>`)}
 
   ${modal('rank', 'Records', `
     <div class="zt-stat-cards">
@@ -1386,12 +1386,15 @@ function setupGachaRoulette(targetZone) {
     return RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity);
   });
   // 65% kemungkinan dapat Epic / Legendary / Mythic dari biome tersebut
-  let winningAnimal = sortedByRarity[0];
+  // Sejak v2 tiap rarity berisi 2 hewan: pilih per TINGKAT rarity, lalu acak hewannya di tingkat itu
+  const tiers = [...new Set(sortedByRarity.map(a => a.rarity))];
+  const pickTier = (r) => { const list = sortedByRarity.filter(a => a.rarity === r); return list[Math.floor(Math.random() * list.length)]; };
+  let winningAnimal = pickTier(tiers[0]);
   const roll = Math.random();
   if (roll < 0.60) {
-    winningAnimal = sortedByRarity[0]; // Tier paling atas (Mythic/Legendary/Epic)
-  } else if (roll < 0.90 && sortedByRarity.length > 1) {
-    winningAnimal = sortedByRarity[1];
+    winningAnimal = pickTier(tiers[0]); // Tier paling atas (Mythic/Legendary/Epic)
+  } else if (roll < 0.90 && tiers.length > 1) {
+    winningAnimal = pickTier(tiers[1]);
   } else {
     winningAnimal = availableAnimals[Math.floor(Math.random() * availableAnimals.length)];
   }

@@ -1,7 +1,7 @@
 # Zoo Toss — Animal roadmap v2, v3 & v4
 
 Status:
-- **v2:** voxel models done (`src/voxel/animals/*.json`, marked `"set": "v2"`). Not playable yet: they still need income, catch weight and rarity in `src/gameData.js`.
+- **v2:** in the game since 0.5.0 (`src/gameData.js`, `set: 'v2'`).
 - **v3 and v4:** ideas only. Do not generate until the team asks.
 
 The art team keeps the master copy of this list outside this repo (art-direction/voxel/animal-roadmap.md); update both when it changes.
