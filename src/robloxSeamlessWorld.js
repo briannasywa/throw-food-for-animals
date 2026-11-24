@@ -581,7 +581,10 @@ export class RobloxSeamlessWorld {
       };
     }
 
-    const luck = (food ? food.luckBonus : 1.0);
+    let luck = (food ? food.luckBonus : 1.0);
+    if (food && food.magicFoodMultiplier) {
+      luck *= food.magicFoodMultiplier;
+    }
     const weights = animals.map(a => {
       let w = a.weight;
       if (a.rarity === 'Legendary' || a.rarity === 'Mythic') w *= luck;

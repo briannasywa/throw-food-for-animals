@@ -34,6 +34,8 @@ export class GameState {
 
     // Web3 Inventory Items (Base Sepolia Testnet)
     this.legendaryBaits = 0; // Count of Legendary Guaranteed Baits available
+    this.magicFoodBuff = 0; // Magic food luck charges (menaikkan max luck tier langka)
+    this.maxReachedZoneIndex = 0; // Zone terjauh yang pernah dicapai dari lemparan
     
     // Daily & Dynamic Quests System
     this.quests = [
@@ -77,6 +79,65 @@ export class GameState {
         return { error: 'Max 2 pets equipped!' };
       }
     }
+  }
+
+  updateMaxDistance(distance) {
+    let farthestIdx = 0;
+    for (let i = 0; i < ZONES.length; i++) {
+      if (distance >= ZONES[i].minDist) {
+        farthestIdx = i;
+      }
+    }
+    if (farthestIdx > this.maxReachedZoneIndex) {
+      this.maxReachedZoneIndex = farthestIdx;
+      this.save();
+    }
+    return this.maxReachedZoneIndex;
+  }
+
+  getFarthestZone() {
+    return ZONES[this.maxReachedZoneIndex] || ZONES[0];
+  }
+
+  /**
+   * Beli boost Power dengan Cash (berdasarkan persentase power saat ini, contoh 5% atau 10%)
+   * @param {number} percent 5 untuk 5%, 10 untuk 10%
+   */
+  buyPowerPercent(percent = 5) {
+    const gained = Math.max(5, Math.round(this.power * (percent / 100)));
+    // Harga berskala seimbang dengan level & power saat ini
+    const cost = Math.max(50, Math.round(gained * 12 * Math.sqrt(this.power / 10)));
+    if (this.money >= cost) {
+      this.money -= cost;
+      this.power += gained;
+      this.save();
+      return { success: true, gained, cost };
+    }
+    return { success: false, cost, needed: cost - this.money };
+  }
+
+  /**
+   * Beli Cash instan dengan Power (contoh tukar 5% atau 10% power untuk cash)
+   * atau jual bagian power untuk uang instan
+   * @param {number} percent 5 untuk 5%, 10 untuk 10%
+   */
+  buyCashWithPowerPercent(percent = 10) {
+    const powerSpent = Math.max(5, Math.round(this.power * (percent / 100)));
+    if (this.power > powerSpent + 5) { // menjaga minimal power
+      const cashGain = Math.max(100, Math.round(powerSpent * 35 * this.getRebirthMultiplier()));
+      this.power -= powerSpent;
+      this.money += cashGain;
+      this.totalEarned += cashGain;
+      this.save();
+      return { success: true, powerSpent, cashGain };
+    }
+    return { success: false, reason: 'Power minimal dibutuhkan 15' };
+  }
+
+  addMagicFood(qty) {
+    this.magicFoodBuff = (this.magicFoodBuff || 0) + qty;
+    this.save();
+    return this.magicFoodBuff;
   }
 
   checkQuest(type, amount) {
@@ -288,6 +349,8 @@ export class GameState {
       rebirthCount: this.rebirthCount,
       rebirthCost: this.rebirthCost,
       legendaryBaits: this.legendaryBaits,
+      magicFoodBuff: this.magicFoodBuff,
+      maxReachedZoneIndex: this.maxReachedZoneIndex,
       quests: this.quests,
       equippedPets: this.equippedPets,
       autoSellRarity: this.autoSellRarity
@@ -321,6 +384,8 @@ export class GameState {
         this.rebirthCount = d.rebirthCount ?? 0;
         this.rebirthCost = d.rebirthCost ?? D.rebirthCostStart;
         this.legendaryBaits = d.legendaryBaits ?? 0;
+        this.magicFoodBuff = d.magicFoodBuff ?? 0;
+        this.maxReachedZoneIndex = d.maxReachedZoneIndex ?? 0;
         // Progres quest dari save, teks (judul/deskripsi) tetap dari definisi terbaru
         if (d.quests) this.quests = this.quests.map(q => {
           const sq = d.quests.find(x => x.id === q.id);
