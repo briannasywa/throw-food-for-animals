@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ZONES, MUTATION_DATA, SKY_COLOR, zoneFoodOf } from './gameData.js';
 import { D } from './difficulty.js';
 // Hewan & Zookeeper dari voxel art-direction (voxelAnimals.js). tickAnimal juga menganimasikan cincin mutasi.
-import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal } from './voxelAnimals.js';
+import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal, ANIMAL_SPECS, eatingGeometry, poseEating } from './voxelAnimals.js';
 import { setupLighting, createBloom } from './zt-lighting.js';
 import { buildZoneCliffs } from './zoneCliffs.js';
 import { ChunkBatcher } from './chunkBatcher.js';
@@ -65,6 +65,7 @@ export class RobloxSeamlessWorld {
     this.eatingDuration = 2.2; // Extended eating animation
     this.landingPos = new THREE.Vector3();
     this.animalSpawnPos = new THREE.Vector3();
+    this.eatPos = new THREE.Vector3(); // titik berdiri hewan saat makan: moncong tepat di makanan, badan di depannya
 
     // Dedicated Village/Courtyard Behind the Throw Line (-Z Area)
     this.worldStations = [
@@ -941,6 +942,13 @@ export class RobloxSeamlessWorld {
           this.attractAnimalMesh.scale.set(0.65, 0.65, 0.65);
           this.scene.add(this.attractAnimalMesh);
 
+          // Berhenti di depan makanan (bukan di atasnya): mundur sejauh moncong dari pusat badan
+          const spec = ANIMAL_SPECS[this.caughtAnimal.id] || ANIMAL_SPECS.rabbit;
+          this.eatGeo = eatingGeometry(spec);
+          const reach = this.eatGeo.reach * this.attractAnimalMesh.scale.x;
+          const toFood = new THREE.Vector3(this.landingPos.x - this.animalSpawnPos.x, 0, this.landingPos.z - this.animalSpawnPos.z).normalize();
+          this.eatPos.set(this.landingPos.x - toFood.x * reach, 0.3, this.landingPos.z - toFood.z * reach);
+
           this.lureEmoji.position.set(this.landingPos.x, this.landingPos.y + 4.5, this.landingPos.z);
         }
       } else if (this.throwStage === 'attract') {
@@ -949,14 +957,16 @@ export class RobloxSeamlessWorld {
         const progress = Math.min(1, this.attractTimer / this.attractDuration);
 
         if (this.attractAnimalMesh) {
-          this.attractAnimalMesh.position.lerpVectors(this.animalSpawnPos, this.landingPos, progress);
+          this.attractAnimalMesh.position.lerpVectors(this.animalSpawnPos, this.eatPos, progress);
           const dir = new THREE.Vector3().subVectors(this.landingPos, this.animalSpawnPos).normalize();
           this.attractAnimalMesh.rotation.y = Math.atan2(dir.x, dir.z);
 
           if (this.attractAnimalMesh.userData?.animalInstance) {
             animateAnimal(this.attractAnimalMesh.userData.animalInstance, secTime * 3, { walking: true });
           }
-          this.attractAnimalMesh.position.y = 0.3 + Math.abs(Math.sin(this.attractTimer * 8)) * 1.2;
+          // lompatan kecil saat berlari, mereda menjelang sampai supaya mendarat pelan di depan makanan
+          const hop = Math.abs(Math.sin(this.attractTimer * 8)) * 0.6 * (1 - progress * progress);
+          this.attractAnimalMesh.position.y = 0.3 + hop;
         }
 
         this.lureEmoji.position.y = this.landingPos.y + 4.5 + Math.sin(time * 6) * 0.4;
@@ -981,11 +991,11 @@ export class RobloxSeamlessWorld {
         this.eatingTimer += dt;
         const eatProgress = Math.min(1, this.eatingTimer / this.eatingDuration);
 
-        // Animal eating head bob and happy wiggles
+        // Hewan diam di depan makanan: kepala menunduk & mengunyah, kaki tidak bergerak (voxelAnimals.poseEating)
         if (this.attractAnimalMesh) {
-          const munch = Math.sin(this.eatingTimer * 12);
-          this.attractAnimalMesh.position.y = 0.3 + Math.abs(munch) * 0.35;
-          this.attractAnimalMesh.rotation.z = Math.sin(this.eatingTimer * 8) * 0.12;
+          this.attractAnimalMesh.position.copy(this.eatPos);
+          const inst = this.attractAnimalMesh.userData?.animalInstance;
+          if (inst && this.eatGeo) poseEating(inst, this.eatingTimer, this.eatGeo);
         }
 
         // Food shrinks as it gets eaten

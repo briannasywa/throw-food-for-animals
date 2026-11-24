@@ -16,6 +16,12 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.4.3 — 2026-11-24
+### Added
+- Animal roadmap for the next updates (v2, v3 and v4 ideas per zone) in `docs/animal-roadmap.md`.
+### Fixed
+- Animals no longer stand on the food while eating: they stop in front of it, lower their head and chew.
+
 ## 0.4.2 — 2026-11-24
 ### Changed
 - Hard mode: Mystery Egg, Magic Food and Boost Power now cost more as you reach farther zones, so Hard still takes about 2–3 hours to reach Galaxy.

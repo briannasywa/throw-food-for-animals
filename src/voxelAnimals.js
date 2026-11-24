@@ -69,6 +69,65 @@ export function createAnimal(id, { mutation = 'Normal', scale = 0.45 } = {}) {
   return animal;
 }
 
+const HEAD_PARTS = ['head', 'headL', 'headC', 'headR'];
+const eatCache = new Map();
+/**
+ * Geometri pose makan per hewan (satuan spec, sumbu depan = +z):
+ *  - dip   : sudut kepala menunduk (rad) supaya moncong turun ke makanan di tanah
+ *  - reach : jarak moncong dari pusat badan setelah menunduk → hewan berhenti sejauh ini DI DEPAN makanan
+ * Hewan tanpa part kepala (ikan, jeli, dll.) mencondongkan seluruh badan.
+ */
+export function eatingGeometry(spec) {
+  if (eatCache.has(spec.id)) return eatCache.get(spec.id);
+  const head = spec.parts.find(p => HEAD_PARTS.includes(p.name));
+  let geo;
+  if (head) {
+    const [, py, pz] = head.pivot;
+    // titik moncong = kotak kepala paling depan, sedikit di bawah tengahnya
+    let mz = -Infinity, my = py;
+    for (const b of head.boxes) { const f = b[2] + b[5] / 2; if (f > mz) { mz = f; my = b[1] - b[4] / 4; } }
+    const dz = mz - pz, dy = my - py;
+    const R = Math.hypot(dz, dy) || 1, phi = Math.atan2(dy, dz);
+    const groundY = 0.8;
+    const k = Math.max(-1, Math.min(1, (groundY - py) / R));
+    const need = Math.max(0.25, Math.min(1.3, phi - Math.asin(k)));
+    // kepala menunduk maks ~40°, sisanya badan ikut condong (hewan tegak tidak terlihat "patah leher")
+    const dip = Math.min(need, 0.7);
+    const lean = Math.min(need - dip, 0.35);
+    const yh = py + R * Math.sin(phi - dip), zh = pz + R * Math.cos(phi - dip); // moncong setelah kepala menunduk
+    geo = { dip, lean, reach: yh * Math.sin(lean) + zh * Math.cos(lean), headPart: true };
+  } else {
+    let front = 0;
+    for (const p of spec.parts) for (const b of p.boxes) front = Math.max(front, b[2] + b[5] / 2);
+    geo = { dip: 0.22, lean: 0, reach: front * 0.9, headPart: false };
+  }
+  eatCache.set(spec.id, geo);
+  return geo;
+}
+
+/**
+ * Pose makan: kaki diam di tanah, kepala menunduk ke makanan lalu mengangguk mengunyah.
+ * t = waktu makan (detik), mulai 0. geo = eatingGeometry(spec).
+ */
+export function poseEating(animal, t, geo) {
+  animateAnimal(animal, t, { walking: false }); // ekor, sayap, rahang tetap bergerak; kaki & pantulan berhenti
+  const down = Math.min(1, t / 0.35);           // menunduk perlahan di awal
+  const chew = Math.max(0, Math.sin(t * 11));   // gigitan cepat
+  if (geo.headPart) {
+    HEAD_PARTS.forEach((n, i) => { const h = animal.parts[n]; if (h) h.rotation.x = down * geo.dip - chew * 0.12 + i * 0.03; });
+    animal.rig.rotation.x = down * geo.lean;
+  } else {
+    animal.rig.rotation.x = down * geo.dip + chew * 0.05;
+  }
+  if (animal.parts.jaw) animal.parts.jaw.rotation.x = chew * 0.35;
+}
+
+/** Kembalikan pose normal setelah makan. */
+export function resetPose(animal) {
+  animal.rig.rotation.x = 0;
+  HEAD_PARTS.forEach(n => { if (animal.parts[n]) animal.parts[n].rotation.x = 0; });
+}
+
 export function tickAnimal(animal, t, opts) {
   animateAnimal(animal, t, opts);
   if (animal.ring) {
