@@ -35,7 +35,7 @@ export const PRESETS = {
   hard: {
     label: 'Hard',
     distPerPower: 1.5,
-    meterSpeedMul: 1.4,
+    meterSpeedMul: 1,
     pullUpRateMul: 0.25,
     pullUpCostStart: 250,
     pullUpCostGrowth: 2.2,

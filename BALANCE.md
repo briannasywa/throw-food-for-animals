@@ -20,7 +20,7 @@ All numbers that drive progress (Power, zones, money). The **Easy** column is th
 | Attribute | Used for | Easy | Hard |
 |---|---|---|---|
 | `distPerPower` | Throw distance (m) per 1 Power | 10 | **1.5** |
-| `meterSpeedMul` | Meter needle speed | 1× | **1.4×** (harder to hit green) |
+| `meterSpeedMul` | Meter needle speed | 1× | 1× |
 | `pullUpRateMul` | Power per second from pull-ups | 1× | **0.25×** |
 | `pullUpCostStart` | First pull-up upgrade price | $50 | **$250** |
 | `pullUpCostGrowth` | Next upgrade price × | 1.8 | **2.2** |
