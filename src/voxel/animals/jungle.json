@@ -4,7 +4,7 @@
   "animals": [
     {
       "id": "sunset_monkey",
-      "name": "Sunset Monkey",
+      "name": "Jungle Monkey",
       "rarity": "Common",
       "frame": "upright",
       "colors": {
@@ -49,7 +49,7 @@
     },
     {
       "id": "sunset_parrot",
-      "name": "Sunset Parrot",
+      "name": "Jungle Parrot",
       "rarity": "Rare",
       "frame": "bird",
       "colors": {
@@ -94,7 +94,7 @@
     },
     {
       "id": "sunset_croc",
-      "name": "Sunset Croc",
+      "name": "Jungle Croc",
       "rarity": "Epic",
       "frame": "reptile",
       "colors": {
@@ -147,7 +147,7 @@
     },
     {
       "id": "giant_sunset_elephant",
-      "name": "Giant Sunset Elephant",
+      "name": "Giant Jungle Elephant",
       "rarity": "Legendary",
       "frame": "quadruped",
       "colors": {

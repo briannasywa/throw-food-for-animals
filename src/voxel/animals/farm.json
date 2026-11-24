@@ -4,7 +4,7 @@
   "animals": [
     {
       "id": "pastel_chick",
-      "name": "Pastel Chick",
+      "name": "Farm Chick",
       "rarity": "Common",
       "frame": "bird",
       "colors": {
@@ -38,7 +38,7 @@
     },
     {
       "id": "pastel_sheep",
-      "name": "Pastel Sheep",
+      "name": "Farm Sheep",
       "rarity": "Rare",
       "frame": "quadruped",
       "colors": {
@@ -69,7 +69,7 @@
     },
     {
       "id": "pastel_donkey",
-      "name": "Pastel Donkey",
+      "name": "Farm Donkey",
       "rarity": "Epic",
       "frame": "quadruped",
       "colors": {
@@ -107,7 +107,7 @@
     },
     {
       "id": "giant_pastel_pig",
-      "name": "Giant Pastel Pig",
+      "name": "Giant Farm Pig",
       "rarity": "Legendary",
       "frame": "quadruped",
       "colors": {

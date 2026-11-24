@@ -29,10 +29,10 @@ export const ZONES = [
     gimmick: 'Hay Fever: a gentle breeze carries hay. Stamina regen +20%.',
     windMultiplier: 0.5,
     animals: [
-      { id: 'pastel_chick', name: 'Pastel Chick', rarity: 'Common', baseCps: 50, weight: 45, color: 0xffffff },
-      { id: 'pastel_sheep', name: 'Pastel Sheep', rarity: 'Rare', baseCps: 120, weight: 30, color: 0xf472b6 },
-      { id: 'pastel_donkey', name: 'Pastel Donkey', rarity: 'Epic', baseCps: 260, weight: 18, color: 0xf1f5f9 },
-      { id: 'giant_pastel_pig', name: 'Giant Pastel Pig', rarity: 'Legendary', baseCps: 800, weight: 7, color: 0x181425 }
+      { id: 'pastel_chick', name: 'Farm Chick', rarity: 'Common', baseCps: 50, weight: 45, color: 0xffffff },
+      { id: 'pastel_sheep', name: 'Farm Sheep', rarity: 'Rare', baseCps: 120, weight: 30, color: 0xf472b6 },
+      { id: 'pastel_donkey', name: 'Farm Donkey', rarity: 'Epic', baseCps: 260, weight: 18, color: 0xf1f5f9 },
+      { id: 'giant_pastel_pig', name: 'Giant Farm Pig', rarity: 'Legendary', baseCps: 800, weight: 7, color: 0x181425 }
     ]
   },
   {
@@ -45,10 +45,10 @@ export const ZONES = [
     gimmick: 'Tropical Rainstorm: rain makes food glide farther.',
     windMultiplier: 0.8,
     animals: [
-      { id: 'sunset_monkey', name: 'Sunset Monkey', rarity: 'Common', baseCps: 1200, weight: 45, color: 0x78350f },
-      { id: 'sunset_parrot', name: 'Sunset Parrot', rarity: 'Rare', baseCps: 2800, weight: 30, color: 0xef4444 },
-      { id: 'sunset_croc', name: 'Sunset Croc', rarity: 'Epic', baseCps: 6500, weight: 18, color: 0x22c55e },
-      { id: 'giant_sunset_elephant', name: 'Giant Sunset Elephant', rarity: 'Legendary', baseCps: 18000, weight: 7, color: 0x334155 }
+      { id: 'sunset_monkey', name: 'Jungle Monkey', rarity: 'Common', baseCps: 1200, weight: 45, color: 0x78350f },
+      { id: 'sunset_parrot', name: 'Jungle Parrot', rarity: 'Rare', baseCps: 2800, weight: 30, color: 0xef4444 },
+      { id: 'sunset_croc', name: 'Jungle Croc', rarity: 'Epic', baseCps: 6500, weight: 18, color: 0x22c55e },
+      { id: 'giant_sunset_elephant', name: 'Giant Jungle Elephant', rarity: 'Legendary', baseCps: 18000, weight: 7, color: 0x334155 }
     ]
   },
   {

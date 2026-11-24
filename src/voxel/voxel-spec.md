@@ -28,7 +28,7 @@ Satu file zona berisi daftar hewan:
   "animals": [
     {
       "id": "pastel_chick",
-      "name": "Pastel Chick",
+      "name": "Farm Chick",
       "rarity": "Common",
       "frame": "bird",
       "colors": { "body": "#FFE29A", "eye": "#1B2233" },
@@ -93,8 +93,8 @@ Satu file zona berisi daftar hewan:
 | Kerangka | Isi | Dipakai untuk (rencana 36 hewan) |
 |---|---|---|
 | `small` | Badan + kepala besar, 4 kaki pendek, ekor | Rabbit, Puppy, Cat, Golden Retriever, Toxic Bunny, Mummy Cat, Gingerbread Kitty, Nebula Cat, Frost Wolf |
-| `quadruped` | Badan besar, 4 kaki, kepala di leher | Pastel Sheep, Pastel Donkey, Giant Pastel Pig, Elephant, Mammoth, Yeti |
-| `bird` | Badan bulat, 2 kaki, 2 sayap | Pastel Chick, Sunset Parrot, Star Phoenix |
+| `quadruped` | Badan besar, 4 kaki, kepala di leher | Farm Sheep, Farm Donkey, Giant Farm Pig, Elephant, Mammoth, Yeti |
+| `bird` | Badan bulat, 2 kaki, 2 sayap | Farm Chick, Jungle Parrot, Star Phoenix |
 | `reptile` | Badan rendah memanjang, ekor panjang | Croc, Raptor, Ankylo, Trike, Brachio |
 | `dragon` | Reptil + sayap + tanduk | Peppermint Dragon, Frost Whelp, Frost Wyrm, Cosmic Dragon |
 | `sea` | Badan + sirip/tentakel | Squid, Hermit Crab, Manta, Serpent, Astral Whale |
@@ -110,8 +110,8 @@ Struktur slot mengikuti data zona di prototype (`web-game-drab.vercel.app`): 9 z
 | Zona | Slot 1 | Slot 2 | Slot 3 | Slot 4 |
 |---|---|---|---|---|
 | Lobby (C, C, R, E) ✅ disetujui | Rabbit (C) | Puppy (C) | Cat (R) | Golden Retriever (E) |
-| Farm ✅ disetujui (pilot) | Pastel Chick (C) | Pastel Sheep (R) | Pastel Donkey (E) | Giant Pastel Pig (L) |
-| Jungle ✅ disetujui | Sunset Monkey (C) | Sunset Parrot (R) | Sunset Croc (E) | Giant Sunset Elephant (L) |
+| Farm ✅ disetujui (pilot) | Farm Chick (C) | Farm Sheep (R) | Farm Donkey (E) | Giant Farm Pig (L) |
+| Jungle ✅ disetujui | Jungle Monkey (C) | Jungle Parrot (R) | Jungle Croc (E) | Giant Jungle Elephant (L) |
 | Toxic ✅ disetujui | Toxic Bunny (C) | Slime Frog (R) | Mummy Cat (E) | Giant Bat Bear (L) |
 | Lava ✅ disetujui | Lava Raptor (C) | Magma Ankylo (R) | Lava Trike (E) | Volcano Brachio (L) |
 | Glow Sea ✅ disetujui | Glow Squid (C) | Glow Hermit Crab (R) | Glow Manta (E) | Abyss Serpent (L) |
@@ -121,7 +121,7 @@ Struktur slot mengikuti data zona di prototype (`web-game-drab.vercel.app`): 9 z
 
 Id hewan di prototype (untuk dicocokkan engineer): lobby `rabbit, dog, cat, golden_retriever` · farm `chicken, pig, sheep, cow` · jungle `monkey, parrot, snake, gorilla` · toxic `mutant_rat, toxic_slime, mutant_bat, radioactive_spider` · lava `magma_snail, fire_lizard, hell_hound, volcano_golem` · glow_sea `anglerfish, glow_jellyfish, giant_squid, leviathan` · christmas `gingerbread_man, snow_reindeer, nutcracker, santa_yeti` · frost `ice_golem, frost_wolf, mammoth_frost, frost_wyrm` · galaxy `star_cat, void_whale, phoenix_sun, cosmic_dragon`. Data hewan di prototype perlu diganti nama dan id-nya sesuai tabel di atas (cukup perubahan data).
 
-**Cadangan untuk update:** Pastel Piglet, Pastel Goat, Sunset Hippo, Sunset Zebra, Ghost Panda, Ember Hatchling, Glow Jelly, Glow Eel, Snow Bunny, Elf Penguin, Ice Drake, Crystal Drake, Blizzard Hydra.
+**Cadangan & roadmap v2/v3:** lihat `art-direction/voxel/animal-roadmap.md`. Nama memakai awalan zona (Farm …, Jungle …); warna tetap palet pastel / sunset.
 
 **Tema warna hewan per zona** (tidak boleh sama dengan warna tanah zonanya, lihat `palette.json` → `biome`): Farm pastel (tanpa hijau). Zona lain ditentukan saat dikerjakan, misalnya Jungle "sunset" (kuning, oranye, magenta) atau Glow Sea "glow" (cyan dan pink neon, memakai bahan emissive).
 

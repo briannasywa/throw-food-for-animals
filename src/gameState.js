@@ -314,6 +314,11 @@ export class GameState {
         this.selectedFoodIndex = d.selectedFoodIndex ?? 0;
         this.unlockedFoods = d.unlockedFoods ?? [0];
         this.inventory = d.inventory ?? [];
+        // Nama tampilan selalu ikut gameData (id tetap), supaya save lama ikut nama baru (mis. "Pastel Chick" → "Farm Chick").
+        const nameById = {};
+        ZONES.forEach(z => z.animals.forEach(a => { nameById[a.id] = a.name; }));
+        this.inventory.forEach(it => { if (nameById[it.id]) it.name = nameById[it.id]; });
+        if (d.luckiestCatch && nameById[d.luckiestCatch.id]) d.luckiestCatch.name = nameById[d.luckiestCatch.id];
         this.indexProgress = d.indexProgress ?? {};
         this.totalCatches = d.totalCatches ?? 0;
         this.luckiestCatch = d.luckiestCatch ?? null;
