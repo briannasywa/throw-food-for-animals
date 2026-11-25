@@ -1,7 +1,7 @@
 # Generator src/voxel/foods.json: 18 makanan voxel original (format sama dengan hewan, lihat voxel-spec.md).
 # Satuan voxel; model berpusat di (0,0,0), tinggi ±4 voxel. Game memakai skala 0.5 → ±2 unit dunia.
 import json, os
-os.chdir(r'C:\Users\V16 NITRO\Documents\Game roblox bikin\prototype')
+os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))  # root prototype; jalankan: python scripts/gen-foods.py
 
 def B(x, y, z, w, h, d, c):
     return [round(x, 3), round(y, 3), round(z, 3), w, h, d, c]
