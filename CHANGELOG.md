@@ -16,6 +16,10 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.10.3 — 2026-11-25
+### Changed
+- Income and pull-up Power are now shown per minute instead of per second (for example +$120/min, +60 Power/min). Cash and Power still go up every second; the game pace is unchanged.
+
 ## 0.10.2 — 2026-11-25
 ### Fixed
 - The Pen said "1 / 2 pets equipped" (and blocked a pet slot) after an equipped animal had been sold. Old saves are cleaned up on load.

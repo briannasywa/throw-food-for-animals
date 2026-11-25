@@ -15,6 +15,8 @@ const state = new GameState();
 
 // ---------- helper tampilan (Chunky Voxel, ui-spec v2) ----------
 const RARITY_ORDER = ['Mythic', 'Legendary', 'Epic', 'Rare', 'Common'];
+// Tampilan laju per MENIT (game tetap menambah uang & Power tiap detik): angka per detik × 60
+const perMin = (perSec) => formatNum(perSec * 60);
 const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
 const meters = (n) => `${Math.floor(n).toLocaleString('en-US')} m`;
 const zoneRange = (z) => `${z.minDist.toLocaleString('en-US')}–${z.maxDist.toLocaleString('en-US')} m`;
@@ -58,7 +60,7 @@ app.innerHTML = `
     <div class="zt-panel zt-stats pointer-events-auto">
       <div class="zt-stat"><div class="zt-stat__label">Cash</div><div id="hud-money" class="zt-stat__value">$0</div></div>
       <div class="zt-stat"><div class="zt-stat__label">Power</div><div id="hud-power" class="zt-stat__value" style="color:var(--zt-primary-d)">10</div></div>
-      <div class="zt-stat"><div class="zt-stat__label">Income</div><div id="hud-cps" class="zt-stat__value" style="color:var(--zt-good-d)">+$0/s</div></div>
+      <div class="zt-stat"><div class="zt-stat__label">Income</div><div id="hud-cps" class="zt-stat__value" style="color:var(--zt-good-d)">+$0/min</div></div>
       <div class="zt-stat zt-stat--rebirth"><div class="zt-stat__label">Rebirth</div><div id="hud-rebirth" class="zt-stat__value" style="color:var(--zt-accent-d)">0x</div></div>
     </div>
     <div class="zt-panel zt-zonechip pointer-events-auto">
@@ -181,7 +183,7 @@ app.innerHTML = `
       <div class="zt-title zt-catch__head">Caught! <span id="catch-new" class="zt-new hidden">NEW!</span></div>
       <div id="catch-name" class="zt-title zt-catch__name">Rabbit</div>
       <div id="catch-tags" class="zt-tags"></div>
-      <div id="catch-sub" class="zt-card__income" style="margin-top:4px">+$3/s</div>
+      <div id="catch-sub" class="zt-card__income" style="margin-top:4px">+$180/min</div>
       <div id="catch-sold" class="zt-catch__sold hidden"></div>
     </div>
   </div>
@@ -264,7 +266,7 @@ app.innerHTML = `
     <div class="zt-row">
       <div class="zt-row__main">
         <div class="zt-title zt-row__title">Upgrade Pull-Up <span id="shop-pullup-lv" class="zt-muted">Lv.1</span></div>
-        <div id="shop-pullup-rate" class="zt-row__desc">+3 Power / sec</div>
+        <div id="shop-pullup-rate" class="zt-row__desc">+180 Power / min</div>
       </div>
       <button id="btn-shop-upgrade-pullup" class="zt-btn zt-btn--good">$50</button>
     </div>
@@ -597,12 +599,12 @@ function renderChangelogModal() {
 function updateUI() {
   setStat('#hud-money', `$${formatNum(state.money)}`);
   setStat('#hud-power', formatNum(state.power));
-  setStat('#hud-cps', `+$${formatNum(state.getCurrentCps())}/s`);
+  setStat('#hud-cps', `+$${perMin(state.getCurrentCps())}/min`);
   setStat('#hud-rebirth', `${state.rebirthCount}x`);
 
   // Shop values
   document.querySelector('#shop-pullup-lv').textContent = `Lv.${state.pullUpLevel}`;
-  document.querySelector('#shop-pullup-rate').textContent = `+${formatNum(state.getPullUpRate())} Power / sec`;
+  document.querySelector('#shop-pullup-rate').textContent = `+${perMin(state.getPullUpRate())} Power / min`;
   document.querySelector('#btn-shop-upgrade-pullup').textContent = `$${formatNum(state.pullUpCost)}`;
 
   document.querySelector('#shop-slots-count').textContent = `(${state.maxBaseSlots} slots)`;
@@ -773,7 +775,7 @@ function renderPlotAnimals() {
       <img class="zt-card__img" src="${getAnimalThumb(item.id)}" alt="">
       <div class="zt-card__name">${item.name}</div>
       <div class="zt-tags" style="justify-content:center">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
-      <div class="zt-card__income">+$${formatNum(incomeOf(item))}/s</div>
+      <div class="zt-card__income">+$${perMin(incomeOf(item))}/min</div>
       <div class="zt-card__actions">
         <button class="zt-btn zt-btn--sm ${isEquipped ? 'zt-btn--plain' : 'zt-btn--good'}" data-equip>${isEquipped ? '✓ Equipped' : 'Equip'}</button>
         <button class="zt-btn zt-btn--sm zt-btn--plain" data-discard ${invFull ? 'disabled title="Inventory full"' : ''}>${invFull ? 'Inventory full' : 'Discard'}</button>
@@ -835,7 +837,7 @@ function showCatchToast(animal, { sellPrice = null, isNew = false, where = 'pen'
   document.querySelector('#catch-img').style.visibility = '';
   document.querySelector('#catch-name').textContent = animal.name;
   document.querySelector('#catch-tags').innerHTML = rarityTag(animal.rarity) + mutTag(animal.mutation);
-  document.querySelector('#catch-sub').textContent = `+$${formatNum(incomeOf(animal))}/s`;
+  document.querySelector('#catch-sub').textContent = `+$${perMin(incomeOf(animal))}/min`;
   document.querySelector('#catch-new').classList.toggle('hidden', !isNew);
   const sold = document.querySelector('#catch-sold');
   sold.classList.toggle('hidden', !sellPrice && where !== 'inventory');
@@ -1095,7 +1097,7 @@ function hideCinematic() {
 function updateCineInfo() {
   if (cineMode !== 'training') return;
   document.querySelector('#cine-info').innerHTML =
-    `POWER <b>${formatNum(state.power)}</b> · <span class="zt-cine__gain">+${formatNum(state.getPullUpRate())} / SEC</span>`;
+    `POWER <b>${formatNum(state.power)}</b> · <span class="zt-cine__gain">+${perMin(state.getPullUpRate())} / MIN</span>`;
 }
 function startBiomeView(zone) {
   if (world.isThrowing) return;
@@ -1581,7 +1583,7 @@ function spinCS2Egg() {
     const resultBox = document.querySelector('#gacha-result');
     resultBox.classList.remove('hidden');
     document.querySelector('#gacha-result-name').textContent = `🎉 UNLOCKED: ${outcome.name} [${outcome.rarity}${outcome.mutation !== 'Normal' ? ' · ' + outcome.mutation : ''}]`;
-    document.querySelector('#gacha-result-desc').textContent = `From ${outcome.zoneName}! Adds +$${formatNum(state.incomeOf(outcome))}/s to your pen!`;
+    document.querySelector('#gacha-result-desc').textContent = `From ${outcome.zoneName}! Adds +$${perMin(state.incomeOf(outcome))}/min to your pen!`;
 
     // Berikan reward ke inventory
     const res = state.addAnimal(outcome);
@@ -1705,7 +1707,7 @@ function renderStorageModal() {
       <img class="zt-card__img" src="${getAnimalThumb(item.id)}" alt="">
       <div class="zt-card__name">${item.name}</div>
       <div class="zt-tags" style="justify-content:center">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
-      <div class="zt-card__income">+$${formatNum(incomeOf(item))}/s in Pen</div>
+      <div class="zt-card__income">+$${perMin(incomeOf(item))}/min in Pen</div>
       <div class="zt-card__actions">${storagePickMode
         ? `<button class="zt-btn zt-btn--sm zt-btn--good" data-topen="${item.uid}">Put in Pen</button>`
         : `<button class="zt-btn zt-btn--sm zt-btn--danger" data-sellst="${item.uid}">Sell $${formatNum(sellPriceOf(item))}</button>`}</div>
