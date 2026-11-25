@@ -16,6 +16,15 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.8.0 — 2026-11-25
+### Added
+- Inventory (B, or Menu → Inventory on phones): when your Pen is full, new catches go here instead of being sold. It starts with 5 slots. Animals in the Inventory do not earn cash.
+- Expand Inventory in the Shop: 5 → 10 → 15 → 20 slots.
+### Changed
+- A catch is only sold automatically when both the Pen and the Inventory are full.
+### Fixed
+- On laptop screens the top-right buttons no longer cover the cash and Power panel; they wrap to a second row instead.
+
 ## 0.7.0 — 2026-11-25
 ### Added
 - All 18 foods have their own voxel look, in the air, on the ground and in the Food Bag (carrot, apple, drumstick, burger, sushi roll, pearl in a shell, candy, ice gem, cake slice and their Enhanced versions).

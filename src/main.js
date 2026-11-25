@@ -83,6 +83,7 @@ app.innerHTML = `
     <button id="btn-open-quests" class="zt-btn zt-btn--primary">Quests${hk('Q')}</button>
     <button id="btn-open-index" class="zt-btn zt-btn--accent">Index${hk('I')}</button>
     <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank${hk('R')}</button>
+    <button id="btn-open-storage" class="zt-btn zt-btn--plain" title="Inventory (B)">Inventory <span id="storage-count" class="zt-muted">0/5</span>${hk('B')}</button>
     <button id="btn-open-changelog" class="zt-btn zt-btn--plain" title="What's new (C)">Changelog${hk('C')}</button>
     <button id="btn-toggle-camlock" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Camera lock" title="Camera lock (L)">${CAMLOCK_ICON}${hk('L')}</button>
     <button id="btn-mobile-menu" class="zt-btn zt-btn--plain zt-menu__burger" aria-label="Menu">${BURGER_ICON}<span>Menu</span></button>
@@ -276,6 +277,13 @@ app.innerHTML = `
     </div>
     <div class="zt-row">
       <div class="zt-row__main">
+        <div class="zt-title zt-row__title">Expand Inventory <span id="shop-storage-count" class="zt-muted">(5 slots)</span></div>
+        <div id="shop-storage-desc" class="zt-row__desc">+5 Inventory slots (max 20)</div>
+      </div>
+      <button id="btn-shop-upgrade-storage" class="zt-btn zt-btn--good">$5K</button>
+    </div>
+    <div class="zt-row">
+      <div class="zt-row__main">
         <div class="zt-title zt-row__title">Sell All Animals</div>
         <div class="zt-row__desc">Sell every animal in your pen for instant cash</div>
       </div>
@@ -317,6 +325,7 @@ app.innerHTML = `
         <button class="zt-btn zt-btn--primary" data-mm="quests">Quests</button>
         <button class="zt-btn zt-btn--accent" data-mm="index">Index</button>
         <button class="zt-btn zt-btn--good" data-mm="rank">Rank</button>
+        <button class="zt-btn zt-btn--plain" data-mm="storage" id="mmenu-storage">Inventory</button>
         <button class="zt-btn zt-btn--plain" data-mm="sound" id="mmenu-sound">Sound: On</button>
         <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="changelog">Changelog</button>
         <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="wallet" id="mmenu-wallet">Connect Wallet</button>
@@ -331,6 +340,9 @@ app.innerHTML = `
     `<div id="plot-capacity-text" class="zt-modal__sub">0 / 4 SLOTS</div>`)}
 
   ${modal('quests', 'Quests', `<div id="quests-list" class="flex flex-col gap-2.5"></div>`)}
+
+  ${modal('storage', 'Inventory', `<div id="storage-list" class="zt-grid"></div>`,
+    `<div id="storage-capacity" class="zt-modal__sub">0 / 5 SLOTS · animals here do not earn cash</div>`)}
 
   ${modal('changelog', 'Changelog', `<div id="changelog-list" class="zt-clog"></div>`,
     `<div class="zt-modal__sub">Version ${LATEST_VERSION}</div>`)}
@@ -600,6 +612,16 @@ function updateUI() {
 
   document.querySelector('#shop-slots-count').textContent = `(${state.maxBaseSlots} slots)`;
   document.querySelector('#btn-shop-upgrade-slots').textContent = `$${formatNum(state.baseSlotCost)}`;
+  // Inventory: jumlah di tombol, harga upgrade di toko
+  document.querySelector('#storage-count').textContent = `${state.storage.length}/${state.storageSlots}`;
+  document.querySelector('#btn-open-storage').classList.toggle('is-full', state.storage.length >= state.storageSlots);
+  document.querySelector('#shop-storage-count').textContent = `(${state.storageSlots} slots)`;
+  const stCost = state.storageUpgradeCost();
+  const stBtn = document.querySelector('#btn-shop-upgrade-storage');
+  stBtn.textContent = stCost === null ? 'MAX' : `$${formatNum(stCost)}`;
+  stBtn.disabled = stCost === null;
+  document.querySelector('#shop-storage-desc').textContent = stCost === null ? 'Inventory is at the maximum (20 slots)' : `+5 Inventory slots (max 20). Pen full → catches go here.`;
+  if (!document.querySelector('#modal-storage').classList.contains('hidden')) renderStorageModal();
 
   document.querySelector('#shop-rebirth-count').textContent = `${state.rebirthCount}x`;
   document.querySelector('#btn-shop-rebirth').textContent = `$${formatNum(state.rebirthCost)}`;
@@ -813,7 +835,7 @@ function showFailToast(food, landedZone, dist) {
 }
 
 let toastTimer = null;
-function showCatchToast(animal, { sellPrice = null, isNew = false } = {}) {
+function showCatchToast(animal, { sellPrice = null, isNew = false, where = 'pen' } = {}) {
   const toast = document.querySelector('#catch-toast');
   toast.style.borderColor = `var(--zt-${animal.rarity.toLowerCase()})`;
   document.querySelector('#catch-img').src = getAnimalThumb(animal.id);
@@ -823,8 +845,9 @@ function showCatchToast(animal, { sellPrice = null, isNew = false } = {}) {
   document.querySelector('#catch-sub').textContent = `+$${formatNum(incomeOf(animal))}/s`;
   document.querySelector('#catch-new').classList.toggle('hidden', !isNew);
   const sold = document.querySelector('#catch-sold');
-  sold.classList.toggle('hidden', !sellPrice);
-  if (sellPrice) sold.textContent = `PEN FULL! AUTO-SOLD +$${formatNum(sellPrice)}`;
+  sold.classList.toggle('hidden', !sellPrice && where !== 'inventory');
+  if (sellPrice) sold.textContent = `PEN & INVENTORY FULL! AUTO-SOLD +$${formatNum(sellPrice)}`;
+  else if (where === 'inventory') sold.textContent = 'PEN FULL · SENT TO INVENTORY';
 
   toast.classList.add('is-show');
   clearTimeout(toastTimer);
@@ -942,7 +965,7 @@ function triggerThrow() {
     const res = state.addAnimal(caughtAnimal);
     if (isNew) indexHasNew = true;
     if (zoneFirstTime) showZoneBanner(zone);
-    showCatchToast(caughtAnimal, { sellPrice: res.autoSold ? res.sellPrice : null, isNew });
+    showCatchToast(caughtAnimal, { sellPrice: res.autoSold ? res.sellPrice : null, isNew, where: res.where });
     updateUI();
     onboarding.onCatch(caughtAnimal);
   });
@@ -1194,7 +1217,7 @@ document.querySelector('#btn-throw').onclick = () => triggerThrow();
 state.autoThrow = false;
 
 // Modal helpers — hanya satu panel terbuka; tutup dengan X, klik latar, atau Esc
-const MODALS = ['shop', 'plot', 'quests', 'index', 'rank', 'food', 'menu', 'changelog'];
+const MODALS = ['shop', 'plot', 'quests', 'index', 'rank', 'food', 'menu', 'changelog', 'storage'];
 const anyModalOpen = () => MODALS.some(id => !document.querySelector(`#modal-${id}`).classList.contains('hidden'))
   || !document.querySelector('#modal-confirm').classList.contains('hidden');
 
@@ -1263,6 +1286,7 @@ const MENU_KEYS = {
   KeyI: () => toggleModal('index', () => { indexHasNew = false; updateDots(); renderIndexModal(); }),
   KeyR: () => toggleModal('rank', updateRankModal),
   KeyC: () => toggleModal('changelog', renderChangelogModal),
+  KeyB: () => toggleModal('storage', renderStorageModal),
   KeyM: () => toggleSound(),
   KeyL: () => { sfx.playPop(); setCamLock(!camLock); },
 };
@@ -1647,6 +1671,32 @@ document.querySelector('#btn-shop-upgrade-pullup').onclick = () => {
   if (state.upgradePullUp()) { sfx.playLevelUp(); updateUI(); }
   else showNotice('NOT ENOUGH CASH!');
 };
+
+document.querySelector('#btn-shop-upgrade-storage').onclick = () => {
+  if (state.storageUpgradeCost() === null) return;
+  if (state.upgradeStorage()) { sfx.playLevelUp(); showNotice(`INVENTORY: ${state.storageSlots} SLOTS`); updateUI(); }
+  else showNotice('NOT ENOUGH CASH!');
+};
+document.querySelector('#btn-open-storage').onclick = () => { renderStorageModal(); openModal('storage'); };
+
+// ---------- Inventory (hewan yang tidak muat di Pen) ----------
+// Action D: tampilan saja. Memindahkan ke Pen (Action E) dan Sell (Action F) menyusul.
+function renderStorageModal() {
+  const list = document.querySelector('#storage-list');
+  document.querySelector('#storage-capacity').textContent =
+    `${state.storage.length} / ${state.storageSlots} SLOTS · animals here do not earn cash`;
+  if (!state.storage.length) {
+    list.innerHTML = `<div class="zt-empty">EMPTY · WHEN YOUR PEN IS FULL, NEW CATCHES COME HERE</div>`;
+    return;
+  }
+  list.innerHTML = state.storage.map(item => `
+    <div class="zt-card zt-card--${item.rarity.toLowerCase()}">
+      <img class="zt-card__img" src="${getAnimalThumb(item.id)}" alt="">
+      <div class="zt-card__name">${item.name}</div>
+      <div class="zt-tags" style="justify-content:center">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
+      <div class="zt-card__income">+$${formatNum(incomeOf(item))}/s in Pen</div>
+    </div>`).join('');
+}
 
 document.querySelector('#btn-shop-upgrade-slots').onclick = () => {
   if (state.upgradeBaseSlot()) { sfx.playLevelUp(); updateUI(); }

@@ -20,6 +20,7 @@ export const PRESETS = {
     foodCostMul: 1,            // pengali harga makanan
     slotCostStart: 200,        // harga Expand Pen pertama (+2 slot)
     slotCostGrowth: 2.5,
+    storageUpgradeCosts: [1000, 5000, 25000], // Inventory 5 → 10 → 15 → 20 (lebih mahal dari Expand Pen)
     rebirthCostStart: 50000,
     rebirthCostGrowth: 3.5,
     rebirthBonus: 0.5,         // +50% income & Power per rebirth
@@ -46,6 +47,7 @@ export const PRESETS = {
     foodCostMul: 8,
     slotCostStart: 2000,
     slotCostGrowth: 3.5,
+    storageUpgradeCosts: [5000, 25000, 125000],
     rebirthCostStart: 3000000,
     rebirthCostGrowth: 6,
     rebirthBonus: 0.2,

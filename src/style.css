@@ -412,3 +412,10 @@ html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 .zt-throwest__item.is-ok b { color: var(--zt-good-d); }
 .zt-throwest__item.is-off { color: var(--zt-danger); }
 .zt-throwest__item.is-off b { color: var(--zt-danger); }
+
+/* ---------- Inventory ---------- */
+#btn-open-storage.is-full #storage-count { color: var(--zt-danger); }
+.zt-card__sub { font-size: 11px; color: #5E6B78; margin-top: 2px; }
+
+/* PC: baris menu kanan atas tidak boleh menabrak panel status kiri — kalau tidak muat, turun ke baris kedua */
+.zt-root:not(.is-touch) .zt-menu { flex-wrap: wrap; justify-content: flex-end; max-width: calc(100vw - 360px); row-gap: 8px; }

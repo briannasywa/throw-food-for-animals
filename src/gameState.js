@@ -33,7 +33,9 @@ export class GameState {
     this.selectedFoodIndex = 0;
     this.unlockedFoods = [0]; // Index of unlocked foods
     
-    this.inventory = []; // Captured animals in base
+    this.inventory = []; // Hewan di kandang (Pen) — nama lama dipertahankan supaya save tetap cocok
+    this.storage = [];   // Inventory: hewan yang tidak muat di Pen (tidak menghasilkan uang)
+    this.storageSlots = 5; // 5 → 10 → 15 → 20 lewat upgrade di toko
     this.indexProgress = {}; // Animal ID -> Set of mutations unlocked
     
     this.totalCatches = 0;
@@ -293,6 +295,21 @@ export class GameState {
     return false;
   }
 
+  /** Harga upgrade Inventory berikutnya, atau null kalau sudah maksimal (20). */
+  storageUpgradeCost() {
+    const step = Math.round((this.storageSlots - 5) / 5);
+    return D.storageUpgradeCosts[step] ?? null;
+  }
+
+  upgradeStorage() {
+    const cost = this.storageUpgradeCost();
+    if (cost === null || this.money < cost) return false;
+    this.money -= cost;
+    this.storageSlots += 5;
+    this.save();
+    return true;
+  }
+
   upgradeBaseSlot() {
     if (this.money >= this.baseSlotCost) {
       this.money -= this.baseSlotCost;
@@ -356,13 +373,16 @@ export class GameState {
       this.indexProgress[animalData.id].push(animalData.mutation);
     }
 
-    // Auto-fit into inventory if slots available, else return overflow warning
+    // Pen dulu; Pen penuh → Inventory; Inventory juga penuh → tangkapan baru dijual otomatis
     if (this.inventory.length < this.maxBaseSlots) {
       this.inventory.push({ ...animalData, uid: Date.now() + Math.random() });
       this.save();
-      return { placed: true };
+      return { placed: true, where: 'pen' };
+    } else if (this.storage.length < this.storageSlots) {
+      this.storage.push({ ...animalData, uid: Date.now() + Math.random() });
+      this.save();
+      return { placed: true, where: 'inventory' };
     } else {
-      // Auto-sell immediately if plot full!
       const sellPrice = this.sellPriceOf(animalData);
       this.money += sellPrice;
       this.totalEarned += sellPrice;
@@ -380,6 +400,8 @@ export class GameState {
       pullUpCost: this.pullUpCost,
       maxBaseSlots: this.maxBaseSlots,
       baseSlotCost: this.baseSlotCost,
+      storage: this.storage,
+      storageSlots: this.storageSlots,
       selectedFoodIndex: this.selectedFoodIndex,
       unlockedFoods: this.unlockedFoods,
       inventory: this.inventory,
@@ -415,6 +437,9 @@ export class GameState {
         this.pullUpCost = d.pullUpCost ?? D.pullUpCostStart;
         this.maxBaseSlots = d.maxBaseSlots ?? 4;
         this.baseSlotCost = d.baseSlotCost ?? D.slotCostStart;
+        this.storage = d.storage ?? [];
+        this.storage.forEach(it => { const a = ZONES.flatMap(z => z.animals).find(x => x.id === it.id); if (a) { it.name = a.name; it.baseCps = a.baseCps; } });
+        this.storageSlots = d.storageSlots ?? 5;
         this.selectedFoodIndex = d.selectedFoodIndex ?? 0;
         this.unlockedFoods = d.unlockedFoods ?? [0];
         this.inventory = d.inventory ?? [];

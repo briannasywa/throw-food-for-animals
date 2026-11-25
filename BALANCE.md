@@ -29,6 +29,7 @@ All numbers that drive progress (Power, zones, money). The **Easy** column is th
 | `foodCostMul` | Food price × (used when `foodCostSeconds` is off) | 1× | 8× (unused) |
 | `slotCostStart` | First Expand Pen (+2 slots) | $200 | **$2,000** |
 | `slotCostGrowth` | Next Expand Pen × | 2.5 | **3.5** |
+| `storageUpgradeCosts` | Expand Inventory 5 → 10 → 15 → 20 slots | $1K / $5K / $25K | **$5K / $25K / $125K** |
 | `rebirthCostStart` | First Rebirth | $50K | **$3M** |
 | `rebirthCostGrowth` | Next Rebirth × | 3.5 | **6** |
 | `rebirthBonus` | Income & Power bonus per rebirth | +50% | **+20%** |
