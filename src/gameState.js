@@ -295,6 +295,25 @@ export class GameState {
     return false;
   }
 
+  /** Inventory → Pen (slot kosong di Pen). */
+  moveToPen(uid) {
+    const i = this.storage.findIndex(a => a.uid === uid);
+    if (i < 0 || this.inventory.length >= this.maxBaseSlots) return false;
+    this.inventory.push(this.storage.splice(i, 1)[0]);
+    this.save();
+    return true;
+  }
+
+  /** Pen → Inventory (Discard). Gagal kalau Inventory penuh. Pet yang di-equip otomatis dilepas. */
+  discardFromPen(uid) {
+    const i = this.inventory.findIndex(a => a.uid === uid);
+    if (i < 0 || this.storage.length >= this.storageSlots) return false;
+    this.equippedPets = this.equippedPets.filter(u => u !== uid);
+    this.storage.push(this.inventory.splice(i, 1)[0]);
+    this.save();
+    return true;
+  }
+
   /** Harga upgrade Inventory berikutnya, atau null kalau sudah maksimal (20). */
   storageUpgradeCost() {
     const step = Math.round((this.storageSlots - 5) / 5);

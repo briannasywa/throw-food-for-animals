@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ZONES, MUTATION_DATA, SKY_COLOR, foodRarities } from './gameData.js';
 import { D } from './difficulty.js';
 // Hewan & Zookeeper dari voxel art-direction (voxelAnimals.js). tickAnimal juga menganimasikan cincin mutasi.
-import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal, ANIMAL_SPECS, eatingGeometry, poseEating, buildFood } from './voxelAnimals.js';
+import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal, ANIMAL_SPECS, eatingGeometry, poseEating, buildFood, specFootprint } from './voxelAnimals.js';
 import { setupLighting, createBloom } from './zt-lighting.js';
 import { buildZoneCliffs } from './zoneCliffs.js';
 import { ChunkBatcher } from './chunkBatcher.js';
@@ -768,6 +768,8 @@ export class RobloxSeamlessWorld {
       if (pet) {
         const mesh = buildVoxelAnimal(pet.id, pet.rarity, pet.mutation);
         mesh.scale.set(0.35, 0.35, 0.35);
+        // jari-jari jejak di dunia: dipakai supaya hewan besar tidak menempel ke pemain / pet lain
+        mesh.userData.footR = specFootprint(ANIMAL_SPECS[pet.id] || ANIMAL_SPECS.rabbit) * 0.35;
         const prev = prevPos[this.petCompanionsGroup.children.length];
         mesh.position.copy(prev || this.avatar.position);
         this.petCompanionsGroup.add(mesh);
@@ -915,12 +917,21 @@ export class RobloxSeamlessWorld {
     // Pet Companions: berjalan di tanah di belakang pemain (kaki bergerak hanya saat pemain bergerak)
     if (this.petCompanionsGroup.children.length > 0) {
       const petWalking = isMoving && !this.isTraining && !this.isThrowing;
-      this.petCompanionsGroup.children.forEach((pet, i) => {
-        const ang = this.avatar.rotation.y + Math.PI + (i === 0 ? -0.6 : 0.6);
-        const tx = this.avatar.position.x + Math.sin(ang) * 3;
-        const tz = this.avatar.position.z + Math.cos(ang) * 3;
+      // Posisi di belakang pemain, dihitung dari ukuran tiap pet: jarak ke pemain = badan pemain + jejak pet,
+      // dan jarak samping antar pet = jejak keduanya + celah, jadi hewan besar tidak saling menempel.
+      const pets = this.petCompanionsGroup.children;
+      const yaw = this.avatar.rotation.y;
+      const fx = Math.sin(yaw), fz = Math.cos(yaw);   // arah depan pemain
+      const rx = Math.cos(yaw), rz = -Math.sin(yaw);  // arah kanan pemain
+      const PLAYER_R = 1.0, GAP = 0.5;
+      pets.forEach((pet, i) => {
+        const r = pet.userData.footR || 1;
+        const back = PLAYER_R + r + GAP;
+        const side = pets.length === 1 ? -(r * 0.6 + GAP) : (i === 0 ? -1 : 1) * (r + GAP * 0.6);
+        const tx = this.avatar.position.x - fx * back + rx * side;
+        const tz = this.avatar.position.z - fz * back + rz * side;
         pet.position.lerp(new THREE.Vector3(tx, 0, tz), dt * 6);
-        pet.rotation.y = this.avatar.rotation.y;
+        pet.rotation.y = yaw;
 
         if (pet.userData && pet.userData.animalInstance) {
           animateAnimal(pet.userData.animalInstance, secTime + i, { walking: petWalking });

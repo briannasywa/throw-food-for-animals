@@ -763,16 +763,13 @@ function renderFoodBagModal() {
 function renderPlotAnimals() {
   const container = document.querySelector('#plot-animals-list');
   container.innerHTML = '';
-
-  if (state.inventory.length === 0) {
-    container.innerHTML = `<div class="zt-empty">YOUR PEN IS EMPTY · GO THROW SOME FOOD!</div>`;
-    return;
-  }
+  const invFull = state.storage.length >= state.storageSlots;
 
   // Urutan tampilan: Mythic → Common, lalu penghasilan tertinggi (data inventory tidak diubah)
   const rows = state.inventory.map((item, idx) => ({ item, idx }));
   rows.sort((a, b) => (RARITY_ORDER.indexOf(a.item.rarity) - RARITY_ORDER.indexOf(b.item.rarity)) || (incomeOf(b.item) - incomeOf(a.item)));
 
+  // Aksi di Pen hanya 2: Equip (pet pengikut, maks 2) & Discard (kembali ke Inventory)
   rows.forEach(({ item }) => {
     const isEquipped = state.equippedPets.includes(item.uid);
     const card = document.createElement('div');
@@ -784,7 +781,7 @@ function renderPlotAnimals() {
       <div class="zt-card__income">+$${formatNum(incomeOf(item))}/s</div>
       <div class="zt-card__actions">
         <button class="zt-btn zt-btn--sm ${isEquipped ? 'zt-btn--plain' : 'zt-btn--good'}" data-equip>${isEquipped ? '✓ Equipped' : 'Equip'}</button>
-        <button class="zt-btn zt-btn--sm zt-btn--danger" data-sell>Sell $${formatNum(sellPriceOf(item))}</button>
+        <button class="zt-btn zt-btn--sm zt-btn--plain" data-discard ${invFull ? 'disabled title="Inventory full"' : ''}>${invFull ? 'Inventory full' : 'Discard'}</button>
       </div>
     `;
 
@@ -795,27 +792,28 @@ function renderPlotAnimals() {
       updateUI();
     };
 
-    card.querySelector('[data-sell]').onclick = async () => {
-      const big = RARITY_ORDER.indexOf(item.rarity) <= 2 || item.mutation !== 'Normal';
-      const ok = await confirmDialog({
-        title: 'Sell Animal?',
-        html: `<img src="${getAnimalThumb(item.id)}" alt="" style="width:96px;height:96px;margin:0 auto">
-          <div class="zt-title" style="font-size:18px">${item.name}</div>
-          <div class="zt-tags" style="justify-content:center;margin:4px 0 8px">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
-          ${big ? `<div class="zt-confirm__warn">THIS IS A RARE ANIMAL!</div>` : ''}
-          <div class="zt-title" style="font-size:20px;color:var(--zt-good-d)">YOU GET $${formatNum(sellPriceOf(item))}</div>`,
-        okLabel: 'Sell',
-      });
-      if (!ok) return;
-      const idx = state.inventory.findIndex(x => x.uid === item.uid);
-      if (idx < 0) return;
-      sfx.playCoins();
-      state.sellAnimal(idx);
+    card.querySelector('[data-discard]').onclick = () => {
+      if (!state.discardFromPen(item.uid)) { showNotice('INVENTORY FULL!'); return; }
+      sfx.playPop();
+      showNotice(`${item.name.toUpperCase()} MOVED TO INVENTORY`);
       updateUI();
     };
 
     container.appendChild(card);
   });
+
+  // Slot kosong: klik → pilih hewan dari Inventory
+  const free = Math.max(0, state.maxBaseSlots - state.inventory.length);
+  for (let i = 0; i < free; i++) {
+    const slot = document.createElement('button');
+    slot.className = 'zt-card zt-slot-empty';
+    slot.innerHTML = state.storage.length
+      ? `<span class="zt-slot-empty__plus">+</span><span class="zt-slot-empty__text">Add from Inventory</span>`
+      : `<span class="zt-slot-empty__plus">+</span><span class="zt-slot-empty__text">Empty slot<br><small>Inventory is empty · go catch more!</small></span>`;
+    slot.disabled = !state.storage.length;
+    slot.onclick = () => { sfx.playPop(); openStoragePicker(); };
+    container.appendChild(slot);
+  }
 }
 
 // Kartu lemparan gagal (memakai kartu tangkapan yang sama)
@@ -1233,6 +1231,7 @@ function openModal(id) {
   sfx.playPop();
   MODALS.forEach(other => other !== id && closeModal(other, true));
   if (id === 'food') renderFoodBagModal();
+  if (id === 'plot') renderPlotAnimals(); // selalu segar saat dibuka (slot kosong & isi Inventory bisa berubah)
   const m = document.querySelector(`#modal-${id}`);
   if (m) m.classList.remove('hidden');
   syncModalState();
@@ -1286,7 +1285,7 @@ const MENU_KEYS = {
   KeyI: () => toggleModal('index', () => { indexHasNew = false; updateDots(); renderIndexModal(); }),
   KeyR: () => toggleModal('rank', updateRankModal),
   KeyC: () => toggleModal('changelog', renderChangelogModal),
-  KeyB: () => toggleModal('storage', renderStorageModal),
+  KeyB: () => toggleModal('storage', () => { storagePickMode = false; renderStorageModal(); }),
   KeyM: () => toggleSound(),
   KeyL: () => { sfx.playPop(); setCamLock(!camLock); },
 };
@@ -1677,25 +1676,48 @@ document.querySelector('#btn-shop-upgrade-storage').onclick = () => {
   if (state.upgradeStorage()) { sfx.playLevelUp(); showNotice(`INVENTORY: ${state.storageSlots} SLOTS`); updateUI(); }
   else showNotice('NOT ENOUGH CASH!');
 };
-document.querySelector('#btn-open-storage').onclick = () => { renderStorageModal(); openModal('storage'); };
+document.querySelector('#btn-open-storage').onclick = () => { storagePickMode = false; renderStorageModal(); openModal('storage'); };
 
 // ---------- Inventory (hewan yang tidak muat di Pen) ----------
 // Action D: tampilan saja. Memindahkan ke Pen (Action E) dan Sell (Action F) menyusul.
+let storagePickMode = false; // true = dibuka dari slot kosong Pen: tiap kartu punya tombol "Put in Pen"
+function openStoragePicker() {
+  storagePickMode = true;
+  renderStorageModal();
+  openModal('storage');
+}
 function renderStorageModal() {
   const list = document.querySelector('#storage-list');
-  document.querySelector('#storage-capacity').textContent =
-    `${state.storage.length} / ${state.storageSlots} SLOTS · animals here do not earn cash`;
+  const penFree = state.maxBaseSlots - state.inventory.length;
+  if (storagePickMode && penFree <= 0) storagePickMode = false;
+  document.querySelector('#storage-capacity').textContent = storagePickMode
+    ? `CHOOSE AN ANIMAL FOR YOUR PEN · ${penFree} FREE SLOT${penFree === 1 ? '' : 'S'}`
+    : `${state.storage.length} / ${state.storageSlots} SLOTS · animals here do not earn cash`;
   if (!state.storage.length) {
     list.innerHTML = `<div class="zt-empty">EMPTY · WHEN YOUR PEN IS FULL, NEW CATCHES COME HERE</div>`;
     return;
   }
-  list.innerHTML = state.storage.map(item => `
+  const rows = [...state.storage].sort((a, b) => (RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity)) || (incomeOf(b) - incomeOf(a)));
+  list.innerHTML = rows.map(item => `
     <div class="zt-card zt-card--${item.rarity.toLowerCase()}">
       <img class="zt-card__img" src="${getAnimalThumb(item.id)}" alt="">
       <div class="zt-card__name">${item.name}</div>
       <div class="zt-tags" style="justify-content:center">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
       <div class="zt-card__income">+$${formatNum(incomeOf(item))}/s in Pen</div>
+      ${storagePickMode ? `<div class="zt-card__actions"><button class="zt-btn zt-btn--sm zt-btn--good" data-topen="${item.uid}">Put in Pen</button></div>` : ''}
     </div>`).join('');
+  list.querySelectorAll('[data-topen]').forEach(b => {
+    b.onclick = () => {
+      const item = state.storage.find(a => String(a.uid) === b.dataset.topen);
+      if (!item || !state.moveToPen(item.uid)) { showNotice('PEN IS FULL!'); return; }
+      sfx.playPop();
+      showNotice(`${item.name.toUpperCase()} MOVED TO YOUR PEN`);
+      storagePickMode = false;
+      updateUI();
+      renderPlotAnimals();
+      openModal('plot'); // kembali ke Pen
+    };
+  });
 }
 
 document.querySelector('#btn-shop-upgrade-slots').onclick = () => {

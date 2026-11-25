@@ -82,6 +82,16 @@ export function createAnimal(id, { mutation = 'Normal', scale = 0.45 } = {}) {
   return animal;
 }
 
+const footCache = new Map();
+/** Setengah lebar jejak hewan di tanah (satuan spec): sisi terjauh dari pusat di sumbu x atau z. */
+export function specFootprint(spec) {
+  if (footCache.has(spec.id)) return footCache.get(spec.id);
+  let r = 0;
+  for (const p of spec.parts) for (const b of p.boxes) r = Math.max(r, Math.abs(b[0]) + b[3] / 2, Math.abs(b[2]) + b[5] / 2);
+  footCache.set(spec.id, r);
+  return r;
+}
+
 const HEAD_PARTS = ['head', 'headL', 'headC', 'headR'];
 const eatCache = new Map();
 /**

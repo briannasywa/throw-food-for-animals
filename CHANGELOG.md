@@ -16,6 +16,14 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.9.0 — 2026-11-25
+### Added
+- My Pen shows an empty box for every free slot. Click it to pick an animal from your Inventory.
+### Changed
+- Animals in the Pen have two actions: Equip (follows you, max 2) and Discard (moves it back to the Inventory). Discard is greyed out with "Inventory full" when there is no room. Selling moves to the Inventory in the next update; until then use Sell All in the Shop.
+### Fixed
+- Big equipped animals no longer squeeze against you or each other: how far they walk behind you now depends on their size.
+
 ## 0.8.0 — 2026-11-25
 ### Added
 - Inventory (B, or Menu → Inventory on phones): when your Pen is full, new catches go here instead of being sold. It starts with 5 slots. Animals in the Inventory do not earn cash.
