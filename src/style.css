@@ -453,3 +453,12 @@ html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 .zt-quest__progress { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
 .zt-quest__bar { flex: 1; min-width: 0; }
 .zt-quest__progress > .zt-btn { flex: none; }
+
+/* ---------- PC: semua tombol kanan atas masuk ke Menu (sama seperti HP) ---------- */
+.zt-root:not(.is-touch) .zt-menu > button:not(#btn-mobile-menu) { display: none !important; }
+.zt-root:not(.is-touch) #btn-mobile-menu { display: inline-flex; min-height: 48px; font-size: 15px; padding: .4em .9em .6em; position: relative; }
+.zt-root:not(.is-touch) .zt-mmenu__sheet { left: auto; right: 12px; top: 12px; width: 380px; max-height: calc(100vh - 24px); overflow-y: auto; }
+.zt-root:not(.is-touch) .zt-mmenu__touch { display: none; }
+.zt-root.is-touch .zt-mmenu__pc { display: none; }
+.zt-mmenu__grid .zt-hk { position: absolute; right: 6px; bottom: 6px; margin: 0; }
+.zt-root:not(.is-touch) .zt-mmenu__grid .zt-hk, .zt-root:not(.is-touch) #btn-mobile-menu .zt-hk { display: inline-block; }

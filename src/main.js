@@ -88,7 +88,7 @@ app.innerHTML = `
     <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank${hk('R')}</button>
     <button id="btn-open-changelog" class="zt-btn zt-btn--plain" title="What's new (C)">Changelog${hk('C')}</button>
     <button id="btn-toggle-camlock" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Camera lock" title="Camera lock (L)">${CAMLOCK_ICON}${hk('L')}</button>
-    <button id="btn-mobile-menu" class="zt-btn zt-btn--plain zt-menu__burger" aria-label="Menu">${BURGER_ICON}<span>Menu</span></button>
+    <button id="btn-mobile-menu" class="zt-btn zt-btn--plain zt-menu__burger" aria-label="Menu" title="Menu (Tab)">${BURGER_ICON}<span>Menu</span>${hk('Tab')}</button>
     <button id="btn-toggle-sound" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Sound" title="Sound (M)"><span id="sound-icon">${SPEAKER_ON}</span>${hk('M')}</button>
   </div>
 
@@ -317,11 +317,13 @@ app.innerHTML = `
         </div>
       </div>
       <div class="zt-mmenu__grid">
-        <button class="zt-btn zt-btn--primary" data-mm="quests">Quests</button>
-        <button class="zt-btn zt-btn--accent" data-mm="index">Index</button>
-        <button class="zt-btn zt-btn--good" data-mm="rank">Rank</button>
+        <button class="zt-btn zt-btn--primary" data-mm="quests">Quests${hk('Q')}</button>
+        <button class="zt-btn zt-btn--accent" data-mm="index">Index${hk('I')}</button>
+        <button class="zt-btn zt-btn--good" data-mm="rank">Rank${hk('R')}</button>
         <button class="zt-btn zt-btn--plain" data-mm="sound" id="mmenu-sound">Sound: On</button>
-        <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="changelog">Changelog</button>
+        <button class="zt-btn zt-btn--plain zt-mmenu__pc" data-mm="camlock" id="mmenu-camlock">Camera lock: Off</button>
+        <button class="zt-btn zt-btn--plain zt-mmenu__pc" data-mm="changelog">Changelog${hk('C')}</button>
+        <button class="zt-btn zt-btn--plain zt-mmenu__wide zt-mmenu__touch" data-mm="changelog">Changelog</button>
         <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="wallet" id="mmenu-wallet">Connect Wallet</button>
       </div>
     </div>
@@ -1282,6 +1284,7 @@ const MENU_KEYS = {
   KeyI: () => toggleModal('index', () => { indexHasNew = false; updateDots(); renderIndexModal(); }),
   KeyR: () => toggleModal('rank', updateRankModal),
   KeyC: () => toggleModal('changelog', renderChangelogModal),
+  Tab: () => toggleModal('menu', renderMobileMenu),
   KeyB: () => toggleModal('storage', () => { storagePickMode = false; renderStorageModal(); }),
   KeyM: () => toggleSound(),
   KeyL: () => { sfx.playPop(); setCamLock(!camLock); },
@@ -1306,7 +1309,7 @@ window.addEventListener('keydown', (e) => {
   if (e.repeat || confirmResolve) return;
   if (cineMode === 'biome') return;                          // selama View Biome hanya Esc
   if (cineMode === 'training' && e.code !== 'KeyE') return;  // selama latihan hanya E (berhenti) / Esc
-  if (MENU_KEYS[e.code]) { MENU_KEYS[e.code](); return; }
+  if (MENU_KEYS[e.code]) { if (e.code === 'Tab') e.preventDefault(); MENU_KEYS[e.code](); return; }
   const st = STATION_KEYS[e.code];
   if (st && world.currentStation?.id === st[0]) st[1]();
 });
@@ -1346,7 +1349,8 @@ function renderMobileMenu() {
   document.querySelector('#mmenu-rb-next').textContent = `Next: ×${+(mult + D.rebirthBonus).toFixed(2)} for $${formatNum(state.rebirthCost)}`;
   const rb = document.querySelector('#mmenu-rebirth');
   rb.classList.toggle('is-short', !state.canRebirth());
-  document.querySelector('#mmenu-sound').textContent = `Sound: ${sfx.enabled ? 'On' : 'Off'}`;
+  document.querySelector('#mmenu-sound').innerHTML = `Sound: ${sfx.enabled ? 'On' : 'Off'}${hk('M')}`;
+  document.querySelector('#mmenu-camlock').innerHTML = `Camera lock: ${camLock ? 'On' : 'Off'}${hk('L')}`;
   document.querySelector('#mmenu-wallet').textContent = document.querySelector('#wallet-btn-text').textContent;
   document.querySelector('[data-mm="changelog"]').classList.toggle('zt-dot', changelogUnseen());
   document.querySelectorAll('[data-mm="quests"], [data-mm="index"]').forEach(b =>
@@ -1358,6 +1362,7 @@ document.querySelectorAll('[data-mm]').forEach(b => {
   b.onclick = () => {
     const id = b.dataset.mm;
     if (id === 'sound') { toggleSound(); renderMobileMenu(); return; }
+    if (id === 'camlock') { closeModal('menu'); sfx.playPop(); setCamLock(!camLock); return; }
     if (id === 'wallet') { closeModal('menu'); document.querySelector('#btn-connect-wallet').click(); return; }
     document.querySelector(`#btn-open-${id}`).click(); // membuka modal tujuan (menu tertutup otomatis)
   };

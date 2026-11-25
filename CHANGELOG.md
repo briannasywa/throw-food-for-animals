@@ -16,6 +16,10 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.10.4 — 2026-11-25
+### Changed
+- PC: the top-right buttons (Mode, Wallet, Quests, Index, Rank, Changelog, Camera lock, Sound) now live in one Menu button (Tab), the same Menu as on phones. Hotkeys still work.
+
 ## 0.10.3 — 2026-11-25
 ### Changed
 - Income and pull-up Power are now shown per minute instead of per second (for example +$120/min, +60 Power/min). Cash and Power still go up every second; the game pace is unchanged.
