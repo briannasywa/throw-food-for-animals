@@ -33,11 +33,6 @@ export const PRESETS = {
     powerSellCashMul: 1,       // pengali cash dari "Instant Cash" (tukar Power)
     eggCostSeconds: null,      // null = $500 × (zona terjauh+1) × foodCostMul; angka = penghasilan hewan teratas zona terjauh × detik ini
     magicFoodSeconds: null,    // null = $100 per buah; angka = penghasilan hewan terendah zona terjauh × detik ini per buah
-    // --- peluang tangkap (robloxSeamlessWorld.js → determineCatch) ---
-    zoneFood: false,           // true = Rare ke atas HANYA bisa didapat dengan makanan khusus zona itu
-    zoneFoodLuck: null,        // null = pakai Luck asli makanan; angka = Luck tetap saat makanan zona dipakai
-    rarityWeightMul: { Rare: 1, Epic: 1, Legendary: 1, Mythic: 1 }, // pengali bobot dasar per rarity
-    luckExp: { Rare: 0, Epic: 0.5, Legendary: 1, Mythic: 1 },        // bobot × Luck^pangkat (asli: Epic √Luck, Legendary ×Luck)
   },
   hard: {
     label: 'Hard',
@@ -63,10 +58,6 @@ export const PRESETS = {
     powerSellCashMul: 0.2,
     eggCostSeconds: 3000,
     magicFoodSeconds: 60,
-    zoneFood: true,
-    zoneFoodLuck: 3,
-    rarityWeightMul: { Rare: 0.5, Epic: 0.3, Legendary: 0.15, Mythic: 0.15 },
-    luckExp: { Rare: 0.5, Epic: 1, Legendary: 1.5, Mythic: 1.5 },
   },
 };
 

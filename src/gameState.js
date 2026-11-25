@@ -1,14 +1,21 @@
-import { FOOD_TIERS, MUTATION_DATA, ZONES } from './gameData.js';
+import { FOOD_TIERS, MUTATION_DATA, ZONES, foodZoneOf, foodRarities } from './gameData.js';
 import { D, MODE } from './difficulty.js';
 
 // Save terpisah per mode (difficulty.js). Save lama tanpa akhiran = progres mode easy.
 const SAVE_KEY = MODE === 'easy' ? 'ZooToss_SaveData_v1' : `ZooToss_SaveData_v1_${MODE}`;
 
-/** Harga makanan sesuai mode. */
-// Mode hard (D.foodCostSeconds): harga = penghasilan hewan terendah zona itu x detik ini, supaya harga ikut penghasilan yang dipadatkan.
+/**
+ * Harga makanan sesuai mode. Carrot (basic Lobby) gratis.
+ * Mode hard (D.foodCostSeconds): harga = penghasilan hewan termurah yang bisa didapat makanan itu × detik ini
+ * (basic → hewan terendah zona, enhanced → hewan Epic pertama), supaya harga ikut penghasilan yang dipadatkan.
+ */
 export const foodCost = (f) => {
-  const i = FOOD_TIERS.indexOf(f);
-  if (D.foodCostSeconds && i > 0 && ZONES[i]) return Math.round(ZONES[i].animals[0].baseCps * D.incomeMul * D.foodCostSeconds);
+  if (f.cost === 0) return 0;
+  const z = foodZoneOf(f);
+  if (D.foodCostSeconds && z) {
+    const first = z.animals.find(a => a.rarity === foodRarities(f)[0]) || z.animals[0];
+    return Math.round(first.baseCps * D.incomeMul * D.foodCostSeconds);
+  }
   return Math.round(f.cost * D.foodCostMul);
 };
 

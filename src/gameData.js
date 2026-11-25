@@ -208,22 +208,48 @@ if (D.zoneIncomeGrowth) {
   });
 }
 
+// Makanan khusus zona (sejak 0.6.0). Tiap zona punya 2 makanan:
+//   basic    = rarity terbawah zona (Common–Rare; Galaxy Rare–Epic)
+//   enhanced = rarity teratas zona (Epic–Legendary; Galaxy Legendary–Mythic; Lobby hanya Epic)
+// Mendarat di zona lain = tidak ada yang makan (lemparan gagal). Makanan tetap sekali beli.
+// Urutan 0–8 = basic lama (index tersimpan di save), 9–17 = enhanced baru.
 export const FOOD_TIERS = [
-  { id: 'carrot', name: 'Carrot', iconText: 'CARROT', color: '#7AD15A', cost: 0, luckBonus: 1.0, desc: 'Basic bait for Lobby animals.' },
-  { id: 'apple', name: 'Apple', iconText: 'APPLE', color: '#B8EFA0', cost: 100, luckBonus: 1.5, desc: 'Fresh bait for Farm animals.' },
-  { id: 'meat', name: 'Meat', iconText: 'MEAT', color: '#2FA84F', cost: 800, luckBonus: 2.2, desc: 'Tasty bait for Jungle animals.' },
-  { id: 'burger', name: 'Burger', iconText: 'BURGER', color: '#8CFF3A', cost: 5000, luckBonus: 3.5, desc: 'Weird bait for Toxic mutants.' },
-  { id: 'sushi', name: 'Lava Roll', iconText: 'LAVA ROLL', color: '#FF5A1F', cost: 50000, luckBonus: 5.5, desc: 'Sizzling bait for Lava animals.' },
-  { id: 'pearl', name: 'Pearl', iconText: 'PEARL', color: '#3FF0FF', cost: 500000, luckBonus: 9.0, desc: 'Glowing bait for Glow Sea.' },
-  { id: 'candy_cane', name: 'Candy', iconText: 'CANDY', color: '#E8384F', cost: 5000000, luckBonus: 14.0, desc: 'Sweet bait for Christmas.' },
-  { id: 'ice_crystal', name: 'Ice Gem', iconText: 'ICE GEM', color: '#7FD3FF', cost: 50000000, luckBonus: 22.0, desc: 'Frozen bait for Frost.' },
-  { id: 'star_cake', name: 'Galaxy', iconText: 'GALAXY', color: '#B57BFF', cost: 500000000, luckBonus: 35.0, desc: 'Mythic bait for Galaxy.' }
+  { id: 'carrot', zone: 'lobby', tier: 'basic', name: 'Carrot', iconText: 'CARROT', color: '#7AD15A', cost: 0, luckBonus: 1.0, desc: 'Lobby pets love it.' },
+  { id: 'apple', zone: 'farm', tier: 'basic', name: 'Apple', iconText: 'APPLE', color: '#B8EFA0', cost: 100, luckBonus: 1.0, desc: 'Fresh from the Farm.' },
+  { id: 'meat', zone: 'jungle', tier: 'basic', name: 'Meat', iconText: 'MEAT', color: '#2FA84F', cost: 800, luckBonus: 1.0, desc: 'For hungry Jungle animals.' },
+  { id: 'burger', zone: 'toxic', tier: 'basic', name: 'Burger', iconText: 'BURGER', color: '#8CFF3A', cost: 5000, luckBonus: 1.0, desc: 'Weird bait for Toxic mutants.' },
+  { id: 'sushi', zone: 'lava', tier: 'basic', name: 'Lava Roll', iconText: 'LAVA ROLL', color: '#FF5A1F', cost: 50000, luckBonus: 1.0, desc: 'Sizzling bait for Lava animals.' },
+  { id: 'pearl', zone: 'glow_sea', tier: 'basic', name: 'Pearl', iconText: 'PEARL', color: '#3FF0FF', cost: 500000, luckBonus: 1.0, desc: 'Glowing bait for the Glow Sea.' },
+  { id: 'candy_cane', zone: 'christmas', tier: 'basic', name: 'Candy', iconText: 'CANDY', color: '#E8384F', cost: 5000000, luckBonus: 1.0, desc: 'Sweet bait for Christmas.' },
+  { id: 'ice_crystal', zone: 'frost', tier: 'basic', name: 'Ice Gem', iconText: 'ICE GEM', color: '#7FD3FF', cost: 50000000, luckBonus: 1.0, desc: 'Frozen bait for Frost.' },
+  { id: 'star_cake', zone: 'galaxy', tier: 'basic', name: 'Galaxy', iconText: 'GALAXY', color: '#B57BFF', cost: 500000000, luckBonus: 1.0, desc: 'Starry bait for Galaxy.' },
+  { id: 'golden_carrot', zone: 'lobby', tier: 'enhanced', name: 'Golden Carrot', iconText: 'GOLD CARROT', color: '#FFC21A', cost: 500, luckBonus: 1.0, desc: 'A shiny treat only the best pets get.' },
+  { id: 'honey_apple', zone: 'farm', tier: 'enhanced', name: 'Honey Apple', iconText: 'HONEY APPLE', color: '#FFB547', cost: 1000, luckBonus: 1.0, desc: 'Dripping with honey. Giant Farm animals come running.' },
+  { id: 'prime_steak', zone: 'jungle', tier: 'enhanced', name: 'Prime Steak', iconText: 'PRIME STEAK', color: '#C8323C', cost: 8000, luckBonus: 1.0, desc: 'The juiciest cut in the Jungle.' },
+  { id: 'mega_burger', zone: 'toxic', tier: 'enhanced', name: 'Mega Burger', iconText: 'MEGA BURGER', color: '#B6FF3A', cost: 50000, luckBonus: 1.0, desc: 'Triple stacked and glowing.' },
+  { id: 'magma_roll', zone: 'lava', tier: 'enhanced', name: 'Magma Roll', iconText: 'MAGMA ROLL', color: '#FF2E1F', cost: 500000, luckBonus: 1.0, desc: 'Too hot for small fry.' },
+  { id: 'black_pearl', zone: 'glow_sea', tier: 'enhanced', name: 'Black Pearl', iconText: 'BLACK PEARL', color: '#3A2D6B', cost: 5000000, luckBonus: 1.0, desc: 'A deep-sea treasure.' },
+  { id: 'gingerbread_star', zone: 'christmas', tier: 'enhanced', name: 'Gingerbread Star', iconText: 'GINGER STAR', color: '#C9822E', cost: 50000000, luckBonus: 1.0, desc: 'Baked for the biggest Christmas guests.' },
+  { id: 'frost_crystal', zone: 'frost', tier: 'enhanced', name: 'Frost Crystal', iconText: 'FROST CRYSTAL', color: '#B8F0FF', cost: 500000000, luckBonus: 1.0, desc: 'Colder than a blizzard.' },
+  { id: 'nebula_cake', zone: 'galaxy', tier: 'enhanced', name: 'Nebula Cake', iconText: 'NEBULA CAKE', color: '#FF7BD8', cost: 5000000000, luckBonus: 1.0, desc: 'Baked in a star. Mythic animals cannot resist.' },
 ];
 
-/** Makanan khusus zona: urutan FOOD_TIERS = urutan ZONES (Carrot = Lobby, Apple = Farm, …, Galaxy = Galaxy). */
-export const zoneFoodOf = (zone) => FOOD_TIERS[Math.max(0, ZONES.findIndex(z => z.id === zone.id))] || FOOD_TIERS[0];
-/** Zona tempat sebuah makanan menjadi makanan khusus. */
-export const foodZoneOf = (food) => ZONES[FOOD_TIERS.indexOf(food)] || null;
+const RARITY_RANK = ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic'];
+/** Rarity yang ada di zona, dari terendah ke tertinggi (mis. Lobby: Common, Rare, Epic). */
+export const rarityTiers = (zone) => [...new Set(zone.animals.map(a => a.rarity))].sort((x, y) => RARITY_RANK.indexOf(x) - RARITY_RANK.indexOf(y));
+/** Zona milik sebuah makanan. */
+export const foodZoneOf = (food) => ZONES.find(z => z.id === food?.zone) || null;
+/** Makanan milik sebuah zona: [basic, enhanced]. */
+export const foodsOfZone = (zone) => FOOD_TIERS.filter(f => f.zone === zone.id);
+/** Rarity yang bisa didapat makanan ini di zonanya: basic = 2 tingkat terbawah, enhanced = sisanya. */
+export const foodRarities = (food) => {
+  const z = foodZoneOf(food);
+  if (!z) return [];
+  const t = rarityTiers(z);
+  return food.tier === 'enhanced' ? t.slice(2) : t.slice(0, 2);
+};
+/** Label rentang rarity, mis. "Common–Rare". */
+export const foodRarityLabel = (food) => { const r = foodRarities(food); return r.length > 1 ? `${r[0]}–${r[r.length - 1]}` : (r[0] || ''); };
 
 export const MUTATION_DATA = {
   // warna dari palette.json -> mutation (Rainbow = gradasi di UI, warna ini hanya cadangan)

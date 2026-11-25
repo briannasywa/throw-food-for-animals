@@ -16,6 +16,14 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.6.0 — 2026-11-25
+### Added
+- Every zone now has its own food: a Basic food for Common and Rare animals, and a new Enhanced food for Epic and Legendary ones (Golden Carrot, Honey Apple, Prime Steak, Mega Burger, Magma Roll, Black Pearl, Gingerbread Star, Frost Crystal, Nebula Cake).
+- The Food Bag is grouped by zone and shows which rarities each food can catch.
+### Changed
+- Food only works in its own zone. If it lands in another zone, nobody eats it and the throw is wasted (the food stays in your bag). Applies to Easy and Hard.
+- Food no longer has Luck numbers; Basic or Enhanced decides the rarity.
+
 ## 0.5.1 — 2026-11-25
 ### Changed
 - Distances are now real: 1 m on screen is 1 m in the world, so zone limits are smaller numbers (Galaxy starts at 2,831 m) but a long throw now looks as far as it reads. Power needed per zone is about the same.

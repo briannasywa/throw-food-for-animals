@@ -41,36 +41,33 @@ All numbers that drive progress (Power, zones, money). The **Easy** column is th
 | `powerSellCashMul` | Instant Cash (Power → cash) × | 1 | **0.2** (no buy-low/sell-high loop) |
 | `eggCostSeconds` | Mystery Egg = farthest zone's top animal $/s (after `incomeMul`) × seconds | off ($500 × zone × `foodCostMul`) | **3,000 s** |
 | `magicFoodSeconds` | Magic Food, per piece = farthest zone's lowest animal $/s × seconds | off ($100) | **60 s** |
-| `zoneFood` | Rare and above need **that zone's food** | off | **on** |
-| `zoneFoodLuck` | Luck when the zone's food is used | food's own Luck | **×3** (fixed) |
-| `rarityWeightMul` | Base catch weight × per rarity (Rare / Epic / Legendary·Mythic) | 1 / 1 / 1 | **0.5 / 0.3 / 0.15** |
-| `luckExp` | Weight × Luck^exp per rarity (Rare / Epic / Legendary·Mythic) | 0 / 0.5 / 1 | **0.5 / 1 / 1.5** |
 
 **Why Hard compresses income:** the original animal income jumps about 30× per zone while the Power needed only grows about 1.6× per zone. Every new zone paid for many pull-up upgrades at once, so multipliers alone could not slow the game (Hard reached Galaxy in about 30 minutes in simulation). Hard now sets each zone's lowest animal to `3 × 4^zone` $/s; the ratio between rarities inside a zone is unchanged. Food prices follow the same scale.
 
 The pet bonus had no cap. Equipping a Jungle elephant (18,000 $/s) gave about +900% to income **and** pull-up Power, which is why progress jumped. Hard caps it at +50%.
 
-### Zone food (Hard only)
+### Zone food: Basic & Enhanced (0.6.0, both modes)
 
-Each zone has one food, in the same order as the zones:
+Every zone has two foods. Food is bought once and used forever.
 
-| Zone | Lobby | Farm | Jungle | Toxic | Lava | Glow Sea | Christmas | Frost | Galaxy |
-|---|---|---|---|---|---|---|---|---|---|
-| Food | Carrot | Apple | Meat | Burger | Lava Roll | Pearl | Candy | Ice Gem | Galaxy |
+| Zone | Basic | Enhanced |
+|---|---|---|
+| Lobby | Carrot (Common–Rare) | Golden Carrot (Epic) |
+| Farm | Apple (Common–Rare) | Honey Apple (Epic–Legendary) |
+| Jungle | Meat | Prime Steak |
+| Toxic | Burger | Mega Burger |
+| Lava | Lava Roll | Magma Roll |
+| Glow Sea | Pearl | Black Pearl |
+| Christmas | Candy | Gingerbread Star |
+| Frost | Ice Gem | Frost Crystal |
+| Galaxy | Galaxy (Rare–Epic) | Nebula Cake (Legendary–Mythic) |
 
-- With the zone's food: Rare and above can drop, with Luck ×3 and the exponents above.
-- With any other food (even a more expensive one): only the zone's lowest animal (Common; Rare in Galaxy, which has no Common). The catch card then says which food to use.
-- Legendary Bait (USDC) still guarantees the top animal anywhere.
-
-Catch odds in Hard with the zone's food (20,000 simulated throws):
-
-| Zone | Common | Rare | Epic | Legendary / Mythic |
-|---|---|---|---|---|
-| Farm, Jungle, … (45/30/18/7) | 49% | 28% | 17% | 6% |
-| Galaxy (Rare 40 / Epic 35 / Legendary 18 / Mythic 7) | — | 44% | 34% | 16% / 6% |
-| Lobby (Carrot) | 86% | 11% | 3% | — |
-
-In Easy the old rule stays: any food works everywhere, and a more expensive food means more Luck.
+- **Basic** catches only the two lowest rarities of its zone, **Enhanced** only the rest (`foodRarities` in `gameData.js`).
+- Inside those rarities the animals' own catch weights decide. Example, Farm: Apple → Common 60% / Rare 40%; Honey Apple → Epic 72% / Legendary 28%.
+- **Wrong zone = failed throw:** if the food lands in another zone, no animal comes. The food is not lost; only that throw is wasted. The catch card says which zone the food is for.
+- **Magic Food** (team feature) makes the top rarity allowed by the food 3.5× more likely.
+- **Legendary Bait** (USDC) still works in any zone.
+- The old Hard-only rule (zone food unlocks Rare+, Luck ×3) and food Luck values are gone.
 
 ## 2. Formulas (the same in both modes)
 
@@ -82,7 +79,7 @@ In Easy the old rule stays: any food works everywhere, and a more expensive food
 | Pull-up | `floor(1 + level^1.4 × 2) × pullUpRateMul × rebirth × pet`, minimum 1/s | `gameState.js` |
 | Income/s | `Σ floor(baseCps × mutation) × incomeMul × rebirth × pet` | `gameState.js` |
 | Rebirth bonus | `1 + rebirths × rebirthBonus` | `gameState.js` |
-| Catch odds | Weight × `rarityWeightMul` × Luck^`luckExp`; Hard: Rare+ only with the zone's food | `robloxSeamlessWorld.js` → `determineCatch` |
+| Catch odds | Food must match the landing zone (else no catch). Basic = 2 lowest rarities, Enhanced = the rest; animal weights decide inside | `robloxSeamlessWorld.js` → `determineCatch` |
 | Mutation | Normal 85%, Gold 10%, Diamond 3.5%, Emerald 1.2%, Rainbow 0.3% | `determineCatch` |
 | Legendary Bait (USDC) | Guaranteed top animal in the zone; mutations: Rainbow 2%, Emerald 6%, Diamond 12%, Gold 25% | `determineCatch` |
 | Starting values | Power 10, 4 pen slots, 2 pets max, Carrot | `gameState.js` |
@@ -141,19 +138,21 @@ Catch weights per rarity: 45/30/18/7 in most zones (Lobby 50/35/12/3, Galaxy 40/
 
 **v2 animals (0.5.0):** Farm to Galaxy now have 8 animals, two per rarity. Each rarity's weight is split 55% (v1 animal) / 45% (v2 animal), so the odds per rarity did not change. A v2 animal earns 1.25× the v1 animal of the same rarity (Hard compression applies on top). The table above lists the v1 animals; v2 incomes are in `src/gameData.js` (`set: 'v2'`). Simulated Hard time to Galaxy stays about 2.1–2.3 hours.
 
-### Food (Easy: base price; Hard: zone income × `foodCostSeconds`)
+### Food prices (Easy: base price; Hard: income × `foodCostSeconds`)
 
-| Food | Base price | Hard price | Luck (Easy) |
-|---|---|---|---|
-| Carrot | $0 | $0 | ×1 |
-| Apple | $100 | $2.4K | ×1.5 |
-| Meat | $800 | $9.6K | ×2.2 |
-| Burger | $5K | $38K | ×3.5 |
-| Lava Roll | $50K | $154K | ×5.5 |
-| Pearl | $500K | $614K | ×9 |
-| Candy | $5M | $2.5M | ×14 |
-| Ice Gem | $50M | $9.8M | ×22 |
-| Galaxy | $500M | $39M | ×35 |
+Hard price = income of the cheapest animal that food can catch (after `incomeMul`) × 1,000 s. Carrot is free.
+
+| Zone | Basic · Easy | Basic · Hard | Enhanced · Easy | Enhanced · Hard |
+|---|---|---|---|---|
+| Lobby | Carrot $0 | $0 | Golden Carrot $500 | $7K |
+| Farm | Apple $100 | $2.4K | Honey Apple $1K | $12.4K |
+| Jungle | Meat $800 | $9.6K | Prime Steak $8K | $52K |
+| Toxic | Burger $5K | $38K | Mega Burger $50K | $219K |
+| Lava | Lava Roll $50K | $154K | Magma Roll $500K | $1M |
+| Glow Sea | Pearl $500K | $614K | Black Pearl $5M | $4.1M |
+| Christmas | Candy $5M | $2.5M | Gingerbread Star $50M | $16.4M |
+| Frost | Ice Gem $50M | $9.8M | Frost Crystal $500M | $79M |
+| Galaxy | Galaxy $500M | $39M | Nebula Cake $5B | $393M |
 
 ### Mutations
 

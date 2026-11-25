@@ -4,7 +4,7 @@ import './style.css';
 import confetti from 'canvas-confetti';
 import { GameState, formatNum, foodCost } from './gameState.js';
 import { D, MODE } from './difficulty.js';
-import { FOOD_TIERS, ZONES, MUTATION_DATA, foodZoneOf } from './gameData.js';
+import { FOOD_TIERS, ZONES, MUTATION_DATA, foodZoneOf, foodsOfZone, foodRarityLabel } from './gameData.js';
 import { RobloxSeamlessWorld } from './robloxSeamlessWorld.js';
 import { sfx } from './audio.js';
 import { getAnimalThumb } from './animalThumbs.js';
@@ -324,7 +324,7 @@ app.innerHTML = `
   </div>
 
   ${modal('food', 'Food Bag', `<div id="food-bag-list" class="flex flex-col gap-2.5"></div>`,
-    `<div class="zt-modal__sub">${D.zoneFood ? 'Rare catches need the food of that zone' : 'Better food = luckier catches'}</div>`)}
+    `<div class="zt-modal__sub">Each zone has its own food. Land it in the right zone!</div>`)}
 
   ${modal('plot', 'My Pen', `<div id="plot-animals-list" class="zt-grid"></div>`,
     `<div id="plot-capacity-text" class="zt-modal__sub">0 / 4 SLOTS</div>`)}
@@ -633,15 +633,15 @@ function renderFoodBag() {
   document.querySelector('#foodbag-swatch').style.background = f.color;
   document.querySelector('#foodbag-name').textContent = leg ? `Legendary ×${state.legendaryBaits}` : f.name;
   document.querySelector('#foodbag-sub').textContent = leg ? 'Guaranteed Legendary' : foodLuckLabel(f);
+  document.querySelector('#btn-food-bag').classList.toggle('is-enhanced', !leg && f.tier === 'enhanced');
   document.querySelector('#btn-food-bag').classList.toggle('is-legend', leg);
   if (!document.querySelector('#modal-food').classList.contains('hidden')) renderFoodBagModal();
 }
 
-// Teks Luck makanan. Mode hard: makanan hanya membuka Rare+ di zonanya sendiri (difficulty.js → zoneFood).
+// Teks singkat makanan: zona + rentang rarity, mis. "Farm · Common–Rare" (gameData.js → foodRarities)
 function foodLuckLabel(f) {
-  if (!D.zoneFood) return `Luck ×${f.luckBonus}`;
   const z = foodZoneOf(f);
-  return z ? `Rare catches in ${z.name}` : `Luck ×${f.luckBonus}`;
+  return z ? `${z.name} · ${foodRarityLabel(f)}` : '';
 }
 
 function equipFood(idx) {
@@ -674,16 +674,21 @@ function renderFoodBagModal() {
       : legCount > 0 ? `<button class="zt-btn zt-btn--accent zt-btn--sm" data-food="legend">Equip</button>`
       : `<button class="zt-btn zt-btn--plain zt-btn--sm" data-food="shop">Get in Shop</button>`,
   });
-  FOOD_TIERS.forEach((f, idx) => {
-    const owned = state.unlockedFoods.includes(idx);
-    const canAfford = state.money >= foodCost(f);
-    html += row({
-      color: f.color, active: cur === f,
-      title: f.name,
-      desc: D.zoneFood ? `${f.desc} · <b>Needed for rare catches in ${foodZoneOf(f)?.name}</b>` : `${f.desc} · Luck ×${f.luckBonus}`,
-      btn: cur === f ? equippedBtn
-        : owned ? `<button class="zt-btn zt-btn--good zt-btn--sm" data-food="${idx}">Equip</button>`
-        : `<button class="zt-btn zt-btn--sm ${canAfford ? 'zt-btn--primary' : 'zt-btn--plain is-short'}" data-food="${idx}">Buy $${formatNum(foodCost(f))}</button>`,
+  // Dikelompokkan per zona: Basic (rarity bawah) lalu Enhanced (rarity atas)
+  ZONES.forEach(z => {
+    html += `<div class="zt-foodzone"><span class="zt-swatch" style="background:${hex(z.stripes[0])}"></span><span class="zt-title">${z.name}</span><span class="zt-foodzone__range">${zoneRange(z)}</span></div>`;
+    foodsOfZone(z).forEach(f => {
+      const idx = FOOD_TIERS.indexOf(f);
+      const owned = state.unlockedFoods.includes(idx);
+      const canAfford = state.money >= foodCost(f);
+      html += row({
+        color: f.color, active: cur === f,
+        title: `${f.name} <span class="zt-foodtier zt-foodtier--${f.tier}">${f.tier === 'enhanced' ? 'Enhanced' : 'Basic'}</span>`,
+        desc: `<b>${foodRarityLabel(f)}</b> in ${z.name} · ${f.desc}`,
+        btn: cur === f ? equippedBtn
+          : owned ? `<button class="zt-btn zt-btn--good zt-btn--sm" data-food="${idx}">Equip</button>`
+          : `<button class="zt-btn zt-btn--sm ${canAfford ? 'zt-btn--primary' : 'zt-btn--plain is-short'}" data-food="${idx}">${foodCost(f) === 0 ? 'Free' : `Buy $${formatNum(foodCost(f))}`}</button>`,
+      });
     });
   });
   list.innerHTML = html;
@@ -761,15 +766,31 @@ function renderPlotAnimals() {
   });
 }
 
+// Kartu lemparan gagal (memakai kartu tangkapan yang sama)
+function showFailToast(food, landedZone, dist) {
+  const toast = document.querySelector('#catch-toast');
+  const fz = foodZoneOf(food);
+  toast.style.borderColor = 'var(--zt-danger)';
+  document.querySelector('#catch-img').style.visibility = 'hidden';
+  document.querySelector('#catch-name').textContent = 'Nobody ate it';
+  document.querySelector('#catch-tags').innerHTML = `<span class="zt-tag" style="background:var(--zt-danger);color:#fff">Wrong zone</span>`;
+  document.querySelector('#catch-sub').textContent = `${food.name} is for ${fz?.name || '?'} · landed in ${landedZone.name} (${formatNum(dist)} m)`;
+  document.querySelector('#catch-new').classList.add('hidden');
+  document.querySelector('#catch-sold').classList.add('hidden');
+  toast.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('is-show'), 3500);
+}
+
 let toastTimer = null;
 function showCatchToast(animal, { sellPrice = null, isNew = false } = {}) {
   const toast = document.querySelector('#catch-toast');
   toast.style.borderColor = `var(--zt-${animal.rarity.toLowerCase()})`;
   document.querySelector('#catch-img').src = getAnimalThumb(animal.id);
+  document.querySelector('#catch-img').style.visibility = '';
   document.querySelector('#catch-name').textContent = animal.name;
   document.querySelector('#catch-tags').innerHTML = rarityTag(animal.rarity) + mutTag(animal.mutation);
-  document.querySelector('#catch-sub').textContent = `+$${formatNum(incomeOf(animal))}/s`
-    + (animal.zoneFoodMiss ? ` · Use ${animal.zoneFoodName} for rarer catches here` : '');
+  document.querySelector('#catch-sub').textContent = `+$${formatNum(incomeOf(animal))}/s`;
   document.querySelector('#catch-new').classList.toggle('hidden', !isNew);
   const sold = document.querySelector('#catch-sold');
   sold.classList.toggle('hidden', !sellPrice);
@@ -868,6 +889,16 @@ function triggerThrow() {
   world.throwFood(distance, targetZone, throwFoodItem, (caughtAnimal, dist) => {
     hud.classList.add('hidden');
     syncCamLockUI();
+    state.checkQuest('distance', dist);
+    state.updateMaxDistance(dist);
+    if (!caughtAnimal) {
+      // Makanan mendarat di zona yang bukan zonanya: tidak ada yang makan
+      const fz = foodZoneOf(food);
+      showNotice(food.isLegendaryBait ? 'NOBODY CAME…' : `NOBODY ATE IT! ${food.name.toUpperCase()} IS FOR ${(fz?.name || '').toUpperCase()} · LANDED IN ${targetZone.name.toUpperCase()}`);
+      showFailToast(food, targetZone, dist);
+      updateUI();
+      return;
+    }
     sfx.playCatch(caughtAnimal.rarity, caughtAnimal.mutation);
 
     // Info untuk tampilan (dibaca sebelum state berubah)
@@ -876,13 +907,11 @@ function triggerThrow() {
     const zoneFirstTime = zone && zone.id !== 'lobby' && !zone.animals.some(a => (state.indexProgress[a.id] || []).length);
 
     state.checkQuest('catch', 1);
-    state.checkQuest('distance', dist);
     state.checkQuest('mutation', caughtAnimal.mutation);
 
     const res = state.addAnimal(caughtAnimal);
     if (isNew) indexHasNew = true;
     if (zoneFirstTime) showZoneBanner(zone);
-    state.updateMaxDistance(dist);
     showCatchToast(caughtAnimal, { sellPrice: res.autoSold ? res.sellPrice : null, isNew });
     updateUI();
     onboarding.onCatch(caughtAnimal);
@@ -1052,9 +1081,7 @@ const onboarding = (() => {
         ? 'Tap <b>Throw</b> when the needle is in the <b>green</b>. Green = longest throw.'
         : 'Press <b>Space</b> when the needle is in the <b>green</b>. Green = longest throw.' },
     { title: 'Watch it fly!', text: 'The farther it lands, the wilder the zone and the rarer the animals.' },
-    { title: 'Nice catch!', text: 'Animals go to your <b>Pen</b> and earn cash every second. ' + (D.zoneFood
-      ? 'Rare animals only bite on <b>their zone\'s food</b>: pick it in your <b>Food Bag</b>.'
-      : 'Better food in your <b>Food Bag</b> catches rarer animals.'), next: true },
+    { title: 'Nice catch!', text: 'Animals go to your <b>Pen</b> and earn cash every second. Each zone has its <b>own food</b>: land it in that zone, or nobody eats it. <b>Enhanced</b> food brings the rare ones.', next: true },
   ];
   let step = -1;
   const el = document.querySelector('#onboarding');
