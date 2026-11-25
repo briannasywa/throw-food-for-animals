@@ -429,3 +429,7 @@ html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 .zt-slot-empty__plus { font-family: var(--zt-font-title); font-size: 34px; line-height: 1; }
 .zt-slot-empty__text { font-size: 12px; text-align: center; line-height: 1.3; }
 .zt-slot-empty__text small { font-size: 10px; opacity: .8; }
+
+/* ---------- Inventory: Sell All di kepala modal ---------- */
+.zt-storagehead { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.zt-storagehead .zt-modal__sub { margin: 0; }

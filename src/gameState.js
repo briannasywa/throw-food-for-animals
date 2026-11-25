@@ -295,6 +295,29 @@ export class GameState {
     return false;
   }
 
+  /** Jual satu hewan dari Inventory. */
+  sellFromStorage(uid) {
+    const i = this.storage.findIndex(a => a.uid === uid);
+    if (i < 0) return 0;
+    const price = this.sellPriceOf(this.storage[i]);
+    this.storage.splice(i, 1);
+    this.money += price;
+    this.totalEarned += price;
+    this.save();
+    return price;
+  }
+
+  /** Jual semua hewan di Inventory (hewan di Pen tidak ikut). */
+  sellAllStorage() {
+    const total = this.storage.reduce((s, a) => s + this.sellPriceOf(a), 0);
+    const count = this.storage.length;
+    this.storage = [];
+    this.money += total;
+    this.totalEarned += total;
+    this.save();
+    return { count, total };
+  }
+
   /** Inventory → Pen (slot kosong di Pen). */
   moveToPen(uid) {
     const i = this.storage.findIndex(a => a.uid === uid);

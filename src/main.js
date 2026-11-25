@@ -284,13 +284,6 @@ app.innerHTML = `
     </div>
     <div class="zt-row">
       <div class="zt-row__main">
-        <div class="zt-title zt-row__title">Sell All Animals</div>
-        <div class="zt-row__desc">Sell every animal in your pen for instant cash</div>
-      </div>
-      <button id="btn-shop-sell-all" class="zt-btn zt-btn--danger">Sell All</button>
-    </div>
-    <div class="zt-row">
-      <div class="zt-row__main">
         <div class="zt-title zt-row__title">Rebirth <span id="shop-rebirth-count" class="zt-muted">0x</span></div>
         <div class="zt-row__desc">Reset cash and Power for a permanent +${Math.round(D.rebirthBonus * 100)}% income &amp; Power boost</div>
       </div>
@@ -342,7 +335,8 @@ app.innerHTML = `
   ${modal('quests', 'Quests', `<div id="quests-list" class="flex flex-col gap-2.5"></div>`)}
 
   ${modal('storage', 'Inventory', `<div id="storage-list" class="zt-grid"></div>`,
-    `<div id="storage-capacity" class="zt-modal__sub">0 / 5 SLOTS · animals here do not earn cash</div>`)}
+    `<div class="zt-storagehead"><div id="storage-capacity" class="zt-modal__sub">0 / 5 SLOTS · animals here do not earn cash</div>
+      <button id="btn-storage-sell-all" class="zt-btn zt-btn--danger zt-btn--sm">Sell All</button></div>`)}
 
   ${modal('changelog', 'Changelog', `<div id="changelog-list" class="zt-clog"></div>`,
     `<div class="zt-modal__sub">Version ${LATEST_VERSION}</div>`)}
@@ -1651,21 +1645,6 @@ document.querySelector('#btn-buy-cash-pct5').onclick = () => buyCashWithPower(5)
 document.querySelector('#btn-buy-cash-pct10').onclick = () => buyCashWithPower(10);
 
 // Shop actions
-document.querySelector('#btn-shop-sell-all').onclick = async () => {
-  if (state.inventory.length === 0) { showNotice('YOUR PEN IS EMPTY!'); return; }
-  const total = state.inventory.reduce((s, it) => s + sellPriceOf(it), 0);
-  const ok = await confirmDialog({
-    title: 'Sell All?',
-    html: `<div class="zt-title" style="font-size:20px">${state.inventory.length} animals · $${formatNum(total)} total</div>`,
-    okLabel: 'Sell All',
-  });
-  if (!ok) return;
-  sfx.playCoins();
-  const res = state.sellAllAnimals();
-  showNotice(`SOLD ${res.count} ANIMALS · +$${formatNum(res.totalSellPrice)}`);
-  updateUI();
-};
-
 document.querySelector('#btn-shop-upgrade-pullup').onclick = () => {
   if (state.upgradePullUp()) { sfx.playLevelUp(); updateUI(); }
   else showNotice('NOT ENOUGH CASH!');
@@ -1677,6 +1656,25 @@ document.querySelector('#btn-shop-upgrade-storage').onclick = () => {
   else showNotice('NOT ENOUGH CASH!');
 };
 document.querySelector('#btn-open-storage').onclick = () => { storagePickMode = false; renderStorageModal(); openModal('storage'); };
+// Sell All di Inventory (hanya hewan Inventory; hewan di Pen aman) dengan konfirmasi
+document.querySelector('#btn-storage-sell-all').onclick = async () => {
+  if (!state.storage.length) { showNotice('YOUR INVENTORY IS EMPTY!'); return; }
+  const total = state.storage.reduce((sum, it) => sum + sellPriceOf(it), 0);
+  const rare = state.storage.filter(it => RARITY_ORDER.indexOf(it.rarity) <= 2 || it.mutation !== 'Normal').length;
+  const ok = await confirmDialog({
+    title: 'Sell All?',
+    html: `<div class="zt-title" style="font-size:20px">${state.storage.length} animals · $${formatNum(total)} total</div>
+      ${rare ? `<div class="zt-confirm__warn">INCLUDES ${rare} RARE ANIMAL${rare > 1 ? 'S' : ''}!</div>` : ''}
+      <div class="zt-row__desc" style="margin-top:6px">Only animals in your Inventory are sold. Your Pen is safe.</div>`,
+    okLabel: 'Sell All',
+  });
+  if (!ok) return;
+  sfx.playCoins();
+  const res = state.sellAllStorage();
+  showNotice(`SOLD ${res.count} ANIMALS · +$${formatNum(res.total)}`);
+  updateUI();
+  renderStorageModal();
+};
 
 // ---------- Inventory (hewan yang tidak muat di Pen) ----------
 // Action D: tampilan saja. Memindahkan ke Pen (Action E) dan Sell (Action F) menyusul.
@@ -1693,6 +1691,9 @@ function renderStorageModal() {
   document.querySelector('#storage-capacity').textContent = storagePickMode
     ? `CHOOSE AN ANIMAL FOR YOUR PEN · ${penFree} FREE SLOT${penFree === 1 ? '' : 'S'}`
     : `${state.storage.length} / ${state.storageSlots} SLOTS · animals here do not earn cash`;
+  const sellAllBtn = document.querySelector('#btn-storage-sell-all');
+  sellAllBtn.classList.toggle('hidden', storagePickMode);
+  sellAllBtn.disabled = !state.storage.length;
   if (!state.storage.length) {
     list.innerHTML = `<div class="zt-empty">EMPTY · WHEN YOUR PEN IS FULL, NEW CATCHES COME HERE</div>`;
     return;
@@ -1704,8 +1705,33 @@ function renderStorageModal() {
       <div class="zt-card__name">${item.name}</div>
       <div class="zt-tags" style="justify-content:center">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
       <div class="zt-card__income">+$${formatNum(incomeOf(item))}/s in Pen</div>
-      ${storagePickMode ? `<div class="zt-card__actions"><button class="zt-btn zt-btn--sm zt-btn--good" data-topen="${item.uid}">Put in Pen</button></div>` : ''}
+      <div class="zt-card__actions">${storagePickMode
+        ? `<button class="zt-btn zt-btn--sm zt-btn--good" data-topen="${item.uid}">Put in Pen</button>`
+        : `<button class="zt-btn zt-btn--sm zt-btn--danger" data-sellst="${item.uid}">Sell $${formatNum(sellPriceOf(item))}</button>`}</div>
     </div>`).join('');
+  list.querySelectorAll('[data-sellst]').forEach(b => {
+    b.onclick = async () => {
+      const item = state.storage.find(a => String(a.uid) === b.dataset.sellst);
+      if (!item) return;
+      const big = RARITY_ORDER.indexOf(item.rarity) <= 2 || item.mutation !== 'Normal';
+      const ok = await confirmDialog({
+        title: 'Sell Animal?',
+        html: `<img src="${getAnimalThumb(item.id)}" alt="" style="width:96px;height:96px;margin:0 auto">
+          <div class="zt-title" style="font-size:18px">${item.name}</div>
+          <div class="zt-tags" style="justify-content:center;margin:4px 0 8px">${rarityTag(item.rarity)}${mutTag(item.mutation)}</div>
+          ${big ? `<div class="zt-confirm__warn">THIS IS A RARE ANIMAL!</div>` : ''}
+          <div class="zt-title" style="font-size:20px;color:var(--zt-good-d)">YOU GET $${formatNum(sellPriceOf(item))}</div>`,
+        okLabel: 'Sell',
+      });
+      if (!ok) return;
+      const price = state.sellFromStorage(item.uid);
+      if (!price) return;
+      sfx.playCoins();
+      showNotice(`SOLD ${item.name.toUpperCase()} · +$${formatNum(price)}`);
+      updateUI();
+      renderStorageModal();
+    };
+  });
   list.querySelectorAll('[data-topen]').forEach(b => {
     b.onclick = () => {
       const item = state.storage.find(a => String(a.uid) === b.dataset.topen);
