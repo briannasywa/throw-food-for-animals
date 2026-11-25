@@ -78,7 +78,19 @@ export class GameState {
     return Math.min(bonus, 1 + D.petBonusCap);
   }
 
+  /**
+   * Buang pet yang hewannya sudah tidak ada di Pen (mis. dijual lewat Sell lama / Sell All).
+   * Tanpa ini hitungan "1 / 2 PETS EQUIPPED" dan batas 2 pet ikut menghitung hewan yang sudah hilang.
+   */
+  prunePets() {
+    const before = this.equippedPets.length;
+    this.equippedPets = this.equippedPets.filter(uid => this.inventory.some(a => a.uid === uid));
+    if (this.equippedPets.length !== before) this.save();
+    return this.equippedPets;
+  }
+
   toggleEquipPet(uid) {
+    this.prunePets();
     const idx = this.equippedPets.indexOf(uid);
     if (idx >= 0) {
       this.equippedPets.splice(idx, 1);
@@ -505,7 +517,7 @@ export class GameState {
           const sq = d.quests.find(x => x.id === q.id);
           return sq ? { ...q, current: sq.current, completed: sq.completed, claimed: sq.claimed } : q;
         });
-        if (d.equippedPets) this.equippedPets = d.equippedPets;
+        if (d.equippedPets) this.equippedPets = d.equippedPets.filter(uid => this.inventory.some(a => a.uid === uid));
         if (d.autoSellRarity) this.autoSellRarity = d.autoSellRarity;
       }
     } catch (e) {

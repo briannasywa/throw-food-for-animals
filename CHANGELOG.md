@@ -16,6 +16,10 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.10.2 — 2026-11-25
+### Fixed
+- The Pen said "1 / 2 pets equipped" (and blocked a pet slot) after an equipped animal had been sold. Old saves are cleaned up on load.
+
 ## 0.10.1 — 2026-11-25
 ### Changed
 - The Inventory is now a bag button in the bottom-right corner (PC and phones), with the slot count under it. It is no longer in the top menu or the phone Menu.

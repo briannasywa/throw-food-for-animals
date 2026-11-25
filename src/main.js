@@ -650,7 +650,7 @@ function updateUI() {
   if (cashBtn10) cashBtn10.textContent = `10% Power (+$${formatNum(cash10Gain)})`;
 
   document.querySelector('#plot-capacity-text').textContent =
-    `${state.inventory.length} / ${state.maxBaseSlots} SLOTS · ${state.equippedPets.length} / 2 PETS EQUIPPED`;
+    `${state.inventory.length} / ${state.maxBaseSlots} SLOTS · ${state.prunePets().length} / 2 PETS EQUIPPED`;
 
   // Sync 3D in-world plot (kandang membesar saat Expand Pen)
   world.setPenSize(state.maxBaseSlots);
