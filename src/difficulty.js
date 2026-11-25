@@ -10,7 +10,7 @@
 export const PRESETS = {
   easy: {
     label: 'Easy',
-    distPerPower: 10,          // jarak (m) per 1 Power sebelum dikali timing (0.5×–2.0×) dan angin
+    distPerPower: 10 / 12,     // jarak (m) per 1 Power sebelum dikali timing & angin (angka asli 10 m pada skala lama 1 unit = 12 m)
     meterSpeedMul: 1,          // kecepatan jarum meter (1 = asli)
     pullUpRateMul: 1,          // pengali Power/detik dari pull-up
     pullUpCostStart: 50,       // harga upgrade pull-up pertama
@@ -41,7 +41,7 @@ export const PRESETS = {
   },
   hard: {
     label: 'Hard',
-    distPerPower: 1.5,
+    distPerPower: 1.5 / 12,
     meterSpeedMul: 1,
     pullUpRateMul: 0.08,
     pullUpCostStart: 250,

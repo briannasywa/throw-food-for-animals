@@ -16,6 +16,15 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.5.1 — 2026-11-25
+### Changed
+- Distances are now real: 1 m on screen is 1 m in the world, so zone limits are smaller numbers (Galaxy starts at 2,831 m) but a long throw now looks as far as it reads. Power needed per zone is about the same.
+- Long throws feel faster: the camera widens and wind lines rush past the food.
+- Rocket Throw quest now asks for 170 m.
+### Fixed
+- A MAX throw now always lands farther than a GOOD one, and GOOD farther than POOR. Wind used to change distance by up to ±33%, enough to flip them; it is now ±10% and each meter grade has its own distance range.
+- The throw meter needle moves at the same speed on every screen (it used to run faster on high refresh rate displays).
+
 ## 0.5.0 — 2026-11-24
 ### Added
 - 32 new animals to catch, 4 in every zone from Farm to Galaxy, for example Farm Goat, Jungle Zebra, Ghost Owl, Glow Shark, Walrus and Giant Moon Griffin. Zones now have 8 animals, two per rarity.

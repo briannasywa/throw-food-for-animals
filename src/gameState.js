@@ -46,7 +46,7 @@ export class GameState {
     this.quests = [
       { id: 'q_pullup', title: 'Hard Training', desc: 'Reach 50 Power with pull-ups', target: 50, current: 0, rewardCash: Math.round(500 * D.questRewardMul), completed: false, claimed: false },
       { id: 'q_catches', title: 'Jungle Hunter', desc: 'Catch 5 animals', target: 5, current: 0, rewardCash: Math.round(1200 * D.questRewardMul), completed: false, claimed: false },
-      { id: 'q_distance', title: 'Rocket Throw', desc: 'Throw 2,000 m in one go', target: 2000, current: 0, rewardCash: Math.round(3500 * D.questRewardMul), completed: false, claimed: false },
+      { id: 'q_distance', title: 'Rocket Throw', desc: 'Throw 170 m in one go', target: 170, current: 0, rewardCash: Math.round(3500 * D.questRewardMul), completed: false, claimed: false },
       { id: 'q_mutation', title: 'Golden Touch', desc: 'Catch 1 animal with a rare mutation', target: 1, current: 0, rewardCash: Math.round(8000 * D.questRewardMul), completed: false, claimed: false }
     ];
 

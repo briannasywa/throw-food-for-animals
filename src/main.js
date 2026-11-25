@@ -501,9 +501,13 @@ let meterVal = 0;
 let meterDir = 1;
 const needle = document.querySelector('#meter-needle');
 
-function animateMeter() {
+let meterLast = performance.now();
+function animateMeter(now = performance.now()) {
+  // Kecepatan per detik (dulu per frame, jadi jarum lebih cepat di layar 120 Hz)
+  const dtm = Math.min(0.05, (now - meterLast) / 1000);
+  meterLast = now;
   if (!world.isThrowing) {
-    const spd = (0.52 + Math.abs(world.windSpeed * 0.02)) * D.meterSpeedMul;
+    const spd = (0.52 + Math.abs(world.windSpeed * 0.02)) * D.meterSpeedMul * 60 * dtm;
     meterVal += meterDir * spd;
     if (meterVal >= 20) { meterVal = 20; meterDir = -1; }
     else if (meterVal <= 0) { meterVal = 0; meterDir = 1; }
@@ -793,8 +797,18 @@ function showZoneBanner(zone) {
   bannerTimer = setTimeout(() => b.classList.add('hidden'), 2000);
 }
 
+// Pengali jarak dari posisi jarum (0–20). Pitanya terpisah supaya hasil selalu urut:
+//   POOR < 55%  → ×0.5–0.9   GOOD 55–90% → ×1.2–1.5   MAX ≥ 90% → ×2.0
+// Dengan angin maks ±10%: POOR terbaik 0.99 < GOOD terburuk 1.08, GOOD terbaik 1.65 < MAX terburuk 1.8.
+function meterMultiplier(val) {
+  const pct = Math.max(0, Math.min(1, val / 20));
+  if (pct >= 0.9) return 2.0;
+  if (pct >= 0.55) return 1.2 + ((pct - 0.55) / 0.35) * 0.3;
+  return 0.5 + (pct / 0.55) * 0.4;
+}
+const WIND_MAX_EFFECT = 0.10; // angin 11 m/s = ±10% jarak
+
 function showMeterResult(score) {
-  // Label hasil (tampilan saja): MAX = 90–100%, GOOD = 55–90%, POOR = di bawahnya
   const pct = score / 20;
   const [label, color] = pct >= 0.9 ? ['MAX!', 'var(--zt-good)'] : pct >= 0.55 ? ['GOOD!', 'var(--zt-legendary)'] : ['POOR', 'var(--zt-danger)'];
   const slot = document.querySelector('#meter-result-slot');
@@ -827,18 +841,17 @@ function triggerThrow() {
   } else {
     food = FOOD_TIERS[state.selectedFoodIndex] || FOOD_TIERS[0];
   }
-  const score = Math.floor(meterVal);
+  const score = meterVal; // posisi jarum apa adanya (dulu dibulatkan ke bawah)
 
   sfx.playThrow(score);
   showMeterResult(score);
   const hud = document.querySelector('#throw-flight-hud');
   hud.classList.remove('hidden');
 
-  // Rumus jarak versi tim (main ba5b48a)
-  // Mode easy: 10 m per Power (angka asli), hard: 2 m per Power (difficulty.js)
-  const baseDist = (state.power * D.distPerPower) * (0.5 + (score / 20) * 1.5);
-  const windEffect = 1 + (world.windSpeed * 0.03 * world.windDirection);
-  const distance = Math.max(15, Math.floor(baseDist * windEffect));
+  // Jarak = Power × m per Power (difficulty.js) × pengali meter × angin (maks ±10%)
+  const baseDist = (state.power * D.distPerPower) * meterMultiplier(score);
+  const windEffect = 1 + (world.windSpeed / 11) * WIND_MAX_EFFECT * world.windDirection;
+  const distance = Math.max(1, Math.floor(baseDist * windEffect));
   const targetZone = zoneOfDistance(distance);
   document.querySelector('#camlock-crosshair').classList.add('hidden');
   document.querySelector('#camlock-hint').classList.add('hidden');

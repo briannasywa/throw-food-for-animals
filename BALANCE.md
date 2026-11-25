@@ -19,7 +19,7 @@ All numbers that drive progress (Power, zones, money). The **Easy** column is th
 
 | Attribute | Used for | Easy | Hard |
 |---|---|---|---|
-| `distPerPower` | Throw distance (m) per 1 Power | 10 | **1.5** |
+| `distPerPower` | Throw distance (m) per 1 Power | 10/12 ≈ 0.83 | **1.5/12 = 0.125** |
 | `meterSpeedMul` | Meter needle speed | 1× | 1× |
 | `pullUpRateMul` | Power per second from pull-ups | 1× | **0.08×** |
 | `pullUpCostStart` | First pull-up upgrade price | $50 | **$250** |
@@ -76,9 +76,9 @@ In Easy the old rule stays: any food works everywhere, and a more expensive food
 
 | What | Formula | Where |
 |---|---|---|
-| Throw distance | `Power × distPerPower × (0.5 + timing/20 × 1.5) × wind`, minimum 15 m | `main.js` → `triggerThrow` |
-| Timing | Needle 0–20. POOR < 55%, GOOD 55–90%, MAX ≥ 90% → ×0.5 … ×2.0 | `main.js` |
-| Wind | `1 + speed × 0.03 × direction`, speed 0–11 m/s, changes every 5 s (55% tailwind) | `robloxSeamlessWorld.js` |
+| Throw distance | `Power × distPerPower × meter × wind`, minimum 1 m. 1 world unit = 1 m. | `main.js` → `triggerThrow` |
+| Meter | Needle 0–20, separate bands: POOR < 55% → ×0.5–0.9, GOOD 55–90% → ×1.2–1.5, MAX ≥ 90% → ×2.0. Needle speed is per second, not per frame. | `main.js` → `meterMultiplier` |
+| Wind | `1 + speed/11 × 0.10 × direction` (max ±10%), speed 0–11 m/s, changes every 5 s (55% tailwind). With these bands MAX always beats GOOD and GOOD always beats POOR, whatever the wind. | `main.js`, `robloxSeamlessWorld.js` |
 | Pull-up | `floor(1 + level^1.4 × 2) × pullUpRateMul × rebirth × pet`, minimum 1/s | `gameState.js` |
 | Income/s | `Σ floor(baseCps × mutation) × incomeMul × rebirth × pet` | `gameState.js` |
 | Rebirth bonus | `1 + rebirths × rebirthBonus` | `gameState.js` |
@@ -90,18 +90,18 @@ In Easy the old rule stays: any food works everywhere, and a more expensive food
 
 ## 3. Power needed to reach each zone
 
-Distance = Power × `distPerPower` × timing (GOOD ≈ ×1.4, MAX = ×2.0), with no wind.
+Distance = Power × `distPerPower` × meter (GOOD ≈ ×1.35 middle of the band, MAX = ×2.0), with no wind.
 
 | Zone (start) | Easy · GOOD | Easy · MAX | Hard · GOOD | Hard · MAX |
 |---|---|---|---|---|
-| Farm (301 m) | 22 | 16 | 144 | 101 |
-| Jungle (1,001 m) | 72 | 51 | 477 | 334 |
-| Toxic (2,501 m) | 179 | 126 | 1,191 | 834 |
-| Lava (5,001 m) | 358 | 251 | 2,382 | 1,667 |
-| Glow Sea (9,001 m) | 643 | 451 | 4,287 | 3,001 |
-| Christmas (15,001 m) | 1,072 | 751 | 7,144 | 5,001 |
-| Frost (23,001 m) | 1,643 | 1,151 | 10,953 | 7,667 |
-| Galaxy (34,001 m) | 2,429 | 1,701 | 16,191 | 11,334 |
+| Farm (26 m) | 24 | 16 | 155 | 104 |
+| Jungle (86 m) | 77 | 52 | 510 | 344 |
+| Toxic (211 m) | 188 | 127 | 1,251 | 844 |
+| Lava (421 m) | 375 | 253 | 2,495 | 1,684 |
+| Glow Sea (751 m) | 668 | 451 | 4,451 | 3,004 |
+| Christmas (1,251 m) | 1,112 | 751 | 7,414 | 5,004 |
+| Frost (1,921 m) | 1,708 | 1,153 | 11,384 | 7,684 |
+| Galaxy (2,831 m) | 2,517 | 1,699 | 16,777 | 11,324 |
 
 Pull-up Power per second by level (before rebirth and pet bonus):
 
@@ -127,15 +127,15 @@ Hard milestones (GOOD, typical run): Farm 5 min, Jungle 15 min, Toxic 26 min, La
 
 | Zone | Distance | Easy: base $/s (Common → Legendary/Mythic) | Hard: base $/s (`zoneIncomeGrowth` 4) |
 |---|---|---|---|
-| Lobby | 0–300 m | 3 · 6 · 15 · 35 | 3 · 6 · 15 · 35 |
-| Farm | 301–1,000 | 50 · 120 · 260 · 800 | 12 · 29 · 62 · 192 |
-| Jungle | 1,001–2,500 | 1.2K · 2.8K · 6.5K · 18K | 48 · 112 · 260 · 720 |
-| Toxic | 2,501–5,000 | 35K · 80K · 200K · 600K | 192 · 439 · 1.1K · 3.3K |
-| Lava | 5,001–9,000 | 1.2M · 3M · 8M · 25M | 768 · 1.9K · 5.1K · 16K |
-| Glow Sea | 9,001–15,000 | 45M · 120M · 300M · 900M | 3.1K · 8.2K · 20K · 61K |
-| Christmas | 15,001–23,000 | 1.5B · 4B · 10B · 30B | 12K · 33K · 82K · 246K |
-| Frost | 23,001–34,000 | 50B · 140B · 400B · 1.2T | 49K · 138K · 393K · 1.2M |
-| Galaxy | 34,001–60,000 | 5T · 15T · 50T · 200T (Mythic) | 197K · 590K · 2M · 7.9M (Mythic) |
+| Lobby | 0–25 m | 3 · 6 · 15 · 35 | 3 · 6 · 15 · 35 |
+| Farm | 26–85 | 50 · 120 · 260 · 800 | 12 · 29 · 62 · 192 |
+| Jungle | 86–210 | 1.2K · 2.8K · 6.5K · 18K | 48 · 112 · 260 · 720 |
+| Toxic | 211–420 | 35K · 80K · 200K · 600K | 192 · 439 · 1.1K · 3.3K |
+| Lava | 421–750 | 1.2M · 3M · 8M · 25M | 768 · 1.9K · 5.1K · 16K |
+| Glow Sea | 751–1,250 | 45M · 120M · 300M · 900M | 3.1K · 8.2K · 20K · 61K |
+| Christmas | 1,251–1,920 | 1.5B · 4B · 10B · 30B | 12K · 33K · 82K · 246K |
+| Frost | 1,921–2,830 | 50B · 140B · 400B · 1.2T | 49K · 138K · 393K · 1.2M |
+| Galaxy | 2,831–5,000 | 5T · 15T · 50T · 200T (Mythic) | 197K · 590K · 2M · 7.9M (Mythic) |
 
 Catch weights per rarity: 45/30/18/7 in most zones (Lobby 50/35/12/3, Galaxy 40/35/18/7).
 
@@ -171,10 +171,16 @@ Catch weights per rarity: 45/30/18/7 in most zones (Lobby 50/35/12/3, Galaxy 40/
 |---|---|---|---|
 | Hard Training | +50 Power from pull-ups | $500 | $100 |
 | Jungle Hunter | 5 catches | $1,200 | $240 |
-| Rocket Throw | One throw ≥ 2,000 m | $3,500 | $700 |
+| Rocket Throw | One throw ≥ 170 m | $3,500 | $700 |
 | Golden Touch | 1 mutated catch | $8,000 | $1,600 |
 
 ### Notes for next tuning
 
 - Animal income still jumps about 20–40× per zone. If Hard still feels fast after the first jump, lower `incomeMul` or raise `distPerPower` difficulty further, rather than changing the zone data.
 - Zone gimmicks (e.g. "Radioactive: mutation chance up to 3×") are text only right now; the code does not apply them.
+
+## Distance scale (0.5.1)
+
+- **Now:** 1 world unit = 1 m, so the number on screen matches what you see. Zone limits were divided by 12 (Galaxy now starts at 2,831 m) and `distPerPower` too, so the Power needed per zone stays the same. Long throws get a speed effect: the camera widens (FOV up to +16°) and wind lines rush past the food.
+- **Before:** 1 unit = 12 m. An 800 m throw only flew about 67 units, which felt close.
+- **Backup plan (b), not built:** keep the old meter numbers and stretch the world 12× instead (track about 60 km long). Rejected for now: much longer flights, a much longer track to build and render, and far-clip/fog would need rework.

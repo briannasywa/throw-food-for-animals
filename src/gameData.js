@@ -3,12 +3,13 @@ import { D } from './difficulty.js';
 
 export const SKY_COLOR = 0x7ccbff; // palette.json -> core.background
 
+// Jarak dalam meter = unit dunia (1 unit = 1 m, sejak 0.5.1). Dulu 1 unit = 12 m sehingga 800 m di layar terasa dekat.
 export const ZONES = [
   {
     id: 'lobby',
     name: 'Lobby',
     minDist: 0,
-    maxDist: 300,
+    maxDist: 25,
     stripes: [0x8ee06a, 0x7ad15a], // palette.json -> biome ground1/ground2
     accent: 0xff3d7f, // palette.json -> core.accent (Pop Pink)
     gimmick: 'Safe zone and training grounds. Calm winds, perfect for beginners.',
@@ -23,8 +24,8 @@ export const ZONES = [
   {
     id: 'farm',
     name: 'Farm',
-    minDist: 301,
-    maxDist: 1000,
+    minDist: 26,
+    maxDist: 85,
     stripes: [0xb8efa0, 0xa3e38a], // palette.json -> biome ground1/ground2
     accent: 0xffe29a, // palette.json -> Farm.hay
     gimmick: 'Hay Fever: a gentle breeze carries hay. Stamina regen +20%.',
@@ -44,8 +45,8 @@ export const ZONES = [
   {
     id: 'jungle',
     name: 'Jungle',
-    minDist: 1001,
-    maxDist: 2500,
+    minDist: 86,
+    maxDist: 210,
     stripes: [0x2fa84f, 0x23913f], // palette.json -> biome ground1/ground2
     accent: 0xff9a3d, // palette.json -> Jungle.flower
     gimmick: 'Tropical Rainstorm: rain makes food glide farther.',
@@ -65,8 +66,8 @@ export const ZONES = [
   {
     id: 'toxic',
     name: 'Toxic',
-    minDist: 2501,
-    maxDist: 5000,
+    minDist: 211,
+    maxDist: 420,
     stripes: [0x3a2f4f, 0x2c2340], // palette.json -> biome ground1/ground2
     accent: 0x8cff3a, // palette.json -> Toxic.slime
     accentGlow: true, // emissive
@@ -87,8 +88,8 @@ export const ZONES = [
   {
     id: 'lava',
     name: 'Lava',
-    minDist: 5001,
-    maxDist: 9000,
+    minDist: 421,
+    maxDist: 750,
     stripes: [0x3b2a2a, 0x2a1d1d], // palette.json -> biome ground1/ground2
     accent: 0xff5a1f, // palette.json -> Lava.lava
     accentGlow: true, // emissive
@@ -109,8 +110,8 @@ export const ZONES = [
   {
     id: 'glow_sea',
     name: 'Glow Sea',
-    minDist: 9001,
-    maxDist: 15000,
+    minDist: 751,
+    maxDist: 1250,
     stripes: [0x1f3a6b, 0x17305a], // palette.json -> biome ground1/ground2
     accent: 0x3ff0ff, // palette.json -> GlowSea.glow
     accentGlow: true, // emissive
@@ -131,8 +132,8 @@ export const ZONES = [
   {
     id: 'christmas',
     name: 'Christmas',
-    minDist: 15001,
-    maxDist: 23000,
+    minDist: 1251,
+    maxDist: 1920,
     stripes: [0xf2e6d8, 0xe3d2c0], // palette.json -> biome ground1/ground2
     accent: 0xe8384f, // palette.json -> Christmas.candy
     gimmick: 'Holiday Blessing: animals sell for +50% at the booth.',
@@ -152,8 +153,8 @@ export const ZONES = [
   {
     id: 'frost',
     name: 'Frost',
-    minDist: 23001,
-    maxDist: 34000,
+    minDist: 1921,
+    maxDist: 2830,
     stripes: [0xcfefff, 0xa9ddf7], // palette.json -> biome ground1/ground2
     accent: 0x7fd3ff, // palette.json -> Frost.ice
     gimmick: 'Blizzard: stamina drains 2× faster.',
@@ -173,8 +174,8 @@ export const ZONES = [
   {
     id: 'galaxy',
     name: 'Galaxy',
-    minDist: 34001,
-    maxDist: 60000,
+    minDist: 2831,
+    maxDist: 5000,
     stripes: [0x2a1b4f, 0x1e1440], // palette.json -> biome ground1/ground2
     accent: 0xfff27a, // palette.json -> Galaxy.star
     accentGlow: true, // emissive

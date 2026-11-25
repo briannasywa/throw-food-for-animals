@@ -268,8 +268,8 @@ export class RobloxSeamlessWorld {
     const lite = this.lighting.quality === 'low';
 
     ZONES.forEach((zone) => {
-      const startZ = Math.max(0, zone.minDist / 12);
-      const endZ = zone.maxDist / 12;
+      const startZ = Math.max(0, zone.minDist);
+      const endZ = zone.maxDist;
       const lengthZ = endZ - startZ;
       const centerZ = startZ + lengthZ / 2;
 
@@ -537,7 +537,7 @@ export class RobloxSeamlessWorld {
 
     // Immersion flight speed scaling:
     // Close zones (0-1000m) take ~2.0s, far zones (up to 30,000m+) smoothly scale up to 4.5s
-    const distFactor = Math.min(1, Math.max(0, (distance - 300) / 15000));
+    const distFactor = Math.min(1, Math.max(0, (distance - 25) / 1250));
     this.flightDuration = 2.0 + distFactor * 2.5;
 
     if (this.foodMesh && foodItem && foodItem.color) {
@@ -546,7 +546,7 @@ export class RobloxSeamlessWorld {
 
     this.caughtAnimal = this.determineCatch(targetZone, foodItem);
 
-    const targetZ = Math.min(4800, this.maxDistance / 12);
+    const targetZ = Math.min(5000, this.maxDistance); // 1 unit = 1 m
     this.landingPos.set(0, 0.5, 10 + targetZ);
 
     this.avatar.position.set(0, 0, 10);
@@ -557,6 +557,42 @@ export class RobloxSeamlessWorld {
       this.scene.remove(this.attractAnimalMesh);
       this.attractAnimalMesh = null;
     }
+  }
+
+  /**
+   * Efek kecepatan saat makanan terbang (supaya jarak terasa jauh): FOV melebar sesuai kecepatan
+   * dan garis angin melesat ke belakang di sekitar makanan. speed = unit (meter) per detik.
+   */
+  tickSpeedFx(dt, speed, progress, z, y) {
+    if (!this.speedLines) {
+      this.baseFov = this.camera.fov;
+      this.speedLines = new THREE.Group();
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false });
+      const geo = new THREE.BoxGeometry(0.08, 0.08, 4);
+      for (let i = 0; i < 36; i++) {
+        const m = new THREE.Mesh(geo, mat);
+        const a = Math.random() * Math.PI * 2, r = 4 + Math.random() * 9;
+        m.userData = { ox: Math.cos(a) * r, oy: Math.sin(a) * r, oz: Math.random() * 60 - 20 };
+        this.speedLines.add(m);
+      }
+      this.speedLines.visible = false;
+      this.scene.add(this.speedLines);
+    }
+    const flying = speed > 0 && progress < 1;
+    // kuat di tengah lintasan, mereda saat lepas & mendarat; makin cepat makin kuat
+    const k = flying ? Math.sin(Math.min(1, progress) * Math.PI) * Math.min(1, speed / 300) : 0;
+    const fov = this.baseFov + k * 16;
+    if (Math.abs(this.camera.fov - fov) > 0.05) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
+    this.speedLines.visible = k > 0.08;
+    if (!this.speedLines.visible) return;
+    this.speedLines.position.set(0, y, z);
+    this.speedLines.children.forEach(m => {
+      const u = m.userData;
+      u.oz -= dt * (30 + speed * 0.9);
+      if (u.oz < -30) u.oz += 60;
+      m.position.set(u.ox, u.oy, u.oz);
+      m.scale.z = 0.5 + k * 2;
+    });
   }
 
   determineCatch(zone, food) {
@@ -753,8 +789,8 @@ export class RobloxSeamlessWorld {
 
   /** View Biome dari Index: kamera terbang pelan menyusuri zona (tanpa memindahkan pemain). */
   startBiomeView(zone) {
-    const z0 = Math.max(0, zone.minDist / 12);
-    const z1 = zone.maxDist / 12;
+    const z0 = Math.max(0, zone.minDist);
+    const z1 = zone.maxDist;
     this.biomeView = { z0: z0 + 8, z1: Math.min(z1 - 30, z0 + 320), t: 0, focus: new THREE.Vector3() };
     this.releaseKeys();
   }
@@ -777,7 +813,7 @@ export class RobloxSeamlessWorld {
     this.windChangeTimer += dt;
     if (this.windChangeTimer >= 5.0) {
       this.windChangeTimer = 0;
-      this.windSpeed = Math.floor(Math.random() * 12);
+      this.windSpeed = Math.floor(Math.random() * 12); // efeknya ke jarak dibatasi ±10% (main.js → windEffect)
       this.windDirection = Math.random() > 0.45 ? 1 : -1;
     }
 
@@ -905,7 +941,10 @@ export class RobloxSeamlessWorld {
 
         const targetZ = this.landingPos.z;
         const currZ = 10 + (targetZ - 10) * this.throwProgress;
-        const arcY = 2 + Math.sin(Math.min(1, this.throwProgress) * Math.PI) * 35;
+        // tinggi lengkung ikut jarak (lemparan pendek tidak melambung setinggi lemparan jauh)
+        const arcH = Math.max(6, Math.min(45, (targetZ - 10) * 0.3));
+        const arcY = 2 + Math.sin(Math.min(1, this.throwProgress) * Math.PI) * arcH;
+        this.tickSpeedFx(dt, (targetZ - 10) / this.flightDuration, this.throwProgress, currZ, arcY);
 
         this.foodGroup.position.set(0, arcY, currZ);
         this.foodGroup.rotation.x += dt * 8;
@@ -924,6 +963,7 @@ export class RobloxSeamlessWorld {
 
         // When food lands on ground -> Stage Attract
         if (this.throwProgress >= 1) {
+          this.tickSpeedFx(dt, 0, 1, 0, 0); // matikan efek kecepatan
           this.throwStage = 'attract';
           this.attractTimer = 0;
           this.foodGroup.position.copy(this.landingPos);
