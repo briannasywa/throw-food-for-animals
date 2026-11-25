@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { ZONES, MUTATION_DATA, SKY_COLOR, foodRarities } from './gameData.js';
 import { D } from './difficulty.js';
 // Hewan & Zookeeper dari voxel art-direction (voxelAnimals.js). tickAnimal juga menganimasikan cincin mutasi.
-import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal, ANIMAL_SPECS, eatingGeometry, poseEating } from './voxelAnimals.js';
+import { buildVoxelAnimal, buildPlayerZookeeper, tickAnimal as animateAnimal, ANIMAL_SPECS, eatingGeometry, poseEating, buildFood } from './voxelAnimals.js';
 import { setupLighting, createBloom } from './zt-lighting.js';
 import { buildZoneCliffs } from './zoneCliffs.js';
 import { ChunkBatcher } from './chunkBatcher.js';
@@ -406,6 +406,8 @@ export class RobloxSeamlessWorld {
     );
     this.foodMesh.castShadow = true;
     this.foodGroup.add(this.foodMesh);
+    this.foodBox = this.foodMesh;   // kotak cadangan (Legendary Bait / makanan tanpa model)
+    this.foodModels = {};           // model voxel per id makanan, dibuat sekali (foods.json)
     this.foodGroup.position.set(0, -60, 0);
     this.scene.add(this.foodGroup);
 
@@ -540,9 +542,20 @@ export class RobloxSeamlessWorld {
     const distFactor = Math.min(1, Math.max(0, (distance - 25) / 1250));
     this.flightDuration = 2.0 + distFactor * 2.5;
 
-    if (this.foodMesh && foodItem && foodItem.color) {
-      this.foodMesh.material.color.set(foodItem.color);
+    // Tampilkan model voxel makanan ini; kotak berwarna hanya untuk makanan tanpa model
+    const model = foodItem?.id && (this.foodModels[foodItem.id] ??= buildFood(foodItem.id));
+    this.foodGroup.children.forEach(c => { c.visible = false; });
+    if (model) {
+      if (model.parent !== this.foodGroup) this.foodGroup.add(model);
+      model.visible = true;
+      this.foodMesh = model;
+    } else {
+      this.foodBox.visible = true;
+      if (foodItem?.color) this.foodBox.material.color.set(foodItem.color);
+      this.foodMesh = this.foodBox;
     }
+    this.foodBaseScale = this.foodMesh === this.foodBox ? 1 : 0.5;
+    this.foodMesh.scale.setScalar(this.foodBaseScale);
 
     this.caughtAnimal = this.determineCatch(targetZone, foodItem);
 
@@ -957,11 +970,11 @@ export class RobloxSeamlessWorld {
         if (this.throwProgress >= 1) {
           this.tickSpeedFx(dt, 0, 1, 0, 0); // matikan efek kecepatan
           this.foodGroup.position.copy(this.landingPos);
+          this.foodGroup.rotation.set(0, Math.random() * Math.PI * 2, 0); // mendarat tegak, bukan miring sisa putaran
           this.attractTimer = 0;
           if (!this.caughtAnimal) {
             // Zona salah: tidak ada hewan yang datang. Makanan tergeletak sebentar lalu selesai.
             this.throwStage = 'failed';
-            this.foodGroup.rotation.set(0, 0, 0);
           } else {
           this.throwStage = 'attract';
 
@@ -1053,7 +1066,7 @@ export class RobloxSeamlessWorld {
         // Food shrinks as it gets eaten
         if (this.foodMesh) {
           const remainingScale = Math.max(0.1, 1 - eatProgress);
-          this.foodMesh.scale.set(remainingScale, remainingScale, remainingScale);
+          this.foodMesh.scale.setScalar(remainingScale * (this.foodBaseScale || 1));
         }
 
         // Joyful heart particles bursting around animal
@@ -1077,7 +1090,7 @@ export class RobloxSeamlessWorld {
           this.throwStage = 'idle';
           this.isThrowing = false;
           this.foodGroup.position.set(0, -60, 0);
-          this.foodMesh.scale.set(1, 1, 1);
+          this.foodMesh.scale.setScalar(this.foodBaseScale || 1);
           this.eatHeartsGroup.position.set(0, -50, 0);
 
           if (this.attractAnimalMesh) {

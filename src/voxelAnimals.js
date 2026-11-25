@@ -12,12 +12,25 @@ import christmas from './voxel/animals/christmas.json';
 import frost from './voxel/animals/frost.json';
 import galaxy from './voxel/animals/galaxy.json';
 import zookeeperSpec from './voxel/characters/zookeeper.json';
+import foods from './voxel/foods.json';
 
 export { animateAnimal, zookeeperSpec };
 
 export const ANIMAL_SPECS = {};
 for (const zone of [lobby, farm, jungle, toxic, lava, glowSea, christmas, frost, galaxy]) {
   for (const a of zone.animals) ANIMAL_SPECS[a.id] = a;
+}
+// Makanan voxel (src/voxel/foods.json) memakai format & builder yang sama; id = 'food_' + id makanan di gameData.
+for (const f of foods.animals) ANIMAL_SPECS[f.id] = f;
+export const foodSpecId = (foodId) => `food_${foodId}`;
+
+/** Model makanan voxel untuk dilempar (±2 unit dunia). null kalau makanan belum punya model (mis. Legendary Bait). */
+export function buildFood(foodId, scale = 0.5) {
+  const spec = ANIMAL_SPECS[foodSpecId(foodId)];
+  if (!spec) return null;
+  const food = buildAnimal(spec);
+  food.group.scale.setScalar(scale);
+  return food.group;
 }
 
 // Warna mutasi dari palette.json -> mutation

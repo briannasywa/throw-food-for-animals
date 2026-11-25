@@ -108,6 +108,7 @@ app.innerHTML = `
         <div id="meter-needle" class="zt-meter__marker" style="left: 0%;"></div>
       </div>
       <div id="meter-result-slot"></div>
+      <div id="throw-estimate" class="zt-throwest"></div>
     </div>
     <button id="btn-throw" class="zt-btn zt-btn--primary zt-throw__btn">Throw <span class="zt-key zt-key--sm">Space</span></button>
   </div>
@@ -501,6 +502,29 @@ let meterVal = 0;
 let meterDir = 1;
 const needle = document.querySelector('#meter-needle');
 
+// Perkiraan jarak & zona untuk GOOD dan MAX (tanpa angin, angin bisa ±10%), supaya pemain tahu
+// makanan yang dipegang akan mendarat di zonanya atau tidak.
+var estimateKey = ''; // var: fungsi ini bisa dipanggil (lewat renderFoodBag) sebelum baris ini dijalankan
+function updateThrowEstimate(force = false) {
+  const el = document.querySelector('#throw-estimate');
+  if (!el) return;
+  const f = equippedFood();
+  const key = `${state.power}|${f.id}|${state.rebirthCount}`;
+  if (!force && key === estimateKey) return;
+  estimateKey = key;
+  const base = state.power * D.distPerPower;
+  const fz = foodZoneOf(f);
+  const part = (label, lo, hi) => {
+    const zLo = zoneOfDistance(Math.floor(lo)), zHi = zoneOfDistance(Math.floor(hi));
+    const ok = !fz || zLo.id === fz.id || zHi.id === fz.id;
+    const zoneTxt = zLo.id === zHi.id ? zLo.name : `${zLo.name}–${zHi.name}`;
+    const dist = Math.floor(lo) === Math.floor(hi) ? `${formatNum(Math.floor(lo))}` : `${formatNum(Math.floor(lo))}–${formatNum(Math.floor(hi))}`;
+    return `<span class="zt-throwest__item ${ok ? 'is-ok' : 'is-off'}"><b>${label}</b> ≈ ${dist} m · ${zoneTxt}</span>`;
+  };
+  el.innerHTML = part('GOOD', base * 1.2, base * 1.5) + part('MAX', base * 2, base * 2);
+  el.title = fz ? `Green = ${f.name} can land in ${fz.name}. Wind can add or remove up to 10%.` : 'Wind can add or remove up to 10%.';
+}
+
 let meterLast = performance.now();
 function animateMeter(now = performance.now()) {
   // Kecepatan per detik (dulu per frame, jadi jarum lebih cepat di layar 120 Hz)
@@ -512,6 +536,7 @@ function animateMeter(now = performance.now()) {
     if (meterVal >= 20) { meterVal = 20; meterDir = -1; }
     else if (meterVal <= 0) { meterVal = 0; meterDir = 1; }
     needle.style.left = `${(meterVal / 20) * 100}%`;
+    updateThrowEstimate();
   }
   requestAnimationFrame(animateMeter);
 }
@@ -630,7 +655,12 @@ function equippedFood() {
 function renderFoodBag() {
   const f = equippedFood();
   const leg = f === LEGENDARY_BAIT;
-  document.querySelector('#foodbag-swatch').style.background = f.color;
+  const sw = document.querySelector('#foodbag-swatch');
+  sw.style.background = f.color;
+  const fthumb = leg ? '' : getAnimalThumb(`food_${f.id}`);
+  sw.style.backgroundImage = fthumb ? `url(${fthumb})` : '';
+  sw.classList.toggle('has-thumb', !!fthumb);
+  updateThrowEstimate(true);
   document.querySelector('#foodbag-name').textContent = leg ? `Legendary ×${state.legendaryBaits}` : f.name;
   document.querySelector('#foodbag-sub').textContent = leg ? 'Guaranteed Legendary' : foodLuckLabel(f);
   document.querySelector('#btn-food-bag').classList.toggle('is-enhanced', !leg && f.tier === 'enhanced');
@@ -655,9 +685,9 @@ function renderFoodBagModal() {
   const list = document.querySelector('#food-bag-list');
   const cur = equippedFood();
   const legCount = state.legendaryBaits || 0;
-  const row = ({ color, title, desc, btn, active, legend }) => `
+  const row = ({ color, title, desc, btn, active, legend, thumb }) => `
     <div class="zt-row zt-foodrow ${active ? 'is-active' : ''} ${legend ? 'zt-foodrow--legend' : ''}">
-      <span class="zt-foodrow__swatch" style="background:${color}"></span>
+      ${thumb ? `<img class="zt-foodrow__thumb" src="${thumb}" alt="">` : `<span class="zt-foodrow__swatch" style="background:${color}"></span>`}
       <div class="zt-row__main">
         <div class="zt-title zt-row__title">${title}</div>
         <div class="zt-row__desc">${desc}</div>
@@ -682,7 +712,7 @@ function renderFoodBagModal() {
       const owned = state.unlockedFoods.includes(idx);
       const canAfford = state.money >= foodCost(f);
       html += row({
-        color: f.color, active: cur === f,
+        color: f.color, active: cur === f, thumb: getAnimalThumb(`food_${f.id}`),
         title: `${f.name} <span class="zt-foodtier zt-foodtier--${f.tier}">${f.tier === 'enhanced' ? 'Enhanced' : 'Basic'}</span>`,
         desc: `<b>${foodRarityLabel(f)}</b> in ${z.name} · ${f.desc}`,
         btn: cur === f ? equippedBtn

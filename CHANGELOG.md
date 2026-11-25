@@ -16,6 +16,13 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.7.0 — 2026-11-25
+### Added
+- All 18 foods have their own voxel look, in the air, on the ground and in the Food Bag (carrot, apple, drumstick, burger, sushi roll, pearl in a shell, candy, ice gem, cake slice and their Enhanced versions).
+- The throw panel shows where your throw will land: "GOOD ≈ 60–75 m · Farm / MAX ≈ 100 m · Jungle". Green means your food can land in its own zone, red means it would miss.
+### Fixed
+- Food now lands upright instead of tilted.
+
 ## 0.6.0 — 2026-11-25
 ### Added
 - Every zone now has its own food: a Basic food for Common and Rare animals, and a new Enhanced food for Epic and Legendary ones (Golden Carrot, Honey Apple, Prime Steak, Mega Burger, Magma Roll, Black Pearl, Gingerbread Star, Frost Crystal, Nebula Cake).
