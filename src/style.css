@@ -462,3 +462,18 @@ html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 .zt-root.is-touch .zt-mmenu__pc { display: none; }
 .zt-mmenu__grid .zt-hk { position: absolute; right: 6px; bottom: 6px; margin: 0; }
 .zt-root:not(.is-touch) .zt-mmenu__grid .zt-hk, .zt-root:not(.is-touch) #btn-mobile-menu .zt-hk { display: inline-block; }
+
+/* ---------- pembayaran per menit ---------- */
+.zt-stat { position: relative; }
+.zt-paybar { display: block; height: 4px; margin-top: 3px; background: rgba(27,34,51,.12); border-radius: 3px; overflow: hidden; }
+.zt-paybar b { display: block; height: 100%; width: 0; background: var(--zt-good); transition: width .9s linear; }
+.zt-paybar--cine { width: min(320px, 70vw); margin: 6px auto 0; background: rgba(255,255,255,.18); }
+.zt-paybar--cine b { background: #3CCB5A; }
+.zt-payfly { position: absolute; left: 50%; top: 100%; translate: -50% 0; pointer-events: none; white-space: nowrap;
+  font-family: var(--zt-font-title); font-size: 16px; color: var(--zt-good-d); text-shadow: 1px 1px 0 #fff;
+  animation: zt-payfly 1.4s ease-out forwards; z-index: 5; }
+@keyframes zt-payfly { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(22px); } }
+
+/* HP: kolom Income lebih lebar (angka per menit lebih panjang), Power lebih sempit */
+.zt-root.is-touch .zt-stat--income { flex: 1.35; }
+.zt-root.is-touch .zt-stats > .zt-stat:nth-child(2) { flex: 0.8; }

@@ -35,6 +35,9 @@ export class GameState {
     
     this.inventory = []; // Hewan di kandang (Pen) — nama lama dipertahankan supaya save tetap cocok
     this.storage = [];   // Inventory: hewan yang tidak muat di Pen (tidak menghasilkan uang)
+    // Pembayaran per MENIT: uang & Power dikumpulkan tiap detik lalu dibayar sekaligus tiap 60 detik.
+    this.incomePending = 0; this.incomeTick = 0; // uang dari Pen
+    this.powerPending = 0;  this.powerTick = 0;  // Power dari pull-up (detik latihan; sisa tidak hilang saat berhenti)
     this.storageSlots = 5; // 5 → 10 → 15 → 20 lewat upgrade di toko
     this.indexProgress = {}; // Animal ID -> Set of mutations unlocked
     
@@ -456,6 +459,8 @@ export class GameState {
       baseSlotCost: this.baseSlotCost,
       storage: this.storage,
       storageSlots: this.storageSlots,
+      incomePending: this.incomePending, incomeTick: this.incomeTick,
+      powerPending: this.powerPending, powerTick: this.powerTick,
       selectedFoodIndex: this.selectedFoodIndex,
       unlockedFoods: this.unlockedFoods,
       inventory: this.inventory,
@@ -494,6 +499,8 @@ export class GameState {
         this.storage = d.storage ?? [];
         this.storage.forEach(it => { const a = ZONES.flatMap(z => z.animals).find(x => x.id === it.id); if (a) { it.name = a.name; it.baseCps = a.baseCps; } });
         this.storageSlots = d.storageSlots ?? 5;
+        this.incomePending = d.incomePending ?? 0; this.incomeTick = d.incomeTick ?? 0;
+        this.powerPending = d.powerPending ?? 0; this.powerTick = d.powerTick ?? 0;
         this.selectedFoodIndex = d.selectedFoodIndex ?? 0;
         this.unlockedFoods = d.unlockedFoods ?? [0];
         this.inventory = d.inventory ?? [];

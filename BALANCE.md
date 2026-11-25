@@ -77,8 +77,8 @@ Every zone has two foods. Food is bought once and used forever.
 | Throw distance | `Power × distPerPower × meter × wind`, minimum 1 m. 1 world unit = 1 m. | `main.js` → `triggerThrow` |
 | Meter | Needle 0–20, separate bands: POOR < 55% → ×0.5–0.9, GOOD 55–90% → ×1.2–1.5, MAX ≥ 90% → ×2.0. Needle speed is per second, not per frame. | `main.js` → `meterMultiplier` |
 | Wind | `1 + speed/11 × 0.10 × direction` (max ±10%), speed 0–11 m/s, changes every 5 s (55% tailwind). With these bands MAX always beats GOOD and GOOD always beats POOR, whatever the wind. | `main.js`, `robloxSeamlessWorld.js` |
-| Pull-up | `floor(1 + level^1.4 × 2) × pullUpRateMul × rebirth × pet`, minimum 1/s | `gameState.js` |
-| Income/s | `Σ floor(baseCps × mutation) × incomeMul × rebirth × pet` | `gameState.js` |
+| Pull-up | `floor(1 + level^1.4 × 2) × pullUpRateMul × rebirth × pet` per second of training, minimum 1/s. **Paid once per 60 s of training** (shown as Power/min); what is collected is kept when you stop and paid when the minute finishes in a later session | `gameState.js`, `main.js` |
+| Income | `Σ floor(baseCps × mutation) × incomeMul × rebirth × pet` per second, **paid once every 60 s** (shown as $/min, with a bar under Income) | `gameState.js`, `main.js` |
 | Rebirth bonus | `1 + rebirths × rebirthBonus` | `gameState.js` |
 | Catch odds | Food must match the landing zone (else no catch). Basic = 2 lowest rarities, Enhanced = the rest; animal weights decide inside | `robloxSeamlessWorld.js` → `determineCatch` |
 | Mutation | Normal 85%, Gold 10%, Diamond 3.5%, Emerald 1.2%, Rainbow 0.3% | `determineCatch` |

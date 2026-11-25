@@ -60,7 +60,7 @@ app.innerHTML = `
     <div class="zt-panel zt-stats pointer-events-auto">
       <div class="zt-stat"><div class="zt-stat__label">Cash</div><div id="hud-money" class="zt-stat__value">$0</div></div>
       <div class="zt-stat"><div class="zt-stat__label">Power</div><div id="hud-power" class="zt-stat__value" style="color:var(--zt-primary-d)">10</div></div>
-      <div class="zt-stat"><div class="zt-stat__label">Income</div><div id="hud-cps" class="zt-stat__value" style="color:var(--zt-good-d)">+$0/min</div></div>
+      <div class="zt-stat zt-stat--income" title="Paid once a minute"><div class="zt-stat__label">Income / min</div><div id="hud-cps" class="zt-stat__value" style="color:var(--zt-good-d)">+$0</div><i class="zt-paybar"><b id="hud-paybar"></b></i></div>
       <div class="zt-stat zt-stat--rebirth"><div class="zt-stat__label">Rebirth</div><div id="hud-rebirth" class="zt-stat__value" style="color:var(--zt-accent-d)">0x</div></div>
     </div>
     <div class="zt-panel zt-zonechip pointer-events-auto">
@@ -601,7 +601,7 @@ function renderChangelogModal() {
 function updateUI() {
   setStat('#hud-money', `$${formatNum(state.money)}`);
   setStat('#hud-power', formatNum(state.power));
-  setStat('#hud-cps', `+$${perMin(state.getCurrentCps())}/min`);
+  setStat('#hud-cps', `+$${perMin(state.getCurrentCps())}`); // "/min" ada di label supaya muat di HP
   setStat('#hud-rebirth', `${state.rebirthCount}x`);
 
   // Shop values
@@ -1098,8 +1098,11 @@ function hideCinematic() {
 }
 function updateCineInfo() {
   if (cineMode !== 'training') return;
+  const left = 60 - state.powerTick;
   document.querySelector('#cine-info').innerHTML =
-    `POWER <b>${formatNum(state.power)}</b> · <span class="zt-cine__gain">+${perMin(state.getPullUpRate())} / MIN</span>`;
+    `POWER <b>${formatNum(state.power)}</b> · <span class="zt-cine__gain">+${perMin(state.getPullUpRate())} / MIN</span>
+     · next <b>+${formatNum(state.powerPending)}</b> in ${left}s
+     <i class="zt-paybar zt-paybar--cine"><b style="width:${(state.powerTick / 60) * 100}%"></b></i>`;
 }
 function startBiomeView(zone) {
   if (world.isThrowing) return;
@@ -1131,7 +1134,7 @@ const onboarding = (() => {
         ? 'Tap <b>Throw</b> when the needle is in the <b>green</b>. Green = longest throw.'
         : 'Press <b>Space</b> when the needle is in the <b>green</b>. Green = longest throw.' },
     { title: 'Watch it fly!', text: 'The farther it lands, the wilder the zone and the rarer the animals.' },
-    { title: 'Nice catch!', text: 'Animals go to your <b>Pen</b> and earn cash every second. Each zone has its <b>own food</b>: land it in that zone, or nobody eats it. <b>Enhanced</b> food brings the rare ones.', next: true },
+    { title: 'Nice catch!', text: 'Animals go to your <b>Pen</b> and pay out cash every minute. Each zone has its <b>own food</b>: land it in that zone, or nobody eats it. <b>Enhanced</b> food brings the rare ones.', next: true },
   ];
   let step = -1;
   const el = document.querySelector('#onboarding');
@@ -1880,25 +1883,61 @@ function updateRankModal() {
   `;
 }
 
-// 1-second passive loop
+// Angka terbang kecil di atas statistik saat pembayaran per menit masuk
+function payoutFly(sel, text) {
+  const host = document.querySelector(sel)?.closest('.zt-stat');
+  if (!host) return;
+  const f = document.createElement('span');
+  f.className = 'zt-payfly';
+  f.textContent = text;
+  host.appendChild(f);
+  setTimeout(() => f.remove(), 1400);
+}
+
+// 1-second passive loop. Uang & Power dikumpulkan tiap detik, tapi DIBAYAR sekali per menit.
+// Pull-up: hitungan menit hanya berjalan saat latihan; sisa yang terkumpul tidak hilang saat berhenti.
+const PAYOUT_SECONDS = 60;
 setInterval(() => {
   if (state.autoThrow && !world.isThrowing && !state.isTraining) {
     triggerThrow();
   }
   if (state.isTraining) {
-    const gain = state.getPullUpRate();
-    state.power += gain;
-    state.checkQuest('pullup', gain);
-    setStat('#hud-power', formatNum(state.power));
+    state.powerPending += state.getPullUpRate();
+    state.powerTick += 1;
+    if (state.powerTick >= PAYOUT_SECONDS) {
+      const gain = state.powerPending;
+      state.power += gain;
+      state.powerPending = 0;
+      state.powerTick = 0;
+      state.checkQuest('pullup', gain);
+      setStat('#hud-power', formatNum(state.power));
+      payoutFly('#hud-power', `+${formatNum(gain)}`);
+      sfx.playLevelUp();
+      state.save();
+    }
     updateCineInfo();
   }
   const cps = state.getCurrentCps();
   if (cps > 0) {
-    state.money += cps;
-    state.totalEarned += cps;
-    setStat('#hud-money', `$${formatNum(state.money)}`);
-    if (!document.querySelector('#modal-food').classList.contains('hidden')) renderFoodBagModal(); // harga ikut berubah saat uang cukup
+    state.incomePending += cps;
+    state.incomeTick += 1;
+    if (state.incomeTick >= PAYOUT_SECONDS) {
+      const pay = state.incomePending;
+      state.money += pay;
+      state.totalEarned += pay;
+      state.incomePending = 0;
+      state.incomeTick = 0;
+      setStat('#hud-money', `$${formatNum(state.money)}`);
+      payoutFly('#hud-money', `+$${formatNum(pay)}`);
+      sfx.playCoins();
+      state.save();
+      if (!document.querySelector('#modal-food').classList.contains('hidden')) renderFoodBagModal(); // harga ikut berubah saat uang cukup
+    }
   }
+  const pb = document.querySelector('#hud-paybar');
+  if (pb) pb.style.width = `${cps > 0 ? (state.incomeTick / PAYOUT_SECONDS) * 100 : 0}%`;
+  document.querySelector('.zt-stat--income')?.setAttribute('title', cps > 0
+    ? `Next payout +$${formatNum(state.incomePending)} in ${PAYOUT_SECONDS - state.incomeTick}s` : 'Paid once a minute');
   updateDots();
 }, 1000);
 

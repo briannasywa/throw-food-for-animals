@@ -16,6 +16,12 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.11.0 — 2026-11-25
+### Changed
+- Income is now paid once a minute instead of every second. A bar under Income fills up, and the cash pops in when the minute is done.
+- Pull-ups pay out Power once per minute of training. The gym screen shows how much is coming and how long until it lands. If you stop early, what you collected is kept for your next session.
+- The HUD shows "Income / min" in the label so the number fits on phones.
+
 ## 0.10.4 — 2026-11-25
 ### Changed
 - PC: the top-right buttons (Mode, Wallet, Quests, Index, Rank, Changelog, Camera lock, Sound) now live in one Menu button (Tab), the same Menu as on phones. Hotkeys still work.
