@@ -16,6 +16,13 @@ Format (newest on top):
 
 Use only the sections you need: `Added`, `Changed`, `Fixed`, `Removed`. Bump the version in `package.json` to match the top entry.
 
+## 0.10.1 — 2026-11-25
+### Changed
+- The Inventory is now a bag button in the bottom-right corner (PC and phones), with the slot count under it. It is no longer in the top menu or the phone Menu.
+- The Food Bag shows only what matters: which rarities a food catches and in which zone.
+- The throw meter panel and the Throw button are the same height.
+- In Quests, the button lines up with the progress bar.
+
 ## 0.10.0 — 2026-11-25
 ### Added
 - Sell animals from the Inventory: each card has a Sell button, and Sell All sells everything in the Inventory after a confirmation that shows the total and warns about rare animals. Animals in your Pen are never sold this way.

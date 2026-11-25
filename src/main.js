@@ -31,6 +31,7 @@ const SPEAKER_OFF = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
 
 // Keycap hotkey kecil di tombol menu (tampil saat camera lock aktif; disembunyikan di layar sentuh)
 const hk = (key, always = false) => `<kbd class="zt-hk ${always ? 'is-always' : ''}">${key}</kbd>`;
+const BAG_ICON = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M9 7V5.5a3 3 0 0 1 6 0V7" /><path d="M5 9.5A2.5 2.5 0 0 1 7.5 7h9A2.5 2.5 0 0 1 19 9.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" fill="#E9A84C"/><path d="M8.5 12h7v3.5h-7z" fill="#FFF4DC"/></svg>`;
 const BURGER_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="3" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;
 const CAMLOCK_ICON = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B2233" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1.6" fill="#1B2233"/></svg>`;
 
@@ -83,7 +84,6 @@ app.innerHTML = `
     <button id="btn-open-quests" class="zt-btn zt-btn--primary">Quests${hk('Q')}</button>
     <button id="btn-open-index" class="zt-btn zt-btn--accent">Index${hk('I')}</button>
     <button id="btn-open-rank" class="zt-btn zt-btn--good">Rank${hk('R')}</button>
-    <button id="btn-open-storage" class="zt-btn zt-btn--plain" title="Inventory (B)">Inventory <span id="storage-count" class="zt-muted">0/5</span>${hk('B')}</button>
     <button id="btn-open-changelog" class="zt-btn zt-btn--plain" title="What's new (C)">Changelog${hk('C')}</button>
     <button id="btn-toggle-camlock" class="zt-btn zt-btn--plain zt-btn--icon" aria-label="Camera lock" title="Camera lock (L)">${CAMLOCK_ICON}${hk('L')}</button>
     <button id="btn-mobile-menu" class="zt-btn zt-btn--plain zt-menu__burger" aria-label="Menu">${BURGER_ICON}<span>Menu</span></button>
@@ -318,7 +318,6 @@ app.innerHTML = `
         <button class="zt-btn zt-btn--primary" data-mm="quests">Quests</button>
         <button class="zt-btn zt-btn--accent" data-mm="index">Index</button>
         <button class="zt-btn zt-btn--good" data-mm="rank">Rank</button>
-        <button class="zt-btn zt-btn--plain" data-mm="storage" id="mmenu-storage">Inventory</button>
         <button class="zt-btn zt-btn--plain" data-mm="sound" id="mmenu-sound">Sound: On</button>
         <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="changelog">Changelog</button>
         <button class="zt-btn zt-btn--plain zt-mmenu__wide" data-mm="wallet" id="mmenu-wallet">Connect Wallet</button>
@@ -426,6 +425,8 @@ app.innerHTML = `
   </div>
 
   <div id="zt-notice" class="zt-panel zt-notice hidden"></div>
+  <!-- Inventory: tombol tas di kanan bawah (PC & HP) -->
+  <button id="btn-open-storage" class="zt-btn zt-btn--plain zt-bagbtn" title="Inventory (B)" aria-label="Inventory">${BAG_ICON}<span id="storage-count" class="zt-bagbtn__count">0/5</span>${hk('B')}</button>
   ${MODE === 'easy' ? `<div class="zt-modebadge" title="Easy mode (dev testing). Open with ?mode=hard for the demo.">EASY MODE · DEV</div>` : ''}
 </div>
 `;
@@ -715,7 +716,7 @@ function renderFoodBagModal() {
   let html = row({
     color: LEGENDARY_BAIT.color, legend: true, active: cur === LEGENDARY_BAIT,
     title: `Legendary Bait <span class="zt-muted">×${legCount}</span>`,
-    desc: 'Guaranteed Legendary catch · bought with USDC',
+    desc: 'Guaranteed Legendary catch',
     btn: cur === LEGENDARY_BAIT ? equippedBtn
       : legCount > 0 ? `<button class="zt-btn zt-btn--accent zt-btn--sm" data-food="legend">Equip</button>`
       : `<button class="zt-btn zt-btn--plain zt-btn--sm" data-food="shop">Get in Shop</button>`,
@@ -730,7 +731,7 @@ function renderFoodBagModal() {
       html += row({
         color: f.color, active: cur === f, thumb: getAnimalThumb(`food_${f.id}`),
         title: `${f.name} <span class="zt-foodtier zt-foodtier--${f.tier}">${f.tier === 'enhanced' ? 'Enhanced' : 'Basic'}</span>`,
-        desc: `<b>${foodRarityLabel(f)}</b> in ${z.name} · ${f.desc}`,
+        desc: `<b>${foodRarityLabel(f)}</b> in ${z.name}`,
         btn: cur === f ? equippedBtn
           : owned ? `<button class="zt-btn zt-btn--good zt-btn--sm" data-food="${idx}">Equip</button>`
           : `<button class="zt-btn zt-btn--sm ${canAfford ? 'zt-btn--primary' : 'zt-btn--plain is-short'}" data-food="${idx}">${foodCost(f) === 0 ? 'Free' : `Buy $${formatNum(foodCost(f))}`}</button>`,
@@ -1781,17 +1782,21 @@ function renderQuestsModal() {
       <div class="zt-row__main">
         <div class="zt-title zt-row__title">${q.title}</div>
         <div class="zt-row__desc">${q.desc}</div>
-        <div class="zt-bar"><i style="width:${pct}%"></i></div>
-        <div class="flex justify-between mt-1">
-          <span class="zt-row__desc">${formatNum(q.current)} / ${formatNum(q.target)}</span>
-          <span class="zt-reward">+$${formatNum(q.rewardCash)}</span>
-        </div>
-      </div>
+        <div class="zt-quest__progress">
+          <div class="zt-quest__bar">
+            <div class="zt-bar"><i style="width:${pct}%"></i></div>
+            <div class="flex justify-between mt-1">
+              <span class="zt-row__desc">${formatNum(q.current)} / ${formatNum(q.target)}</span>
+              <span class="zt-reward">+$${formatNum(q.rewardCash)}</span>
+            </div>
+          </div>
       ${q.claimed
         ? `<button class="zt-btn zt-btn--plain zt-btn--sm" disabled style="--c:var(--zt-panel);--cd:var(--zt-panel-d);color:var(--zt-ink)">Claimed ✓</button>`
         : q.completed
           ? `<button class="zt-btn zt-btn--good" data-claim="${q.id}" style="animation:zt-bump .8s ease-in-out infinite">Claim</button>`
           : `<button class="zt-btn zt-btn--sm" disabled>In Progress</button>`}
+        </div>
+      </div>
     `;
     if (q.completed && !q.claimed) {
       card.querySelector(`[data-claim="${q.id}"]`).onclick = () => {

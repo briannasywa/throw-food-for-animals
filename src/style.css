@@ -433,3 +433,23 @@ html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 /* ---------- Inventory: Sell All di kepala modal ---------- */
 .zt-storagehead { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .zt-storagehead .zt-modal__sub { margin: 0; }
+
+/* ---------- Inventory: tombol tas kanan bawah ---------- */
+.zt-bagbtn { position: absolute; right: 16px; bottom: 16px; z-index: 22; width: 68px; height: 68px; padding: 0 !important;
+  display: flex; align-items: center; justify-content: center; }
+.zt-bagbtn__count { position: absolute; left: 50%; bottom: -10px; translate: -50% 0; font-family: var(--zt-font-title); font-size: 12px;
+  background: var(--zt-panel); border: 2px solid var(--zt-ink); border-radius: 6px; padding: 0 6px 1px; white-space: nowrap; color: var(--zt-ink); }
+.zt-bagbtn.is-full .zt-bagbtn__count { background: var(--zt-danger); color: var(--zt-white); }
+.zt-bagbtn .zt-hk { position: absolute; top: -8px; right: -8px; }
+.zt-root:not(.is-touch) .zt-modebadge { bottom: 100px; }
+.zt-root.is-touch .zt-bagbtn { width: 60px; height: 60px; right: 14px; bottom: calc(26px + var(--sab, 0px)); }
+.zt-root.is-touch.is-in-area .zt-bagbtn, .zt-root.is-cinematic .zt-bagbtn { display: none; }
+
+/* ---------- Panel lempar: meter+estimasi dan tombol Throw sama tinggi ---------- */
+.zt-throw { align-items: stretch; }
+.zt-throw__btn { align-self: stretch; height: auto; }
+
+/* ---------- Quests: tombol sejajar dengan progres ---------- */
+.zt-quest__progress { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.zt-quest__bar { flex: 1; min-width: 0; }
+.zt-quest__progress > .zt-btn { flex: none; }
